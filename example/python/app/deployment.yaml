@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-metric
+  labels:
+    app: flask-metric
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flask-metric
+  template:
+    metadata:
+      labels:
+        app: flask-metric
+    spec:
+      containers:
+      - name: flask-metric
+        image: flask-metric:latest
+        ports:
+        - containerPort: 5000
+        imagePullPolicy: Never

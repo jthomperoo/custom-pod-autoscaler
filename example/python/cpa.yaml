@@ -1,0 +1,7 @@
+apiVersion: "custom-pod-autoscaler.com/v1alpha1"
+kind: CustomPodAutoscaler
+metadata:
+  name: player-count-scaler
+spec:
+  image: example-custom-pod-autoscaler:latest
+  selector: app=flask-metric
