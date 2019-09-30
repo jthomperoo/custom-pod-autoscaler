@@ -81,10 +81,6 @@ func executeShellWithValuePipe(command string, value string) (*bytes.Buffer, err
 	return &outb, nil
 }
 
-type Evaluation struct {
-	TargetReplicas int32 `json:"target_replicas"`
-}
-
 func evaluate(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, dynamicKubeConfig *config.Config, ticker *time.Ticker, quit chan struct{}) {
 	for {
 		select {
@@ -125,7 +121,7 @@ func evaluate(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentIn
 					println(err.Error())
 					continue
 				}
-				evaluation := &Evaluation{}
+				evaluation := &models.Evaluation{}
 				json.Unmarshal(outb.Bytes(), evaluation)
 				if evaluation.TargetReplicas != *deployment.Spec.Replicas {
 					deployment.Spec.Replicas = &evaluation.TargetReplicas

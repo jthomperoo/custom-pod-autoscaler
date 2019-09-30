@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package config
 
 import (
@@ -32,12 +33,13 @@ const (
 
 const (
 	defaultConfig   = "/config.yaml"
-	defaultEvaluate = "exit 1"
-	defaultMetric   = "exit 1"
+	defaultEvaluate = ">&2 echo 'ERROR: No evaluate command set' && exit 1"
+	defaultMetric   = ">&2 echo 'ERROR: No metric command set' && exit 1"
 	defaultInterval = 15000
 	defaultSelector = ""
 )
 
+// Config is the configuration options for the CPA
 type Config struct {
 	Evaluate string `yaml:"evaluate"`
 	Metric   string `yaml:"metric"`
@@ -45,6 +47,8 @@ type Config struct {
 	Selector string `yaml:"selector"`
 }
 
+// LoadConfig loads in the default configuration, then overrides it from the config file,
+// then any env vars set.
 func LoadConfig() (*Config, error) {
 	data, err := ioutil.ReadFile(getEnv(configEnvName, defaultConfig))
 	if err != nil {

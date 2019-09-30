@@ -22,10 +22,12 @@ def main():
     evaluate(metric_json)
 
 def evaluate(metrics):
+    sys.stderr.write(metrics)
     total_available = 0
     for metric in metrics:
         pod = metric["pod"]
-        available = metric["available"]
+        json_value = metric["value"]
+        available = json_value["available"]
         total_available += int(available)
 
     if total_available > 5:

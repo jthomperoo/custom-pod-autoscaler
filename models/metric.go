@@ -16,8 +16,15 @@ limitations under the License.
 
 package models
 
+// Metric is the result of the custom metric calculation, containing information on the
+// relevant pod and the metric value
 type Metric struct {
 	Pod string `json:"pod,omitempty"`
 
 	Value string `json:"value,omitempty"`
+}
+
+// Evaluation is the result of the custom evaluation, defining how to scale a deployment
+type Evaluation struct {
+	TargetReplicas int32 `json:"target_replicas"`
 }

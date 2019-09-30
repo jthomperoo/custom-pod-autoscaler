@@ -10,14 +10,10 @@ lint: vendor
 	@echo "=============Linting============="
 	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
-test: vendor
-	@echo "=============Running unit tests============="
-	go test ./...
-
-vendor:
-	go mod vendor
-
 docker: default
 	@echo "=============Building docker images============="
 	docker build --target=python -t $(REGISTRY)/python:$(VERSION) .
 	docker build --target=alpine -t $(REGISTRY)/alpine:$(VERSION) .
+
+vendor:
+	go mod vendor
