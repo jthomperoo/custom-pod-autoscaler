@@ -11,11 +11,11 @@ The CPA can be used to make Customised Autoscalers, either by using one of the b
 Developing this project requires these dependencies:
 
 * Go >= 1.13
+* Docker
 
 ### Commands
 
 * make - builds the CPA binary.
 * make docker - builds the CPA base images.
 * make lint - lints the code.
-* make test - tests the code.
 * make vendor - generates a vendor folder.
