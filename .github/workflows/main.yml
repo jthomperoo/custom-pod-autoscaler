@@ -1,0 +1,63 @@
+name: main
+on: 
+  push:
+  pull_request:
+  release:
+    types: [created]
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v1
+    
+    - name: Get dependencies
+      run: make vendor
+
+    - name: Lint 
+      run: |
+        export PATH=$PATH:$(go env GOPATH)/bin
+        GO111MODULE=off go get -u golang.org/x/lint/golint
+        make lint
+
+    - name: Build
+      run: |
+        if [ ${{ github.event_name }} == "release" ]; then
+          # github.ref is in the form refs/tags/VERSION, so apply regex to just get version
+          VERSION=$(echo "${{ github.ref }}" | grep -P '([^\/]+$)' -o) 
+        else
+          VERSION=$(git rev-parse --short ${{ github.sha }})
+        fi
+        make docker VERSION=${VERSION}
+
+    - name: Deploy
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      if: github.event_name != 'pull_request' && github.repository == 'jthomperoo/custom-pod-autoscaler'
+      run: |
+        # Array of images to publish
+        declare -a IMAGES=(python alpine)
+        echo "$DOCKER_PASS" | docker login --username=$DOCKER_USER --password-stdin
+        if [ ${{ github.event_name }} == "release" ]; then
+          # This needs to be determined again, due to env vars not being shared between steps
+          # https://github.com/actions/starter-workflows/issues/68
+          VERSION=$(echo "${{ github.ref }}" | grep -P '([^\/]+$)' -o) 
+          # Go through each image type and publish each one individually
+          for image in "${IMAGES[@]}"; do
+            docker tag custompodautoscaler/${image}:${VERSION} custompodautoscaler/${image}:latest
+            docker push custompodautoscaler/${image}:${VERSION}
+            docker push custompodautoscaler/${image}:latest
+          done
+        else
+          for image in "${IMAGES[@]}"; do
+            docker push custompodautoscaler/${image}:$(git rev-parse --short ${{ github.sha }})
+          done
+        fi
