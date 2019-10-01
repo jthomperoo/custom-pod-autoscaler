@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/Azure/go-autorest v11.1.2+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
+	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/go-openapi/swag v0.19.5 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0-20190925180651-d58b53da08f5

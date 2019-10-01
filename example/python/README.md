@@ -27,7 +27,7 @@ Once CPAs have been enabled on your cluster, you need to build this example, run
 * Target the Minikube registry for building the image.  
 `eval $(minikube docker-env)`  
 * Build the example image.  
-`docker build -t example-python-custom-pod-autoscaler`  
+`docker build -t example-python-custom-pod-autoscaler .`  
 * Deploy the CPA using the image just built.  
 `kubectl apply -f cpa.yaml`  
 

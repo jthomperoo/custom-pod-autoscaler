@@ -13,26 +13,20 @@
 # limitations under the License.
 
 # Global environment variables
-ARG host=0.0.0.0 
-ARG port=5000
 ARG cmd="/app/custom-pod-autoscaler"
 
 # Python build
 FROM python:3.6-slim AS python
-ARG host
-ARG port
 ARG cmd
-ENV HOST=$host PORT=$port CMD=$cmd
+ENV CMD=$cmd
 WORKDIR /app
 COPY dist /app/
 CMD $CMD
 
 # Alpine build
 FROM alpine:3.10 AS alpine
-ARG host
-ARG port
 ARG cmd
-ENV HOST=$host PORT=$port CMD=$cmd
+ENV CMD=$cmd
 WORKDIR /app
 COPY dist /app/
 CMD $CMD

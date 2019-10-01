@@ -18,17 +18,18 @@ import requests
 import math
 
 def main():
-    metric_json = json.loads(sys.stdin.read())
-    evaluate(metric_json)
+    metrics = json.loads(sys.stdin.read())
+    evaluate(metrics)
 
 def evaluate(metrics):
-    sys.stderr.write(metrics)
     total_available = 0
     for metric in metrics:
         pod = metric["pod"]
-        json_value = metric["value"]
+        json_value = json.loads(metric["value"])
         available = json_value["available"]
         total_available += int(available)
+
+    target_replica_count = len(metrics)
 
     if total_available > 5:
         target_replica_count -= 1

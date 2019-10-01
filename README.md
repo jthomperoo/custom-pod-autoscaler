@@ -11,6 +11,7 @@ The CPA can be used to make Customised Autoscalers, either by using one of the b
 Developing this project requires these dependencies:
 
 * Go >= 1.13
+* Golint
 * Docker
 
 ### Commands

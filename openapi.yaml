@@ -1,0 +1,94 @@
+openapi: 3.0.1
+info:
+  title: Custom Pod Autoscaler
+  description: "Custom Pod Autoscaler API; for querying metrics and evaluations of scaling."
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+tags:
+- name: metric
+  description: Metrics for scaling
+- name: evaluation
+  description: Evaluation decisions for scaling
+paths:
+  /metrics:
+    get:
+      tags:
+      - metric
+      summary: Get metrics for CPA
+      operationId: getMetrics
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeploymentMetric"
+        default:
+          description: Error
+  /evaluations:
+    get:
+      tags:
+      - evaluation
+      summary: Get evaluation decisions for CPA
+      operationId: getEvaluations
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeploymentEvaluation"
+        default:
+          description: Error
+components:
+  schemas:
+    DeploymentMetric:
+      required:
+      - deployment
+      - metrics
+      type: object
+      properties:
+        deployment:
+          type: string
+          example: example-deployment
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/Metric"
+    DeploymentEvaluation:
+      required:
+      - deployment
+      - evaluation
+      type: object
+      properties:
+        deployment:
+          type: string
+          example: example-deployment
+        evaluation:
+          $ref: "#/components/schemas/Evaluation"
+    Evaluation:
+      required:
+      - target_replicas
+      type: object
+      properties:
+        target_replicas:
+          type: integer
+          example: 2
+    Metric:
+      required:
+      - pod
+      - value
+      type: object
+      properties:
+        pod:
+          type: string
+          example: example-pod
+        value:
+          type: string
+          example: value
