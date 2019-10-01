@@ -18,9 +18,9 @@ package models
 
 import appsv1 "k8s.io/api/apps/v1"
 
-// Metric represents a deployment's metrics, including each pod's metrics
-type Metric struct {
+// Evaluation represents a decision on how to scale a deployment
+type Evaluation struct {
 	DeploymentName string             `json:"deployment"`
-	Metrics        []*MetricValue     `json:"metrics"`
+	Evaluation     *EvaluationValue   `json:"evaluation"`
 	Deployment     *appsv1.Deployment `json:"-"` // hide
 }

@@ -16,11 +16,10 @@ limitations under the License.
 
 package models
 
-import appsv1 "k8s.io/api/apps/v1"
+// MetricValue is the result of the custom metric calculation, containing information on the
+// relevant pod and the metric value
+type MetricValue struct {
+	Pod string `json:"pod,omitempty"`
 
-// Metric represents a deployment's metrics, including each pod's metrics
-type Metric struct {
-	DeploymentName string             `json:"deployment"`
-	Metrics        []*MetricValue     `json:"metrics"`
-	Deployment     *appsv1.Deployment `json:"-"` // hide
+	Value string `json:"value,omitempty"`
 }

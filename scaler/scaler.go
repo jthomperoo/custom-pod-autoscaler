@@ -1,0 +1,71 @@
+/*
+Copyright 2019 The Custom Pod Autoscaler Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package scaler
+
+import (
+	"log"
+	"time"
+
+	"github.com/jthomperoo/custom-pod-autoscaler/config"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/kubernetes/typed/apps/v1"
+)
+
+// ConfigureScaler sets up the scaler logic, which will repeatedly determine through gathering metrics and
+// evaluating the metrics if the managed deployments need scaled up/down
+func ConfigureScaler(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config) {
+	ticker := time.NewTicker(time.Duration(config.Interval) * time.Millisecond)
+	quit := make(chan struct{})
+	go scale(clientset, deploymentsClient, config, ticker, quit)
+}
+
+func scale(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config, ticker *time.Ticker, quit chan struct{}) {
+	for {
+		select {
+		case <-ticker.C:
+			// Get deployments being managed
+			deployments, err := deploymentsClient.List(metav1.ListOptions{LabelSelector: config.Selector})
+			if err != nil {
+				log.Fatalf(err.Error())
+			}
+
+			// Gather metrics
+			metrics, err := GetMetrics(clientset, deployments, config)
+
+			// Evaluate based on metrics
+			evaluations, err := GetEvaluations(metrics, config)
+
+			// Check if each evaluation requires an action
+			for _, evaluation := range evaluations {
+				deployment := evaluation.Deployment
+				// If the deployment needs scaled up/down
+				if evaluation.Evaluation.TargetReplicas != *deployment.Spec.Replicas {
+					// Scale deployment
+					deployment.Spec.Replicas = &evaluation.Evaluation.TargetReplicas
+					_, err = deploymentsClient.Update(deployment)
+					if err != nil {
+						log.Fatalf(err.Error())
+					}
+				}
+			}
+		case <-quit:
+			ticker.Stop()
+			return
+		}
+	}
+}

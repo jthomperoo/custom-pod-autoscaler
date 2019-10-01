@@ -16,11 +16,7 @@ limitations under the License.
 
 package models
 
-import appsv1 "k8s.io/api/apps/v1"
-
-// Metric represents a deployment's metrics, including each pod's metrics
-type Metric struct {
-	DeploymentName string             `json:"deployment"`
-	Metrics        []*MetricValue     `json:"metrics"`
-	Deployment     *appsv1.Deployment `json:"-"` // hide
+// EvaluationValue is the result of the custom evaluation, defining how to scale a deployment
+type EvaluationValue struct {
+	TargetReplicas int32 `json:"target_replicas"`
 }

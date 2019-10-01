@@ -29,6 +29,8 @@ const (
 	metricEnvName   = "METRIC"
 	intervalEnvName = "INTERVAL"
 	selectorEnvName = "SELECTOR"
+	hostEnvName     = "HOST"
+	portEnvName     = "PORT"
 )
 
 const (
@@ -37,6 +39,8 @@ const (
 	defaultMetric   = ">&2 echo 'ERROR: No metric command set' && exit 1"
 	defaultInterval = 15000
 	defaultSelector = ""
+	defaultHost     = "0.0.0.0"
+	defaultPort     = 5000
 )
 
 // Config is the configuration options for the CPA
@@ -45,6 +49,8 @@ type Config struct {
 	Metric   string `yaml:"metric"`
 	Interval int    `yaml:"interval"`
 	Selector string `yaml:"selector"`
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
 }
 
 // LoadConfig loads in the default configuration, then overrides it from the config file,
@@ -95,5 +101,7 @@ func newDefaultConfig() *Config {
 		Metric:   defaultMetric,
 		Evaluate: defaultEvaluate,
 		Selector: defaultSelector,
+		Host:     defaultHost,
+		Port:     defaultPort,
 	}
 }
