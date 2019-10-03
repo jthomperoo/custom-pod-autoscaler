@@ -18,6 +18,9 @@ package scaler
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
@@ -30,13 +33,17 @@ import (
 // evaluating the metrics if the managed deployments need scaled up/down
 func ConfigureScaler(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config) {
 	ticker := time.NewTicker(time.Duration(config.Interval) * time.Millisecond)
-	quit := make(chan struct{})
-	go scale(clientset, deploymentsClient, config, ticker, quit)
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	go scale(clientset, deploymentsClient, config, ticker, shutdown)
 }
 
-func scale(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config, ticker *time.Ticker, quit chan struct{}) {
+func scale(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config, ticker *time.Ticker, shutdown chan os.Signal) {
 	for {
 		select {
+		case <-shutdown:
+			ticker.Stop()
+			return
 		case <-ticker.C:
 			// Get deployments being managed
 			deployments, err := deploymentsClient.List(metav1.ListOptions{LabelSelector: config.Selector})
@@ -63,9 +70,6 @@ func scale(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInter
 					}
 				}
 			}
-		case <-quit:
-			ticker.Stop()
-			return
 		}
 	}
 }

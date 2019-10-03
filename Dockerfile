@@ -12,21 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Global environment variables
-ARG cmd="/app/custom-pod-autoscaler"
-
 # Python build
 FROM python:3.6-slim AS python
-ARG cmd
-ENV CMD=$cmd
 WORKDIR /app
 COPY dist /app/
-CMD $CMD
+CMD [ "/app/custom-pod-autoscaler" ]
 
 # Alpine build
 FROM alpine:3.10 AS alpine
-ARG cmd
-ENV CMD=$cmd
 WORKDIR /app
 COPY dist /app/
-CMD $CMD
+CMD [ "/app/custom-pod-autoscaler" ]
