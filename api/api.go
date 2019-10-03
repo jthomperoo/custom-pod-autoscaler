@@ -17,9 +17,14 @@ limitations under the License.
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-chi/chi"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
@@ -38,11 +43,31 @@ func ConfigureAPI(clientset *kubernetes.Clientset, deploymentsClient v1.Deployme
 		config:            config,
 	}
 
-	// Set up routing and serve API
+	// Set up routing
 	r := chi.NewRouter()
 	r.Get("/metrics", api.getMetrics)
 	r.Get("/evaluations", api.getEvaluations)
-	http.ListenAndServe(fmt.Sprintf("%s:%d", config.Host, config.Port), r)
+
+	// Set up server
+	srv := http.Server{Addr: fmt.Sprintf("%s:%d", config.Host, config.Port), Handler: r}
+
+	// Set up channel for handling shutdown requests
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	// Handle shutdowns
+	go func() {
+		for range shutdown {
+			log.Println("Shutting down...")
+			// Immediate shutdown
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			srv.Shutdown(ctx)
+		}
+	}()
+
+	// Start API
+	srv.ListenAndServe()
 }
 
 type api struct {
