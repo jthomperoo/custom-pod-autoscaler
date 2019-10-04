@@ -61,3 +61,15 @@ jobs:
             docker push custompodautoscaler/${image}:$(git rev-parse --short ${{ github.sha }})
           done
         fi
+
+    - name: Bundle binary
+      if: github.event_name == 'release' && github.repository == 'jthomperoo/custom-pod-autoscaler'
+      run: tar -czvf custom-pod-autoscaler.tar.gz dist/*
+
+    - name: Deploy binary
+      if: github.event_name == 'release' && github.repository == 'jthomperoo/custom-pod-autoscaler'
+      uses: Shopify/upload-to-release@1.0.0
+      with:
+        name: custom-pod-autoscaler.tar.gz
+        path: custom-pod-autoscaler.tar.gz
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
