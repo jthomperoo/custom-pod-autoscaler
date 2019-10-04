@@ -8,7 +8,7 @@ default: vendor
 
 lint: vendor
 	@echo "=============Linting============="
-	go list ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
+	go list -mod=vendor ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
 docker: default
 	@echo "=============Building docker images============="
