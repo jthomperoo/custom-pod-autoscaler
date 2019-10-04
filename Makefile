@@ -5,6 +5,7 @@ VERSION = latest
 default: vendor
 	@echo "=============Building============="
 	CGO_ENABLED=0 GOOS=linux go build -mod vendor -o dist/$(NAME)
+	cp LICENSE dist/LICENSE
 
 lint: vendor
 	@echo "=============Linting============="
