@@ -24,33 +24,36 @@ import (
 )
 
 const (
-	configEnvName   = "CONFIG_PATH"
-	evaluateEnvName = "EVALUATE"
-	metricEnvName   = "METRIC"
-	intervalEnvName = "INTERVAL"
-	selectorEnvName = "SELECTOR"
-	hostEnvName     = "HOST"
-	portEnvName     = "PORT"
+	configEnvName    = "CONFIG_PATH"
+	evaluateEnvName  = "EVALUATE"
+	metricEnvName    = "METRIC"
+	intervalEnvName  = "INTERVAL"
+	selectorEnvName  = "SELECTOR"
+	hostEnvName      = "HOST"
+	portEnvName      = "PORT"
+	namespaceEnvName = "WATCH_NAMESPACE"
 )
 
 const (
-	defaultConfig   = "/config.yaml"
-	defaultEvaluate = ">&2 echo 'ERROR: No evaluate command set' && exit 1"
-	defaultMetric   = ">&2 echo 'ERROR: No metric command set' && exit 1"
-	defaultInterval = 15000
-	defaultSelector = ""
-	defaultHost     = "0.0.0.0"
-	defaultPort     = 5000
+	defaultConfig    = "/config.yaml"
+	defaultEvaluate  = ">&2 echo 'ERROR: No evaluate command set' && exit 1"
+	defaultMetric    = ">&2 echo 'ERROR: No metric command set' && exit 1"
+	defaultInterval  = 15000
+	defaultSelector  = ""
+	defaultHost      = "0.0.0.0"
+	defaultPort      = 5000
+	defaultNamespace = "default"
 )
 
 // Config is the configuration options for the CPA
 type Config struct {
-	Evaluate string `yaml:"evaluate"`
-	Metric   string `yaml:"metric"`
-	Interval int    `yaml:"interval"`
-	Selector string `yaml:"selector"`
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
+	Evaluate  string `yaml:"evaluate"`
+	Metric    string `yaml:"metric"`
+	Interval  int    `yaml:"interval"`
+	Selector  string `yaml:"selector"`
+	Host      string `yaml:"host"`
+	Port      int    `yaml:"port"`
+	Namespace string `yaml:"-"`
 }
 
 // LoadConfig loads in the default configuration, then overrides it from the config file,
@@ -85,6 +88,7 @@ func loadFromEnv(config *Config) error {
 	config.Selector = getEnv(selectorEnvName, config.Selector)
 	config.Evaluate = getEnv(evaluateEnvName, config.Evaluate)
 	config.Metric = getEnv(metricEnvName, config.Metric)
+	config.Namespace = getEnv(namespaceEnvName, config.Namespace)
 	return nil
 }
 
@@ -97,11 +101,12 @@ func getEnv(key, fallback string) string {
 
 func newDefaultConfig() *Config {
 	return &Config{
-		Interval: defaultInterval,
-		Metric:   defaultMetric,
-		Evaluate: defaultEvaluate,
-		Selector: defaultSelector,
-		Host:     defaultHost,
-		Port:     defaultPort,
+		Interval:  defaultInterval,
+		Metric:    defaultMetric,
+		Evaluate:  defaultEvaluate,
+		Selector:  defaultSelector,
+		Host:      defaultHost,
+		Port:      defaultPort,
+		Namespace: defaultNamespace,
 	}
 }
