@@ -21,7 +21,6 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/api"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/scaler"
-	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -46,7 +45,7 @@ func main() {
 	}
 
 	// Set up client for managing deployments
-	deploymentsClient := clientset.AppsV1().Deployments(apiv1.NamespaceDefault)
+	deploymentsClient := clientset.AppsV1().Deployments(config.Namespace)
 
 	// Start scaler
 	scaler.ConfigureScaler(clientset, deploymentsClient, config)

@@ -35,7 +35,7 @@ func GetMetrics(clientset *kubernetes.Clientset, deployments *appsv1.DeploymentL
 	for _, deployment := range deployments.Items {
 		// Get Deployment pods
 		labels := deployment.GetLabels()
-		pods, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", labels["app"])})
+		pods, err := clientset.CoreV1().Pods(config.Namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", labels["app"])})
 		if err != nil {
 			return nil, err
 		}
