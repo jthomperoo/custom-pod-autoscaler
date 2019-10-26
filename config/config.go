@@ -19,6 +19,7 @@ package config
 import (
 	"io/ioutil"
 	"os"
+	"strconv"
 
 	"gopkg.in/yaml.v2"
 )
@@ -89,12 +90,24 @@ func loadFromEnv(config *Config) error {
 	config.Evaluate = getEnv(evaluateEnvName, config.Evaluate)
 	config.Metric = getEnv(metricEnvName, config.Metric)
 	config.Namespace = getEnv(namespaceEnvName, config.Namespace)
+	config.Interval = getEnvInt(intervalEnvName, config.Interval)
 	return nil
 }
 
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
+	}
+	return fallback
+}
+
+func getEnvInt(key string, fallback int) int {
+	if value, ok := os.LookupEnv(key); ok {
+		intVal, err := strconv.Atoi(value)
+		if err != nil {
+			return fallback
+		}
+		return intVal
 	}
 	return fallback
 }
