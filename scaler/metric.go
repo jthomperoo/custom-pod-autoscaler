@@ -43,9 +43,9 @@ func GetMetrics(clientset *kubernetes.Clientset, deployments *appsv1.DeploymentL
 		// Gather metrics for each pod
 		var metricValues []*models.MetricValue
 		for _, pod := range pods.Items {
-			metric, err := getMetricForPod(config.Metric, &pod)
+			metric, err := getMetricForPod(config.Metric, &pod, config.MetricTimeout)
 			if err != nil {
-				continue
+				return nil, err
 			}
 			metricValues = append(metricValues, metric)
 		}
@@ -60,7 +60,7 @@ func GetMetrics(clientset *kubernetes.Clientset, deployments *appsv1.DeploymentL
 }
 
 // getMetricForPod gathers the metric for a specific pod
-func getMetricForPod(metricCmd string, pod *corev1.Pod) (*models.MetricValue, error) {
+func getMetricForPod(cmd string, pod *corev1.Pod, timeout int) (*models.MetricValue, error) {
 	// Convert the Pod description to JSON
 	podJSON, err := json.Marshal(pod)
 	if err != nil {
@@ -68,7 +68,7 @@ func getMetricForPod(metricCmd string, pod *corev1.Pod) (*models.MetricValue, er
 	}
 
 	// Execute the Metric command with the Pod JSON
-	outb, err := shell.ExecWithValuePipe(metricCmd, string(podJSON))
+	outb, err := shell.ExecWithValuePipe(cmd, string(podJSON), timeout)
 	if err != nil {
 		return nil, err
 	}

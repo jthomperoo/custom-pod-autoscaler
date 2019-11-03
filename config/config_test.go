@@ -26,46 +26,42 @@ import (
 )
 
 const (
-	evaluateEnvName  = "evaluate"
-	metricEnvName    = "metric"
-	intervalEnvName  = "interval"
-	selectorEnvName  = "selector"
-	hostEnvName      = "host"
-	portEnvName      = "port"
-	namespaceEnvName = "namespace"
+	evaluateEnvName        = "evaluate"
+	metricEnvName          = "metric"
+	intervalEnvName        = "interval"
+	selectorEnvName        = "selector"
+	hostEnvName            = "host"
+	portEnvName            = "port"
+	metricTimeoutEnvName   = "metric_timeout"
+	evaluateTimeoutEnvName = "evaluate_timeout"
+	namespaceEnvName       = "namespace"
 
-	defaultEvaluate  = ">&2 echo 'ERROR: No evaluate command set' && exit 1"
-	defaultMetric    = ">&2 echo 'ERROR: No metric command set' && exit 1"
-	defaultInterval  = 15000
-	defaultSelector  = ""
-	defaultHost      = "0.0.0.0"
-	defaultPort      = 5000
-	defaultNamespace = "default"
+	defaultEvaluate        = ">&2 echo 'ERROR: No evaluate command set' && exit 1"
+	defaultMetric          = ">&2 echo 'ERROR: No metric command set' && exit 1"
+	defaultInterval        = 15000
+	defaultSelector        = ""
+	defaultHost            = "0.0.0.0"
+	defaultPort            = 5000
+	defaultMetricTimeout   = 5000
+	defaultEvaluateTimeout = 5000
+	defaultNamespace       = "default"
 
-	invalidYAML   = "- in: -: valid - yaml"
-	testEvaluate  = "test evaluate"
-	testMetric    = "test metric"
-	testInterval  = 1234
-	testSelector  = "test selector"
-	testHost      = "1.2.3.4"
-	testPort      = 1234
-	testNamespace = "test namespace"
+	invalidYAML         = "- in: -: valid - yaml"
+	testEvaluate        = "test evaluate"
+	testMetric          = "test metric"
+	testInterval        = 1234
+	testSelector        = "test selector"
+	testHost            = "1.2.3.4"
+	testPort            = 1234
+	testMetricTimeout   = 4321
+	testEvaluateTimeout = 8765
+	testNamespace       = "test namespace"
 )
 
 func TestLoadConfig_InvalidYAML(t *testing.T) {
 	_, err := config.LoadConfig([]byte(invalidYAML), nil)
 	if err == nil {
 		t.Errorf("Expected error due to invalid YAML provided")
-	}
-}
-
-func TestLoadConfig_InvalidEnv(t *testing.T) {
-	_, err := config.LoadConfig(nil, map[string]string{
-		"invalid": "invalid",
-	})
-
-	if err == nil {
-		t.Errorf("Expected error due to invalid environment variable provided")
 	}
 }
 
@@ -80,24 +76,18 @@ func TestLoadConfig_InvalidIntEnv(t *testing.T) {
 }
 
 func TestLoadConfig_NoYAML(t *testing.T) {
-	testConfig := &config.Config{
-		Evaluate:  testEvaluate,
-		Metric:    testMetric,
-		Interval:  testInterval,
-		Selector:  testSelector,
-		Host:      testHost,
-		Port:      testPort,
-		Namespace: testNamespace,
-	}
+	testConfig := getTestConfig()
 
 	testEnvVars := map[string]string{
-		evaluateEnvName:  testEvaluate,
-		metricEnvName:    testMetric,
-		intervalEnvName:  strconv.FormatInt(testInterval, 10),
-		selectorEnvName:  testSelector,
-		hostEnvName:      testHost,
-		portEnvName:      strconv.FormatInt(testPort, 10),
-		namespaceEnvName: testNamespace,
+		evaluateEnvName:        testEvaluate,
+		metricEnvName:          testMetric,
+		intervalEnvName:        strconv.FormatInt(testInterval, 10),
+		selectorEnvName:        testSelector,
+		hostEnvName:            testHost,
+		portEnvName:            strconv.FormatInt(testPort, 10),
+		metricTimeoutEnvName:   strconv.FormatInt(testMetricTimeout, 10),
+		evaluateTimeoutEnvName: strconv.FormatInt(testEvaluateTimeout, 10),
+		namespaceEnvName:       testNamespace,
 	}
 
 	loadedConfig, err := config.LoadConfig(nil, testEnvVars)
@@ -111,14 +101,7 @@ func TestLoadConfig_NoYAML(t *testing.T) {
 }
 
 func TestLoadConfig_NoEnv(t *testing.T) {
-	testConfig := &config.Config{
-		Evaluate: testEvaluate,
-		Metric:   testMetric,
-		Interval: testInterval,
-		Selector: testSelector,
-		Host:     testHost,
-		Port:     testPort,
-	}
+	testConfig := getTestConfig()
 
 	yamlConfig, err := yaml.Marshal(testConfig)
 	if err != nil {
@@ -130,24 +113,13 @@ func TestLoadConfig_NoEnv(t *testing.T) {
 		t.Error(err)
 	}
 
-	// Namespace is not loaded in by the YAML, so it should be the default value
-	testConfig.Namespace = defaultNamespace
-
 	if !cmp.Equal(loadedConfig, testConfig) {
 		t.Errorf("Config mismatch (-want +got):\n%s", cmp.Diff(testConfig, loadedConfig))
 	}
 }
 
 func TestLoadConfig_NoYAMLNoEnv(t *testing.T) {
-	testConfig := &config.Config{
-		Evaluate:  defaultEvaluate,
-		Metric:    defaultMetric,
-		Interval:  defaultInterval,
-		Selector:  defaultSelector,
-		Host:      defaultHost,
-		Port:      defaultPort,
-		Namespace: defaultNamespace,
-	}
+	testConfig := getDefaultConfig()
 
 	loadedConfig, err := config.LoadConfig(nil, nil)
 	if err != nil {
@@ -156,5 +128,33 @@ func TestLoadConfig_NoYAMLNoEnv(t *testing.T) {
 
 	if !cmp.Equal(loadedConfig, testConfig) {
 		t.Errorf("Config mismatch (-want +got):\n%s", cmp.Diff(testConfig, loadedConfig))
+	}
+}
+
+func getDefaultConfig() *config.Config {
+	return &config.Config{
+		Evaluate:        defaultEvaluate,
+		Metric:          defaultMetric,
+		Interval:        defaultInterval,
+		Selector:        defaultSelector,
+		Host:            defaultHost,
+		Port:            defaultPort,
+		MetricTimeout:   defaultMetricTimeout,
+		EvaluateTimeout: defaultEvaluateTimeout,
+		Namespace:       defaultNamespace,
+	}
+}
+
+func getTestConfig() *config.Config {
+	return &config.Config{
+		Evaluate:        testEvaluate,
+		Metric:          testMetric,
+		Interval:        testInterval,
+		Selector:        testSelector,
+		Host:            testHost,
+		Port:            testPort,
+		MetricTimeout:   testMetricTimeout,
+		EvaluateTimeout: testEvaluateTimeout,
+		Namespace:       testNamespace,
 	}
 }
