@@ -22,22 +22,43 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"time"
 )
 
 // ExecWithValuePipe executes a shell command with a value piped to it
-func ExecWithValuePipe(command string, value string) (*bytes.Buffer, error) {
+func ExecWithValuePipe(command string, value string, timeout int) (*bytes.Buffer, error) {
 	// Build command string with value piped into it
 	commandString := fmt.Sprintf("echo '%s' | %s", value, command)
 	cmd := exec.Command("/bin/sh", "-c", commandString)
+
 	// Set up byte buffers to read stdout and stderr
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
-	err := cmd.Run()
+
+	// Start command
+	err := cmd.Start()
 	if err != nil {
-		// Output stderr
-		log.Println(errb.String())
 		return nil, err
+	}
+
+	// Set up channel to wait for command to finish
+	done := make(chan error)
+	go func() { done <- cmd.Wait() }()
+
+	// Set up a timeout, after which if the command hasn't finished it will be stopped
+	timeoutListener := time.After(time.Duration(timeout) * time.Millisecond)
+
+	select {
+	case <-timeoutListener:
+		cmd.Process.Kill()
+		return nil, fmt.Errorf("Command %s timed out", command)
+	case err = <-done:
+		if err != nil {
+			// Output stderr
+			log.Println(errb.String())
+			return nil, err
+		}
 	}
 	return &outb, nil
 }

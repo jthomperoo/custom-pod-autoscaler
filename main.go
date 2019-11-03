@@ -28,14 +28,16 @@ import (
 )
 
 const (
-	configEnvName    = "config_path"
-	evaluateEnvName  = "evaluate"
-	metricEnvName    = "metric"
-	intervalEnvName  = "interval"
-	selectorEnvName  = "selector"
-	hostEnvName      = "host"
-	portEnvName      = "port"
-	namespaceEnvName = "namespace"
+	configEnvName          = "config_path"
+	evaluateEnvName        = "evaluate"
+	metricEnvName          = "metric"
+	intervalEnvName        = "interval"
+	selectorEnvName        = "selector"
+	hostEnvName            = "host"
+	portEnvName            = "port"
+	metricTimeoutEnvName   = "metric_timeout"
+	evaluateTimeoutEnvName = "evaluate_timeout"
+	namespaceEnvName       = "namespace"
 )
 
 const defaultConfig = "/config.yaml"
@@ -86,8 +88,16 @@ func main() {
 // putting them in a key-value map
 func readEnvVars() map[string]string {
 	configEnvsNames := []string{
-		evaluateEnvName, metricEnvName, intervalEnvName, selectorEnvName,
-		hostEnvName, hostEnvName, portEnvName, namespaceEnvName,
+		evaluateEnvName,
+		metricEnvName,
+		intervalEnvName,
+		selectorEnvName,
+		hostEnvName,
+		hostEnvName,
+		portEnvName,
+		namespaceEnvName,
+		metricTimeoutEnvName,
+		evaluateTimeoutEnvName,
 	}
 	configEnvs := map[string]string{}
 	for _, envName := range configEnvsNames {

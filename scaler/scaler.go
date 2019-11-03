@@ -53,9 +53,17 @@ func scale(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInter
 
 			// Gather metrics
 			metrics, err := GetMetrics(clientset, deployments, config)
+			if err != nil {
+				log.Printf("Failed to gather metrics\n%v", err)
+				break
+			}
 
 			// Evaluate based on metrics
 			evaluations, err := GetEvaluations(metrics, config)
+			if err != nil {
+				log.Printf("Failed to evaluate metrics\n%v", err)
+				break
+			}
 
 			// Check if each evaluation requires an action
 			for _, evaluation := range evaluations {
