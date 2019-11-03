@@ -19,4 +19,5 @@ Developing this project requires these dependencies:
 * make - builds the CPA binary.
 * make docker - builds the CPA base images.
 * make lint - lints the code.
+* make test - runs the unit tests.
 * make vendor - generates a vendor folder.

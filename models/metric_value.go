@@ -19,7 +19,6 @@ package models
 // MetricValue is the result of the custom metric calculation, containing information on the
 // relevant pod and the metric value
 type MetricValue struct {
-	Pod string `json:"pod,omitempty"`
-
+	Pod   string `json:"pod,omitempty"`
 	Value string `json:"value,omitempty"`
 }
