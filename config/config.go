@@ -17,26 +17,15 @@ limitations under the License.
 package config
 
 import (
-	"io/ioutil"
-	"os"
+	"fmt"
+	"reflect"
 	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
 
 const (
-	configEnvName    = "CONFIG_PATH"
-	evaluateEnvName  = "EVALUATE"
-	metricEnvName    = "METRIC"
-	intervalEnvName  = "INTERVAL"
-	selectorEnvName  = "SELECTOR"
-	hostEnvName      = "HOST"
-	portEnvName      = "PORT"
-	namespaceEnvName = "WATCH_NAMESPACE"
-)
-
-const (
-	defaultConfig    = "/config.yaml"
 	defaultEvaluate  = ">&2 echo 'ERROR: No evaluate command set' && exit 1"
 	defaultMetric    = ">&2 echo 'ERROR: No metric command set' && exit 1"
 	defaultInterval  = 15000
@@ -59,17 +48,13 @@ type Config struct {
 
 // LoadConfig loads in the default configuration, then overrides it from the config file,
 // then any env vars set.
-func LoadConfig() (*Config, error) {
-	data, err := ioutil.ReadFile(getEnv(configEnvName, defaultConfig))
-	if err != nil {
-		return nil, err
-	}
+func LoadConfig(configFileData []byte, envVars map[string]string) (*Config, error) {
 	config := newDefaultConfig()
-	err = loadFromYAML(data, config)
+	err := loadFromYAML(configFileData, config)
 	if err != nil {
 		return nil, err
 	}
-	err = loadFromEnv(config)
+	err = loadFromEnv(config, envVars)
 	if err != nil {
 		return nil, err
 	}
@@ -84,32 +69,26 @@ func loadFromYAML(data []byte, config *Config) error {
 	return nil
 }
 
-func loadFromEnv(config *Config) error {
-	// Get string env vars
-	config.Selector = getEnv(selectorEnvName, config.Selector)
-	config.Evaluate = getEnv(evaluateEnvName, config.Evaluate)
-	config.Metric = getEnv(metricEnvName, config.Metric)
-	config.Namespace = getEnv(namespaceEnvName, config.Namespace)
-	config.Interval = getEnvInt(intervalEnvName, config.Interval)
-	return nil
-}
-
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
-func getEnvInt(key string, fallback int) int {
-	if value, ok := os.LookupEnv(key); ok {
-		intVal, err := strconv.Atoi(value)
-		if err != nil {
-			return fallback
+func loadFromEnv(config *Config, envVars map[string]string) error {
+	ps := reflect.ValueOf(config)
+	s := ps.Elem()
+	for key, value := range envVars {
+		field := s.FieldByName(strings.Title(key))
+		if !field.IsValid() || !field.CanSet() {
+			return fmt.Errorf("Field %s is invalid", key)
 		}
-		return intVal
+		if field.Kind() == reflect.String {
+			field.SetString(value)
+		}
+		if field.Kind() == reflect.Int {
+			intVal, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return err
+			}
+			field.SetInt(intVal)
+		}
 	}
-	return fallback
+	return nil
 }
 
 func newDefaultConfig() *Config {
