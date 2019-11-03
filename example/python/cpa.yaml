@@ -6,5 +6,5 @@ spec:
   image: example-python-custom-pod-autoscaler:latest
   selector: app=flask-metric
   config: 
-    - name: INTERVAL
-      value: "5000"
+    - name: interval
+      value: "30000"

@@ -7,6 +7,7 @@ require (
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/go-openapi/swag v0.19.5 // indirect
+	github.com/google/go-cmp v0.3.1
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0-20190925180651-d58b53da08f5
 	k8s.io/apiextensions-apiserver v0.0.0-20190927042040-728319705b32 // indirect

@@ -7,6 +7,10 @@ default: vendor
 	CGO_ENABLED=0 GOOS=linux go build -mod vendor -o dist/$(NAME)
 	cp LICENSE dist/LICENSE
 
+test: vendor
+	@echo "=============Testing============="
+	go test ./... -cover
+
 lint: vendor
 	@echo "=============Linting============="
 	go list -mod=vendor ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status

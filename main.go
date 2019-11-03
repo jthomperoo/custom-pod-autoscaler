@@ -16,7 +16,9 @@ limitations under the License.
 package main
 
 import (
+	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/api"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
@@ -24,6 +26,19 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
+
+const (
+	configEnvName    = "config_path"
+	evaluateEnvName  = "evaluate"
+	metricEnvName    = "metric"
+	intervalEnvName  = "interval"
+	selectorEnvName  = "selector"
+	hostEnvName      = "host"
+	portEnvName      = "port"
+	namespaceEnvName = "namespace"
+)
+
+const defaultConfig = "/config.yaml"
 
 func main() {
 	// Create the in-cluster config
@@ -38,8 +53,21 @@ func main() {
 		log.Panicf(err.Error())
 	}
 
+	// Read in environment variables
+	configPath, exists := os.LookupEnv(configEnvName)
+	if !exists {
+		configPath = defaultConfig
+	}
+	configEnvs := readEnvVars()
+
+	// Read in config file
+	configFileData, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		log.Panicf(err.Error())
+	}
+
 	// Load CPA config
-	config, err := config.LoadConfig()
+	config, err := config.LoadConfig(configFileData, configEnvs)
 	if err != nil {
 		log.Panicf(err.Error())
 	}
@@ -52,4 +80,21 @@ func main() {
 
 	// Start API
 	api.ConfigureAPI(clientset, deploymentsClient, config)
+}
+
+// readEnvVars loads in all relevant environment variables if they exist,
+// putting them in a key-value map
+func readEnvVars() map[string]string {
+	configEnvsNames := []string{
+		evaluateEnvName, metricEnvName, intervalEnvName, selectorEnvName,
+		hostEnvName, hostEnvName, portEnvName, namespaceEnvName,
+	}
+	configEnvs := map[string]string{}
+	for _, envName := range configEnvsNames {
+		value, exists := os.LookupEnv(envName)
+		if exists {
+			configEnvs[envName] = value
+		}
+	}
+	return configEnvs
 }

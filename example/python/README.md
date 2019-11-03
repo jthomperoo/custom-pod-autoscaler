@@ -22,17 +22,8 @@ Trying out this example requires a kubernetes cluster to try it out on, this gui
 ### Enable CPAs
 Using this CPA requires CPAs to be enabled on your kubernetes cluster, [follow this guide to set up CPAs on your cluster](https://github.com/jthomperoo/custom-pod-autoscaler-operator#installation).  
 
-### Build CPA image
-Once CPAs have been enabled on your cluster, you need to build this example, run these commands to build the example:  
-* Target the Minikube registry for building the image.  
-`eval $(minikube docker-env)`  
-* Build the example image.  
-`docker build -t example-python-custom-pod-autoscaler .`  
-* Deploy the CPA using the image just built.  
-`kubectl apply -f cpa.yaml`  
-
-### Deploy a deployment for the CPA to manage
-Now you have a CPA running on the cluster, you need to deploy an app for it to manage:  
+### Deploy an app for the CPA to manage
+You need to deploy an app for the CPA to manage:  
 * Target the Minikube registry for building the image.  
 `eval $(minikube docker-env)`  
 * Move to the app directory.  
@@ -42,6 +33,16 @@ Now you have a CPA running on the cluster, you need to deploy an app for it to m
 * Deploy the app using a deployment.  
 `kubectl apply -f deployment.yaml`  
 Now you have CPAs enabled on your cluster, the example CPA running and an app deployment that it is managing.
+
+### Build CPA image
+Once CPAs have been enabled on your cluster, you need to build this example, run these commands to build the example:  
+* Target the Minikube registry for building the image.  
+`eval $(minikube docker-env)`  
+* Build the example image.  
+`docker build -t example-python-custom-pod-autoscaler .`  
+* Deploy the CPA using the image just built.  
+`kubectl apply -f cpa.yaml`  
+Now the CPA should be running on your cluster, managing the app we previously deployed.
 
 ## Testing the CPA
 * List pods.  
