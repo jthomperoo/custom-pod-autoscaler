@@ -19,6 +19,8 @@ package scaler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"os/exec"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/models"
@@ -68,13 +70,14 @@ func getMetricForPod(cmd string, pod *corev1.Pod, timeout int) (*models.MetricVa
 	}
 
 	// Execute the Metric command with the Pod JSON
-	outb, err := shell.ExecWithValuePipe(cmd, string(podJSON), timeout)
+	outb, err := shell.ExecWithValuePipe(cmd, string(podJSON), timeout, exec.Command)
 	if err != nil {
+		log.Println(outb.String())
 		return nil, err
 	}
 
 	return &models.MetricValue{
 		Pod:   pod.GetName(),
-		Value: string(outb.String()),
+		Value: outb.String(),
 	}, nil
 }
