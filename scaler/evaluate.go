@@ -18,6 +18,8 @@ package scaler
 
 import (
 	"encoding/json"
+	"log"
+	"os/exec"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/models"
@@ -46,8 +48,9 @@ func getEvaluationForMetric(cmd string, metric *models.Metric, timeout int) (*mo
 	}
 
 	// Execute the Evaluate command with the metric JSON
-	outb, err := shell.ExecWithValuePipe(cmd, string(metricJSON), timeout)
+	outb, err := shell.ExecWithValuePipe(cmd, string(metricJSON), timeout, exec.Command)
 	if err != nil {
+		log.Println(outb.String())
 		return nil, err
 	}
 	evaluation := &models.EvaluationValue{}

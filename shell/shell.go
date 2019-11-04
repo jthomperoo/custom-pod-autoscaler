@@ -20,16 +20,20 @@ package shell
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os/exec"
 	"time"
 )
 
-// ExecWithValuePipe executes a shell command with a value piped to it
-func ExecWithValuePipe(command string, value string, timeout int) (*bytes.Buffer, error) {
+type execContext = func(name string, arg ...string) *exec.Cmd
+
+// ExecWithValuePipe executes a shell command with a value piped to it.
+// If it exits with code 0, no error is returned and the stdout is captured and returned.
+// If it exits with code 1, an error is returned and the stderr is captured and returned.
+// If the timeout is reached, an error is returned.
+func ExecWithValuePipe(command string, value string, timeout int, cmdContext execContext) (*bytes.Buffer, error) {
 	// Build command string with value piped into it
 	commandString := fmt.Sprintf("echo '%s' | %s", value, command)
-	cmd := exec.Command("/bin/sh", "-c", commandString)
+	cmd := cmdContext("/bin/sh", "-c", commandString)
 
 	// Set up byte buffers to read stdout and stderr
 	var outb, errb bytes.Buffer
@@ -55,9 +59,7 @@ func ExecWithValuePipe(command string, value string, timeout int) (*bytes.Buffer
 		return nil, fmt.Errorf("Command %s timed out", command)
 	case err = <-done:
 		if err != nil {
-			// Output stderr
-			log.Println(errb.String())
-			return nil, err
+			return &errb, err
 		}
 	}
 	return &outb, nil
