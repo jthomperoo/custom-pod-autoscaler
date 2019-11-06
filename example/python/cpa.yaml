@@ -4,7 +4,10 @@ metadata:
   name: player-count-scaler
 spec:
   image: example-python-custom-pod-autoscaler:latest
-  selector: app=flask-metric
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: flask-metric
   config: 
     - name: interval
       value: "5000"

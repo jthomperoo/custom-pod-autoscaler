@@ -16,11 +16,9 @@ limitations under the License.
 
 package models
 
-import appsv1 "k8s.io/api/apps/v1"
-
-// Metric represents a deployment's metrics, including each pod's metrics
+// Metric is the result of the custom metric calculation, containing information on the
+// relevant pod and the metric value
 type Metric struct {
-	DeploymentName string             `json:"deployment"`
-	Metrics        []*MetricValue     `json:"metrics"`
-	Deployment     *appsv1.Deployment `json:"-"` // hide
+	Pod   string `json:"pod,omitempty"`
+	Value string `json:"value,omitempty"`
 }

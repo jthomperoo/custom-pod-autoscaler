@@ -17,17 +17,18 @@ limitations under the License.
 package config
 
 import (
+	"encoding/json"
 	"reflect"
 	"strconv"
 
 	"gopkg.in/yaml.v2"
+	autoscaling "k8s.io/api/autoscaling/v1"
 )
 
 const (
 	defaultEvaluate        = ">&2 echo 'ERROR: No evaluate command set' && exit 1"
 	defaultMetric          = ">&2 echo 'ERROR: No metric command set' && exit 1"
 	defaultInterval        = 15000
-	defaultSelector        = ""
 	defaultHost            = "0.0.0.0"
 	defaultPort            = 5000
 	defaultMetricTimeout   = 5000
@@ -39,15 +40,15 @@ const yamlStructTag = "yaml"
 
 // Config is the configuration options for the CPA
 type Config struct {
-	Evaluate        string `yaml:"evaluate"`
-	Metric          string `yaml:"metric"`
-	Interval        int    `yaml:"interval"`
-	Selector        string `yaml:"selector"`
-	Host            string `yaml:"host"`
-	Port            int    `yaml:"port"`
-	EvaluateTimeout int    `yaml:"evaluate_timeout"`
-	MetricTimeout   int    `yaml:"metric_timeout"`
-	Namespace       string `yaml:"namespace"`
+	ScaleTargetRef  *autoscaling.CrossVersionObjectReference `yaml:"scaleTargetRef"`
+	Evaluate        string                                   `yaml:"evaluate"`
+	Metric          string                                   `yaml:"metric"`
+	Interval        int                                      `yaml:"interval"`
+	Host            string                                   `yaml:"host"`
+	Port            int                                      `yaml:"port"`
+	EvaluateTimeout int                                      `yaml:"evaluateTimeout"`
+	MetricTimeout   int                                      `yaml:"metricTimeout"`
+	Namespace       string                                   `yaml:"namespace"`
 }
 
 // LoadConfig loads in the default configuration, then overrides it from the config file,
@@ -96,6 +97,7 @@ func loadFromEnv(config *Config, envVars map[string]string) error {
 		// Assign values using correct types
 		if fieldValue.Kind() == reflect.String {
 			fieldValue.SetString(value)
+			continue
 		}
 		if fieldValue.Kind() == reflect.Int {
 			intVal, err := strconv.ParseInt(value, 10, 64)
@@ -103,7 +105,19 @@ func loadFromEnv(config *Config, envVars map[string]string) error {
 				return err
 			}
 			fieldValue.SetInt(intVal)
+			continue
 		}
+
+		// If the type is not one of the primitives above, it must be in JSON form, so try to parse
+		// it and set the value from the unmarshalled JSON value
+		fieldRef := reflect.New(fieldType.Type)
+		err := json.Unmarshal([]byte(value), fieldRef.Interface())
+		if err != nil {
+			return err
+		}
+
+		fieldValue.Set(fieldRef.Elem())
+		continue
 	}
 	return nil
 }
@@ -113,7 +127,6 @@ func newDefaultConfig() *Config {
 		Interval:        defaultInterval,
 		Metric:          defaultMetric,
 		Evaluate:        defaultEvaluate,
-		Selector:        defaultSelector,
 		Host:            defaultHost,
 		Port:            defaultPort,
 		EvaluateTimeout: defaultEvaluateTimeout,

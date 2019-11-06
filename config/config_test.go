@@ -23,39 +23,43 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"gopkg.in/yaml.v2"
+	autoscaling "k8s.io/api/autoscaling/v1"
 )
 
 const (
 	evaluateEnvName        = "evaluate"
 	metricEnvName          = "metric"
 	intervalEnvName        = "interval"
-	selectorEnvName        = "selector"
 	hostEnvName            = "host"
 	portEnvName            = "port"
-	metricTimeoutEnvName   = "metric_timeout"
-	evaluateTimeoutEnvName = "evaluate_timeout"
+	metricTimeoutEnvName   = "metricTimeout"
+	evaluateTimeoutEnvName = "evaluateTimeout"
 	namespaceEnvName       = "namespace"
+	scaleTargetRefEnvName  = "scaleTargetRef"
 
 	defaultEvaluate        = ">&2 echo 'ERROR: No evaluate command set' && exit 1"
 	defaultMetric          = ">&2 echo 'ERROR: No metric command set' && exit 1"
 	defaultInterval        = 15000
-	defaultSelector        = ""
 	defaultHost            = "0.0.0.0"
 	defaultPort            = 5000
 	defaultMetricTimeout   = 5000
 	defaultEvaluateTimeout = 5000
 	defaultNamespace       = "default"
 
-	invalidYAML         = "- in: -: valid - yaml"
-	testEvaluate        = "test evaluate"
-	testMetric          = "test metric"
-	testInterval        = 1234
-	testSelector        = "test selector"
-	testHost            = "1.2.3.4"
-	testPort            = 1234
-	testMetricTimeout   = 4321
-	testEvaluateTimeout = 8765
-	testNamespace       = "test namespace"
+	invalidYAML                   = "- in: -: valid - yaml"
+	testEvaluate                  = "test evaluate"
+	testMetric                    = "test metric"
+	testInterval                  = 1234
+	testHost                      = "1.2.3.4"
+	testPort                      = 1234
+	testMetricTimeout             = 4321
+	testEvaluateTimeout           = 8765
+	testNamespace                 = "test namespace"
+	testScaleTargetRefKind        = "test kind"
+	testScaleTargetRefName        = "test name"
+	testScaleTargetRefAPIVersion  = "test api version"
+	testScaleTargetRefJSON        = "{\"kind\":\"test kind\", \"name\":\"test name\", \"apiVersion\":\"test api version\" }"
+	testScaleTargetRefInvalidJSON = "abc invali:d json"
 )
 
 func TestLoadConfig_InvalidYAML(t *testing.T) {
@@ -78,17 +82,7 @@ func TestLoadConfig_InvalidIntEnv(t *testing.T) {
 func TestLoadConfig_NoYAML(t *testing.T) {
 	testConfig := getTestConfig()
 
-	testEnvVars := map[string]string{
-		evaluateEnvName:        testEvaluate,
-		metricEnvName:          testMetric,
-		intervalEnvName:        strconv.FormatInt(testInterval, 10),
-		selectorEnvName:        testSelector,
-		hostEnvName:            testHost,
-		portEnvName:            strconv.FormatInt(testPort, 10),
-		metricTimeoutEnvName:   strconv.FormatInt(testMetricTimeout, 10),
-		evaluateTimeoutEnvName: strconv.FormatInt(testEvaluateTimeout, 10),
-		namespaceEnvName:       testNamespace,
-	}
+	testEnvVars := getTestEnvVars()
 
 	loadedConfig, err := config.LoadConfig(nil, testEnvVars)
 	if err != nil {
@@ -131,17 +125,28 @@ func TestLoadConfig_NoYAMLNoEnv(t *testing.T) {
 	}
 }
 
+func TestLoadCOnfig_InvalidScaleTargetRefJSON(t *testing.T) {
+	testEnvVars := getTestEnvVars()
+
+	testEnvVars[scaleTargetRefEnvName] = testScaleTargetRefInvalidJSON
+
+	_, err := config.LoadConfig(nil, testEnvVars)
+	if err == nil {
+		t.Errorf("Expected error due to invalid scaleTargetRef environment variable provided")
+	}
+}
+
 func getDefaultConfig() *config.Config {
 	return &config.Config{
 		Evaluate:        defaultEvaluate,
 		Metric:          defaultMetric,
 		Interval:        defaultInterval,
-		Selector:        defaultSelector,
 		Host:            defaultHost,
 		Port:            defaultPort,
 		MetricTimeout:   defaultMetricTimeout,
 		EvaluateTimeout: defaultEvaluateTimeout,
 		Namespace:       defaultNamespace,
+		ScaleTargetRef:  nil,
 	}
 }
 
@@ -150,11 +155,29 @@ func getTestConfig() *config.Config {
 		Evaluate:        testEvaluate,
 		Metric:          testMetric,
 		Interval:        testInterval,
-		Selector:        testSelector,
 		Host:            testHost,
 		Port:            testPort,
 		MetricTimeout:   testMetricTimeout,
 		EvaluateTimeout: testEvaluateTimeout,
 		Namespace:       testNamespace,
+		ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+			Name:       testScaleTargetRefName,
+			Kind:       testScaleTargetRefKind,
+			APIVersion: testScaleTargetRefAPIVersion,
+		},
+	}
+}
+
+func getTestEnvVars() map[string]string {
+	return map[string]string{
+		evaluateEnvName:        testEvaluate,
+		metricEnvName:          testMetric,
+		intervalEnvName:        strconv.FormatInt(testInterval, 10),
+		hostEnvName:            testHost,
+		portEnvName:            strconv.FormatInt(testPort, 10),
+		metricTimeoutEnvName:   strconv.FormatInt(testMetricTimeout, 10),
+		evaluateTimeoutEnvName: strconv.FormatInt(testEvaluateTimeout, 10),
+		namespaceEnvName:       testNamespace,
+		scaleTargetRefEnvName:  testScaleTargetRefJSON,
 	}
 }

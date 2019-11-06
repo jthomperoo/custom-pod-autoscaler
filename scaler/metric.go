@@ -31,37 +31,33 @@ import (
 )
 
 // GetMetrics gathers metrics for the deployments supplied
-func GetMetrics(clientset kubernetes.Interface, deployments *appsv1.DeploymentList, config *config.Config, executer shell.Executer) ([]*models.Metric, error) {
+func GetMetrics(clientset kubernetes.Interface, deployment *appsv1.Deployment, config *config.Config, executer shell.ExecuteWithPiper) (*models.ResourceMetrics, error) {
+	// Get Deployment pods
+	labels := deployment.GetLabels()
+	pods, err := clientset.CoreV1().Pods(config.Namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", labels["app"])})
+	if err != nil {
+		return nil, err
+	}
+
+	// Gather metrics for each pod
 	var metrics []*models.Metric
-	for _, deployment := range deployments.Items {
-		// Get Deployment pods
-		labels := deployment.GetLabels()
-		pods, err := clientset.CoreV1().Pods(config.Namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", labels["app"])})
+	for _, pod := range pods.Items {
+		metric, err := getMetricForPod(config.Metric, &pod, config.MetricTimeout, executer)
 		if err != nil {
 			return nil, err
 		}
-
-		// Gather metrics for each pod
-		var metricValues []*models.MetricValue
-		for _, pod := range pods.Items {
-			metric, err := getMetricForPod(config.Metric, &pod, config.MetricTimeout, executer)
-			if err != nil {
-				return nil, err
-			}
-			metricValues = append(metricValues, metric)
-		}
-
-		metrics = append(metrics, &models.Metric{
-			DeploymentName: deployment.GetName(),
-			Deployment:     &deployment,
-			Metrics:        metricValues,
-		})
+		metrics = append(metrics, metric)
 	}
-	return metrics, nil
+
+	return &models.ResourceMetrics{
+		DeploymentName: deployment.GetName(),
+		Deployment:     deployment,
+		Metrics:        metrics,
+	}, nil
 }
 
 // getMetricForPod gathers the metric for a specific pod
-func getMetricForPod(cmd string, pod *corev1.Pod, timeout int, executer shell.Executer) (*models.MetricValue, error) {
+func getMetricForPod(cmd string, pod *corev1.Pod, timeout int, executer shell.ExecuteWithPiper) (*models.Metric, error) {
 	// Convert the Pod description to JSON
 	podJSON, err := json.Marshal(pod)
 	if err != nil {
@@ -69,13 +65,13 @@ func getMetricForPod(cmd string, pod *corev1.Pod, timeout int, executer shell.Ex
 	}
 
 	// Execute the Metric command with the Pod JSON
-	outb, err := executer.ExecWithValuePipe(cmd, string(podJSON), timeout)
+	outb, err := executer.ExecuteWithPipe(cmd, string(podJSON), timeout)
 	if err != nil {
 		log.Println(outb.String())
 		return nil, err
 	}
 
-	return &models.MetricValue{
+	return &models.Metric{
 		Pod:   pod.GetName(),
 		Value: outb.String(),
 	}, nil

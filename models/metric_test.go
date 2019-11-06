@@ -29,9 +29,9 @@ const (
 	testMetricValue   = "metric value"
 )
 
-func getTestMetricValues() []*models.MetricValue {
-	return []*models.MetricValue{
-		&models.MetricValue{
+func getTestMetricValues() []*models.Metric {
+	return []*models.Metric{
+		&models.Metric{
 			Pod:   testMetricPodName,
 			Value: testMetricValue,
 		},
@@ -39,7 +39,7 @@ func getTestMetricValues() []*models.MetricValue {
 }
 
 func TestMetric_CreateJSONWithDeployment(t *testing.T) {
-	testMetric := models.Metric{
+	testMetric := models.ResourceMetrics{
 		DeploymentName: testDeploymentName,
 		Metrics:        getTestMetricValues(),
 		Deployment:     getTestDeployment(),
