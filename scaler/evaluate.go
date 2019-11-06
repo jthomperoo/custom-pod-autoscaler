@@ -25,29 +25,16 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/shell"
 )
 
-// GetEvaluations uses the metrics provided to determine a set of evaluations
-func GetEvaluations(metrics []*models.Metric, config *config.Config, executer shell.Executer) ([]*models.Evaluation, error) {
-	var evaluations []*models.Evaluation
-	for _, metric := range metrics {
-		evaluation, err := getEvaluationForMetric(config.Evaluate, metric, config.EvaluateTimeout, executer)
-		if err != nil {
-			return nil, err
-		}
-		evaluations = append(evaluations, evaluation)
-	}
-	return evaluations, nil
-}
-
-// getEvaluationForMetric uses a metric to evaluate how to scale
-func getEvaluationForMetric(cmd string, metric *models.Metric, timeout int, executer shell.Executer) (*models.Evaluation, error) {
-	// Convert metric into JSON
-	metricJSON, err := json.Marshal(metric.Metrics)
+// GetEvaluation uses the metrics provided to determine a set of evaluations
+func GetEvaluation(resourceMetric *models.ResourceMetrics, config *config.Config, executer shell.ExecuteWithPiper) (*models.Evaluation, error) {
+	// Convert metrics into JSON
+	metricJSON, err := json.Marshal(resourceMetric.Metrics)
 	if err != nil {
 		return nil, err
 	}
 
 	// Execute the Evaluate command with the metric JSON
-	outb, err := executer.ExecWithValuePipe(cmd, string(metricJSON), timeout)
+	outb, err := executer.ExecuteWithPipe(config.Evaluate, string(metricJSON), config.EvaluateTimeout)
 	if err != nil {
 		log.Println(outb.String())
 		return nil, err
@@ -55,8 +42,8 @@ func getEvaluationForMetric(cmd string, metric *models.Metric, timeout int, exec
 	evaluation := &models.EvaluationValue{}
 	json.Unmarshal(outb.Bytes(), evaluation)
 	return &models.Evaluation{
-		DeploymentName: metric.DeploymentName,
+		DeploymentName: resourceMetric.DeploymentName,
 		Evaluation:     evaluation,
-		Deployment:     metric.Deployment,
+		Deployment:     resourceMetric.Deployment,
 	}, nil
 }

@@ -24,34 +24,34 @@ import (
 	"time"
 )
 
-// ExecContext represents the exec.Command that will be used
-type ExecContext = func(name string, arg ...string) *exec.Cmd
+// Command represents the function that builds the exec.Cmd to be used in shell commands.
+type Command = func(name string, arg ...string) *exec.Cmd
 
-// Executer is the interface that wraps the ExecWithValuePipe method
-type Executer interface {
-	ExecWithValuePipe(command string, value string, timeout int) (*bytes.Buffer, error)
+// ExecuteWithPiper wraps the ExecuteWithPipe method for executing with a value piped to it.
+type ExecuteWithPiper interface {
+	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
 }
 
-// Execute contains a shell execution context, and is used to execute shell commands
-type Execute struct {
-	cmdContext ExecContext
+// CommandExecuteWithPipe represents a way to execute commands with values piped to them.
+type CommandExecuteWithPipe struct {
+	command Command
 }
 
-// NewExecute creates a new Execute, which contains the context for executing shell commands
-func NewExecute(cmdContext ExecContext) *Execute {
-	return &Execute{
-		cmdContext: cmdContext,
+// NewCommandExecuteWithPipe creates a new CommandExecuteWithPipe, which runs shell commands values piped to them.
+func NewCommandExecuteWithPipe(command Command) *CommandExecuteWithPipe {
+	return &CommandExecuteWithPipe{
+		command: command,
 	}
 }
 
-// ExecWithValuePipe executes a shell command with a value piped to it.
+// ExecuteWithPipe executes a shell command with a value piped to it.
 // If it exits with code 0, no error is returned and the stdout is captured and returned.
 // If it exits with code 1, an error is returned and the stderr is captured and returned.
 // If the timeout is reached, an error is returned.
-func (s *Execute) ExecWithValuePipe(command string, value string, timeout int) (*bytes.Buffer, error) {
+func (e *CommandExecuteWithPipe) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
 	// Build command string with value piped into it
 	commandString := fmt.Sprintf("echo '%s' | %s", value, command)
-	cmd := s.cmdContext("/bin/sh", "-c", commandString)
+	cmd := e.command("/bin/sh", "-c", commandString)
 
 	// Set up byte buffers to read stdout and stderr
 	var outb, errb bytes.Buffer

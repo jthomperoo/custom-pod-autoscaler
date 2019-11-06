@@ -36,7 +36,7 @@ import (
 )
 
 // ConfigureAPI sets up endpoints and begins listening for API requests
-func ConfigureAPI(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config, executer shell.Executer) {
+func ConfigureAPI(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config, executer shell.ExecuteWithPiper) {
 	// Set up shared resources
 	api := &api{
 		executer:          executer,
@@ -48,7 +48,7 @@ func ConfigureAPI(clientset *kubernetes.Clientset, deploymentsClient v1.Deployme
 	// Set up routing
 	r := chi.NewRouter()
 	r.Get("/metrics", api.getMetrics)
-	r.Get("/evaluations", api.getEvaluations)
+	r.Get("/evaluation", api.getEvaluation)
 
 	// Set up server
 	srv := http.Server{Addr: fmt.Sprintf("%s:%d", config.Host, config.Port), Handler: r}
@@ -73,7 +73,7 @@ func ConfigureAPI(clientset *kubernetes.Clientset, deploymentsClient v1.Deployme
 }
 
 type api struct {
-	executer          shell.Executer
+	executer          shell.ExecuteWithPiper
 	config            *config.Config
 	clientset         *kubernetes.Clientset
 	deploymentsClient v1.DeploymentInterface
@@ -81,12 +81,12 @@ type api struct {
 
 func (api *api) getMetrics(w http.ResponseWriter, r *http.Request) {
 	// Get deployments being managed
-	deployments, err := api.deploymentsClient.List(metav1.ListOptions{LabelSelector: api.config.Selector})
+	deployment, err := api.clientset.AppsV1().Deployments(api.config.Namespace).Get(api.config.ScaleTargetRef.Name, metav1.GetOptions{})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}
 	// Get metrics
-	metrics, err := scaler.GetMetrics(api.clientset, deployments, api.config, api.executer)
+	metrics, err := scaler.GetMetrics(api.clientset, deployment, api.config, api.executer)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -101,20 +101,20 @@ func (api *api) getMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func (api *api) getEvaluations(w http.ResponseWriter, r *http.Request) {
+func (api *api) getEvaluation(w http.ResponseWriter, r *http.Request) {
 	// Get deployments being managed
-	deployments, err := api.deploymentsClient.List(metav1.ListOptions{LabelSelector: api.config.Selector})
+	deployment, err := api.clientset.AppsV1().Deployments(api.config.Namespace).Get(api.config.ScaleTargetRef.Name, metav1.GetOptions{})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}
 	// Get metrics
-	metrics, err := scaler.GetMetrics(api.clientset, deployments, api.config, api.executer)
+	metrics, err := scaler.GetMetrics(api.clientset, deployment, api.config, api.executer)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 	// Get evaluations for metrics
-	evaluations, err := scaler.GetEvaluations(metrics, api.config, api.executer)
+	evaluations, err := scaler.GetEvaluation(metrics, api.config, api.executer)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

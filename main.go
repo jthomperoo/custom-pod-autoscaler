@@ -34,12 +34,12 @@ const (
 	evaluateEnvName        = "evaluate"
 	metricEnvName          = "metric"
 	intervalEnvName        = "interval"
-	selectorEnvName        = "selector"
 	hostEnvName            = "host"
 	portEnvName            = "port"
-	metricTimeoutEnvName   = "metric_timeout"
-	evaluateTimeoutEnvName = "evaluate_timeout"
+	metricTimeoutEnvName   = "metricTimeout"
+	evaluateTimeoutEnvName = "evaluateTimeout"
 	namespaceEnvName       = "namespace"
+	scaleTargetRefEnvName  = "scaleTargetRef"
 )
 
 const defaultConfig = "/config.yaml"
@@ -80,7 +80,7 @@ func main() {
 	deploymentsClient := clientset.AppsV1().Deployments(config.Namespace)
 
 	// Set up shell execution context
-	executer := shell.NewExecute(exec.Command)
+	executer := shell.NewCommandExecuteWithPipe(exec.Command)
 
 	// Start scaler
 	scaler.ConfigureScaler(clientset, deploymentsClient, config, executer)
@@ -96,13 +96,13 @@ func readEnvVars() map[string]string {
 		evaluateEnvName,
 		metricEnvName,
 		intervalEnvName,
-		selectorEnvName,
 		hostEnvName,
 		hostEnvName,
 		portEnvName,
 		namespaceEnvName,
 		metricTimeoutEnvName,
 		evaluateTimeoutEnvName,
+		scaleTargetRefEnvName,
 	}
 	configEnvs := map[string]string{}
 	for _, envName := range configEnvsNames {
