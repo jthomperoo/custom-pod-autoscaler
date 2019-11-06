@@ -19,10 +19,12 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/api"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/scaler"
+	"github.com/jthomperoo/custom-pod-autoscaler/shell"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -77,11 +79,14 @@ func main() {
 	// Set up client for managing deployments
 	deploymentsClient := clientset.AppsV1().Deployments(config.Namespace)
 
+	// Set up shell execution context
+	executer := shell.NewExecute(exec.Command)
+
 	// Start scaler
-	scaler.ConfigureScaler(clientset, deploymentsClient, config)
+	scaler.ConfigureScaler(clientset, deploymentsClient, config, executer)
 
 	// Start API
-	api.ConfigureAPI(clientset, deploymentsClient, config)
+	api.ConfigureAPI(clientset, deploymentsClient, config, executer)
 }
 
 // readEnvVars loads in all relevant environment variables if they exist,

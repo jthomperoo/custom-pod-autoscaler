@@ -29,15 +29,17 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/scaler"
+	"github.com/jthomperoo/custom-pod-autoscaler/shell"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
 
 // ConfigureAPI sets up endpoints and begins listening for API requests
-func ConfigureAPI(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config) {
+func ConfigureAPI(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config, executer shell.Executer) {
 	// Set up shared resources
 	api := &api{
+		executer:          executer,
 		clientset:         clientset,
 		deploymentsClient: deploymentsClient,
 		config:            config,
@@ -71,6 +73,7 @@ func ConfigureAPI(clientset *kubernetes.Clientset, deploymentsClient v1.Deployme
 }
 
 type api struct {
+	executer          shell.Executer
 	config            *config.Config
 	clientset         *kubernetes.Clientset
 	deploymentsClient v1.DeploymentInterface
@@ -83,7 +86,7 @@ func (api *api) getMetrics(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 	}
 	// Get metrics
-	metrics, err := scaler.GetMetrics(api.clientset, deployments, api.config)
+	metrics, err := scaler.GetMetrics(api.clientset, deployments, api.config, api.executer)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -105,13 +108,13 @@ func (api *api) getEvaluations(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 	}
 	// Get metrics
-	metrics, err := scaler.GetMetrics(api.clientset, deployments, api.config)
+	metrics, err := scaler.GetMetrics(api.clientset, deployments, api.config, api.executer)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 	// Get evaluations for metrics
-	evaluations, err := scaler.GetEvaluations(metrics, api.config)
+	evaluations, err := scaler.GetEvaluations(metrics, api.config, api.executer)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

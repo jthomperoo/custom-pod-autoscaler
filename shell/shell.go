@@ -24,16 +24,34 @@ import (
 	"time"
 )
 
-type execContext = func(name string, arg ...string) *exec.Cmd
+// ExecContext represents the exec.Command that will be used
+type ExecContext = func(name string, arg ...string) *exec.Cmd
+
+// Executer is the interface that wraps the ExecWithValuePipe method
+type Executer interface {
+	ExecWithValuePipe(command string, value string, timeout int) (*bytes.Buffer, error)
+}
+
+// Execute contains a shell execution context, and is used to execute shell commands
+type Execute struct {
+	cmdContext ExecContext
+}
+
+// NewExecute creates a new Execute, which contains the context for executing shell commands
+func NewExecute(cmdContext ExecContext) *Execute {
+	return &Execute{
+		cmdContext: cmdContext,
+	}
+}
 
 // ExecWithValuePipe executes a shell command with a value piped to it.
 // If it exits with code 0, no error is returned and the stdout is captured and returned.
 // If it exits with code 1, an error is returned and the stderr is captured and returned.
 // If the timeout is reached, an error is returned.
-func ExecWithValuePipe(command string, value string, timeout int, cmdContext execContext) (*bytes.Buffer, error) {
+func (s *Execute) ExecWithValuePipe(command string, value string, timeout int) (*bytes.Buffer, error) {
 	// Build command string with value piped into it
 	commandString := fmt.Sprintf("echo '%s' | %s", value, command)
-	cmd := cmdContext("/bin/sh", "-c", commandString)
+	cmd := s.cmdContext("/bin/sh", "-c", commandString)
 
 	// Set up byte buffers to read stdout and stderr
 	var outb, errb bytes.Buffer
