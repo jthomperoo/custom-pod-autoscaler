@@ -19,7 +19,6 @@ package scaler
 import (
 	"encoding/json"
 	"log"
-	"os/exec"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/models"
@@ -27,10 +26,10 @@ import (
 )
 
 // GetEvaluations uses the metrics provided to determine a set of evaluations
-func GetEvaluations(metrics []*models.Metric, config *config.Config) ([]*models.Evaluation, error) {
+func GetEvaluations(metrics []*models.Metric, config *config.Config, executer shell.Executer) ([]*models.Evaluation, error) {
 	var evaluations []*models.Evaluation
 	for _, metric := range metrics {
-		evaluation, err := getEvaluationForMetric(config.Evaluate, metric, config.EvaluateTimeout)
+		evaluation, err := getEvaluationForMetric(config.Evaluate, metric, config.EvaluateTimeout, executer)
 		if err != nil {
 			return nil, err
 		}
@@ -40,7 +39,7 @@ func GetEvaluations(metrics []*models.Metric, config *config.Config) ([]*models.
 }
 
 // getEvaluationForMetric uses a metric to evaluate how to scale
-func getEvaluationForMetric(cmd string, metric *models.Metric, timeout int) (*models.Evaluation, error) {
+func getEvaluationForMetric(cmd string, metric *models.Metric, timeout int, executer shell.Executer) (*models.Evaluation, error) {
 	// Convert metric into JSON
 	metricJSON, err := json.Marshal(metric.Metrics)
 	if err != nil {
@@ -48,7 +47,7 @@ func getEvaluationForMetric(cmd string, metric *models.Metric, timeout int) (*mo
 	}
 
 	// Execute the Evaluate command with the metric JSON
-	outb, err := shell.ExecWithValuePipe(cmd, string(metricJSON), timeout, exec.Command)
+	outb, err := executer.ExecWithValuePipe(cmd, string(metricJSON), timeout)
 	if err != nil {
 		log.Println(outb.String())
 		return nil, err

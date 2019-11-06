@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os/exec"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/models"
@@ -32,7 +31,7 @@ import (
 )
 
 // GetMetrics gathers metrics for the deployments supplied
-func GetMetrics(clientset *kubernetes.Clientset, deployments *appsv1.DeploymentList, config *config.Config) ([]*models.Metric, error) {
+func GetMetrics(clientset kubernetes.Interface, deployments *appsv1.DeploymentList, config *config.Config, executer shell.Executer) ([]*models.Metric, error) {
 	var metrics []*models.Metric
 	for _, deployment := range deployments.Items {
 		// Get Deployment pods
@@ -45,7 +44,7 @@ func GetMetrics(clientset *kubernetes.Clientset, deployments *appsv1.DeploymentL
 		// Gather metrics for each pod
 		var metricValues []*models.MetricValue
 		for _, pod := range pods.Items {
-			metric, err := getMetricForPod(config.Metric, &pod, config.MetricTimeout)
+			metric, err := getMetricForPod(config.Metric, &pod, config.MetricTimeout, executer)
 			if err != nil {
 				return nil, err
 			}
@@ -62,7 +61,7 @@ func GetMetrics(clientset *kubernetes.Clientset, deployments *appsv1.DeploymentL
 }
 
 // getMetricForPod gathers the metric for a specific pod
-func getMetricForPod(cmd string, pod *corev1.Pod, timeout int) (*models.MetricValue, error) {
+func getMetricForPod(cmd string, pod *corev1.Pod, timeout int, executer shell.Executer) (*models.MetricValue, error) {
 	// Convert the Pod description to JSON
 	podJSON, err := json.Marshal(pod)
 	if err != nil {
@@ -70,7 +69,7 @@ func getMetricForPod(cmd string, pod *corev1.Pod, timeout int) (*models.MetricVa
 	}
 
 	// Execute the Metric command with the Pod JSON
-	outb, err := shell.ExecWithValuePipe(cmd, string(podJSON), timeout, exec.Command)
+	outb, err := executer.ExecWithValuePipe(cmd, string(podJSON), timeout)
 	if err != nil {
 		log.Println(outb.String())
 		return nil, err

@@ -37,7 +37,8 @@ const (
 )
 
 func TestExecWithValuePipe_Success(t *testing.T) {
-	stdout, err := shell.ExecWithValuePipe(testCommand, testPipeValue, testTimeout, fakeExecCommandSuccess)
+	s := shell.NewExecute(fakeExecCommandSuccess)
+	stdout, err := s.ExecWithValuePipe(testCommand, testPipeValue, testTimeout)
 	if err != nil {
 		t.Error(stdout.String())
 		t.Error(err)
@@ -51,7 +52,8 @@ func TestExecWithValuePipe_Success(t *testing.T) {
 }
 
 func TestExecWithValuePipe_Fail(t *testing.T) {
-	stderr, err := shell.ExecWithValuePipe(testCommand, testPipeValue, testTimeout, fakeExecCommandFailure)
+	s := shell.NewExecute(fakeExecCommandFailure)
+	stderr, err := s.ExecWithValuePipe(testCommand, testPipeValue, testTimeout)
 	if err == nil {
 		t.Errorf("Expected error due to shell command exiting with non-zero exit code")
 		return
@@ -64,7 +66,8 @@ func TestExecWithValuePipe_Fail(t *testing.T) {
 }
 
 func TestExecWithValuePipe_Timeout(t *testing.T) {
-	stderr, err := shell.ExecWithValuePipe(testCommand, testPipeValue, testTimeout, fakeExecCommandTimeout)
+	s := shell.NewExecute(fakeExecCommandTimeout)
+	stderr, err := s.ExecWithValuePipe(testCommand, testPipeValue, testTimeout)
 	if err == nil {
 		t.Errorf("Expected error due to shell command timing out")
 		return
@@ -76,7 +79,8 @@ func TestExecWithValuePipe_Timeout(t *testing.T) {
 }
 
 func TestExecWithValuePipe_StartFail(t *testing.T) {
-	stderr, err := shell.ExecWithValuePipe(testCommand, testPipeValue, testTimeout, fakeExecCommandStartFail)
+	s := shell.NewExecute(fakeExecCommandStartFail)
+	stderr, err := s.ExecWithValuePipe(testCommand, testPipeValue, testTimeout)
 	if err == nil {
 		t.Errorf("Expected error due to shell failing to start")
 		return

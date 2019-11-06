@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/shell"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -31,14 +32,14 @@ import (
 
 // ConfigureScaler sets up the scaler logic, which will repeatedly determine through gathering metrics and
 // evaluating the metrics if the managed deployments need scaled up/down
-func ConfigureScaler(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config) {
+func ConfigureScaler(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config, executer shell.Executer) {
 	ticker := time.NewTicker(time.Duration(config.Interval) * time.Millisecond)
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	go scale(clientset, deploymentsClient, config, ticker, shutdown)
+	go scale(clientset, deploymentsClient, config, ticker, shutdown, executer)
 }
 
-func scale(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config, ticker *time.Ticker, shutdown chan os.Signal) {
+func scale(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config, ticker *time.Ticker, shutdown chan os.Signal, executer shell.Executer) {
 	for {
 		select {
 		case <-shutdown:
@@ -52,14 +53,14 @@ func scale(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInter
 			}
 
 			// Gather metrics
-			metrics, err := GetMetrics(clientset, deployments, config)
+			metrics, err := GetMetrics(clientset, deployments, config, executer)
 			if err != nil {
 				log.Printf("Failed to gather metrics\n%v", err)
 				break
 			}
 
 			// Evaluate based on metrics
-			evaluations, err := GetEvaluations(metrics, config)
+			evaluations, err := GetEvaluations(metrics, config, executer)
 			if err != nil {
 				log.Printf("Failed to evaluate metrics\n%v", err)
 				break
