@@ -18,6 +18,7 @@ package scaler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
@@ -25,10 +26,28 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/shell"
 )
 
+const invalidEvaluationMessage = "Invalid evaluation returned by evaluator: %s"
+
+// ErrInvalidEvaluation occurs when the the evaluator reports success but returns invalid JSON
+type ErrInvalidEvaluation struct {
+	message string
+}
+
+func (e *ErrInvalidEvaluation) Error() string {
+	return e.message
+}
+
+// NewErrInvalidEvaluation creates a new ErrInvalidEvaluation with the evaluation provided after the error message
+func NewErrInvalidEvaluation(evaluation string) *ErrInvalidEvaluation {
+	return &ErrInvalidEvaluation{
+		message: fmt.Sprintf(invalidEvaluationMessage, evaluation),
+	}
+}
+
 // GetEvaluation uses the metrics provided to determine a set of evaluations
-func GetEvaluation(resourceMetric *models.ResourceMetrics, config *config.Config, executer shell.ExecuteWithPiper) (*models.Evaluation, error) {
+func GetEvaluation(resourceMetrics *models.ResourceMetrics, config *config.Config, executer shell.ExecuteWithPiper) (*models.Evaluation, error) {
 	// Convert metrics into JSON
-	metricJSON, err := json.Marshal(resourceMetric.Metrics)
+	metricJSON, err := json.Marshal(resourceMetrics.Metrics)
 	if err != nil {
 		return nil, err
 	}
@@ -39,11 +58,13 @@ func GetEvaluation(resourceMetric *models.ResourceMetrics, config *config.Config
 		log.Println(outb.String())
 		return nil, err
 	}
-	evaluation := &models.EvaluationValue{}
-	json.Unmarshal(outb.Bytes(), evaluation)
-	return &models.Evaluation{
-		DeploymentName: resourceMetric.DeploymentName,
-		Evaluation:     evaluation,
-		Deployment:     resourceMetric.Deployment,
-	}, nil
+	evaluation := &models.Evaluation{}
+	err = json.Unmarshal(outb.Bytes(), evaluation)
+	if err != nil {
+		return nil, err
+	}
+	if evaluation.TargetReplicas == nil {
+		return nil, NewErrInvalidEvaluation(outb.String())
+	}
+	return evaluation, nil
 }

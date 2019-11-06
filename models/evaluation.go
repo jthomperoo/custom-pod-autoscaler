@@ -16,11 +16,7 @@ limitations under the License.
 
 package models
 
-import appsv1 "k8s.io/api/apps/v1"
-
 // Evaluation represents a decision on how to scale a deployment
 type Evaluation struct {
-	DeploymentName string             `json:"deployment"`
-	Evaluation     *EvaluationValue   `json:"evaluation"`
-	Deployment     *appsv1.Deployment `json:"-"` // hide
+	TargetReplicas *int32 `json:"target_replicas"`
 }

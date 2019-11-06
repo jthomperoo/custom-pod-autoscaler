@@ -74,9 +74,9 @@ func scale(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInter
 
 			// Check if evaluation requires an action
 			// If the deployment needs scaled up/down
-			if evaluation.Evaluation.TargetReplicas != *deployment.Spec.Replicas {
+			if evaluation.TargetReplicas != deployment.Spec.Replicas {
 				// Scale deployment
-				deployment.Spec.Replicas = &evaluation.Evaluation.TargetReplicas
+				deployment.Spec.Replicas = evaluation.TargetReplicas
 				_, err = deploymentsClient.Update(deployment)
 				if err != nil {
 					log.Fatalf(err.Error())
