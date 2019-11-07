@@ -22,8 +22,10 @@ import (
 	"os/exec"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/api"
+	"github.com/jthomperoo/custom-pod-autoscaler/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/scaler"
+	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/shell"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -79,14 +81,37 @@ func main() {
 	// Set up client for managing deployments
 	deploymentsClient := clientset.AppsV1().Deployments(config.Namespace)
 
-	// Set up shell execution context
-	executer := shell.NewCommandExecuteWithPipe(exec.Command)
+	// Set up shell executer
+	executer := shell.ExecuteWithPipe{
+		Command: exec.Command,
+	}
 
-	// Start scaler
-	scaler.ConfigureScaler(clientset, deploymentsClient, config, executer)
+	// Set up metric gathering
+	metricGatherer := &metric.Gatherer{
+		Clientset: clientset,
+		Config:    config,
+		Executer:  &executer,
+	}
+
+	// Set up evaluator
+	evaluator := &evaluate.Evaluator{
+		Config:   config,
+		Executer: &executer,
+	}
+
+	// Set up autoscaler and start it
+	autoscaler := autoscaler.NewAutoscaler(clientset, deploymentsClient, config, metricGatherer, evaluator)
+	autoscaler.Start()
 
 	// Start API
-	api.ConfigureAPI(clientset, deploymentsClient, config, executer)
+	api := &api.API{
+		Config:            config,
+		Clientset:         clientset,
+		DeploymentsClient: deploymentsClient,
+		GetMetricer:       metricGatherer,
+		GetEvaluationer:   evaluator,
+	}
+	api.Start()
 }
 
 // readEnvVars loads in all relevant environment variables if they exist,
