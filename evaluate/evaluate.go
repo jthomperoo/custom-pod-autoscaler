@@ -14,19 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaler
+package evaluate
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/models"
-	"github.com/jthomperoo/custom-pod-autoscaler/shell"
 )
 
 const invalidEvaluationMessage = "Invalid evaluation returned by evaluator: %s"
+
+type executeWithPiper interface {
+	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
+}
+
+// Evaluator handles triggering the evaluation logic to decide how to scale a resource
+type Evaluator struct {
+	Config   *config.Config
+	Executer executeWithPiper
+}
 
 // ErrInvalidEvaluation occurs when the the evaluator reports success but returns invalid JSON
 type ErrInvalidEvaluation struct {
@@ -45,7 +55,7 @@ func NewErrInvalidEvaluation(evaluation string) *ErrInvalidEvaluation {
 }
 
 // GetEvaluation uses the metrics provided to determine a set of evaluations
-func GetEvaluation(resourceMetrics *models.ResourceMetrics, config *config.Config, executer shell.ExecuteWithPiper) (*models.Evaluation, error) {
+func (e *Evaluator) GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error) {
 	// Convert metrics into JSON
 	metricJSON, err := json.Marshal(resourceMetrics.Metrics)
 	if err != nil {
@@ -53,7 +63,7 @@ func GetEvaluation(resourceMetrics *models.ResourceMetrics, config *config.Confi
 	}
 
 	// Execute the Evaluate command with the metric JSON
-	outb, err := executer.ExecuteWithPipe(config.Evaluate, string(metricJSON), config.EvaluateTimeout)
+	outb, err := e.Executer.ExecuteWithPipe(e.Config.Evaluate, string(metricJSON), e.Config.EvaluateTimeout)
 	if err != nil {
 		log.Println(outb.String())
 		return nil, err

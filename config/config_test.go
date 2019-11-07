@@ -22,8 +22,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/test"
 	"gopkg.in/yaml.v2"
-	autoscaling "k8s.io/api/autoscaling/v1"
 )
 
 const (
@@ -80,7 +80,7 @@ func TestLoadConfig_InvalidIntEnv(t *testing.T) {
 }
 
 func TestLoadConfig_NoYAML(t *testing.T) {
-	testConfig := getTestConfig()
+	testConfig := test.GetTestConfig()
 
 	testEnvVars := getTestEnvVars()
 
@@ -95,7 +95,7 @@ func TestLoadConfig_NoYAML(t *testing.T) {
 }
 
 func TestLoadConfig_NoEnv(t *testing.T) {
-	testConfig := getTestConfig()
+	testConfig := test.GetTestConfig()
 
 	yamlConfig, err := yaml.Marshal(testConfig)
 	if err != nil {
@@ -147,24 +147,6 @@ func getDefaultConfig() *config.Config {
 		EvaluateTimeout: defaultEvaluateTimeout,
 		Namespace:       defaultNamespace,
 		ScaleTargetRef:  nil,
-	}
-}
-
-func getTestConfig() *config.Config {
-	return &config.Config{
-		Evaluate:        testEvaluate,
-		Metric:          testMetric,
-		Interval:        testInterval,
-		Host:            testHost,
-		Port:            testPort,
-		MetricTimeout:   testMetricTimeout,
-		EvaluateTimeout: testEvaluateTimeout,
-		Namespace:       testNamespace,
-		ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
-			Name:       testScaleTargetRefName,
-			Kind:       testScaleTargetRefKind,
-			APIVersion: testScaleTargetRefAPIVersion,
-		},
 	}
 }
 

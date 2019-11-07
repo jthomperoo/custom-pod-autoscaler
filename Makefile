@@ -7,7 +7,7 @@ default: vendor
 	CGO_ENABLED=0 GOOS=linux go build -mod vendor -o dist/$(NAME)
 	cp LICENSE dist/LICENSE
 
-test: vendor
+unittest: vendor
 	@echo "=============Testing============="
 	go test ./... -cover
 

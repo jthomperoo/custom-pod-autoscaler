@@ -28,30 +28,39 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/scaler"
-	"github.com/jthomperoo/custom-pod-autoscaler/shell"
+	"github.com/jthomperoo/custom-pod-autoscaler/models"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
 
-// ConfigureAPI sets up endpoints and begins listening for API requests
-func ConfigureAPI(clientset *kubernetes.Clientset, deploymentsClient v1.DeploymentInterface, config *config.Config, executer shell.ExecuteWithPiper) {
-	// Set up shared resources
-	api := &api{
-		executer:          executer,
-		clientset:         clientset,
-		deploymentsClient: deploymentsClient,
-		config:            config,
-	}
+type getMetricer interface {
+	GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error)
+}
 
+type getEvaluationer interface {
+	GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error)
+}
+
+// API is the Custom Pod Autoscaler REST API, exposing endpoints to retrieve metrics/evaluations
+type API struct {
+	Config            *config.Config
+	Clientset         *kubernetes.Clientset
+	DeploymentsClient v1.DeploymentInterface
+	GetMetricer       getMetricer
+	GetEvaluationer   getEvaluationer
+}
+
+// Start sets up routing for the API and starts listening
+func (api *API) Start() {
 	// Set up routing
 	r := chi.NewRouter()
 	r.Get("/metrics", api.getMetrics)
 	r.Get("/evaluation", api.getEvaluation)
 
 	// Set up server
-	srv := http.Server{Addr: fmt.Sprintf("%s:%d", config.Host, config.Port), Handler: r}
+	srv := http.Server{Addr: fmt.Sprintf("%s:%d", api.Config.Host, api.Config.Port), Handler: r}
 
 	// Set up channel for handling shutdown requests
 	shutdown := make(chan os.Signal, 1)
@@ -72,21 +81,14 @@ func ConfigureAPI(clientset *kubernetes.Clientset, deploymentsClient v1.Deployme
 	srv.ListenAndServe()
 }
 
-type api struct {
-	executer          shell.ExecuteWithPiper
-	config            *config.Config
-	clientset         *kubernetes.Clientset
-	deploymentsClient v1.DeploymentInterface
-}
-
-func (api *api) getMetrics(w http.ResponseWriter, r *http.Request) {
+func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 	// Get deployments being managed
-	deployment, err := api.clientset.AppsV1().Deployments(api.config.Namespace).Get(api.config.ScaleTargetRef.Name, metav1.GetOptions{})
+	deployment, err := api.Clientset.AppsV1().Deployments(api.Config.Namespace).Get(api.Config.ScaleTargetRef.Name, metav1.GetOptions{})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}
 	// Get metrics
-	metrics, err := scaler.GetMetrics(api.clientset, deployment, api.config, api.executer)
+	metrics, err := api.GetMetricer.GetMetrics(deployment)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -101,20 +103,20 @@ func (api *api) getMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func (api *api) getEvaluation(w http.ResponseWriter, r *http.Request) {
+func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 	// Get deployments being managed
-	deployment, err := api.clientset.AppsV1().Deployments(api.config.Namespace).Get(api.config.ScaleTargetRef.Name, metav1.GetOptions{})
+	deployment, err := api.Clientset.AppsV1().Deployments(api.Config.Namespace).Get(api.Config.ScaleTargetRef.Name, metav1.GetOptions{})
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}
 	// Get metrics
-	metrics, err := scaler.GetMetrics(api.clientset, deployment, api.config, api.executer)
+	metrics, err := api.GetMetricer.GetMetrics(deployment)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 	// Get evaluations for metrics
-	evaluations, err := scaler.GetEvaluation(metrics, api.config, api.executer)
+	evaluations, err := api.GetEvaluationer.GetEvaluation(metrics)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

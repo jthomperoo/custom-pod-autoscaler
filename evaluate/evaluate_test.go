@@ -1,4 +1,4 @@
-package scaler_test
+package evaluate_test
 
 import (
 	"bytes"
@@ -7,8 +7,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/models"
-	"github.com/jthomperoo/custom-pod-autoscaler/scaler"
+	"github.com/jthomperoo/custom-pod-autoscaler/test"
 )
 
 const (
@@ -17,6 +18,21 @@ const (
 	testEvaluationInvalidEvaluation = "{ \"invalid\": \"invalid\"}"
 	testEvaluationInvalidJSON       = "invalid}"
 	testEvaluationTargetReplicas    = int32(3)
+	invalidYAML                     = "- in: -: valid - yaml"
+	testEvaluate                    = "test evaluate"
+	testMetric                      = "test metric"
+	testInterval                    = 1234
+	testHost                        = "1.2.3.4"
+	testPort                        = 1234
+	testMetricTimeout               = 4321
+	testEvaluateTimeout             = 8765
+	testNamespace                   = "test namespace"
+	testScaleTargetRefKind          = "test kind"
+	testScaleTargetRefName          = "test name"
+	testScaleTargetRefAPIVersion    = "test api version"
+	testDeploymentName              = "test deployment"
+	testExecuteError                = "test error"
+	testExecuteSuccess              = "test success"
 )
 
 type successExecuteValidEvaluation struct{}
@@ -50,9 +66,12 @@ func (e *successExecuteInvalidJSON) ExecuteWithPipe(command string, value string
 
 func TestGetEvaluation_ExecuteFail(t *testing.T) {
 	resourceMetrics := getTestResourceMetrics()
-	config := getTestConfig()
+	evaluator := &evaluate.Evaluator{
+		Config:   test.GetTestConfig(),
+		Executer: &test.FailExecute{},
+	}
 
-	_, err := scaler.GetEvaluation(resourceMetrics, config, &failExecuteWithPipe{})
+	_, err := evaluator.GetEvaluation(resourceMetrics)
 	if err == nil {
 		t.Errorf("Expected error due to executer failing and returning an error")
 		return
@@ -65,10 +84,13 @@ func TestGetEvaluation_ExecuteFail(t *testing.T) {
 
 func TestGetEvaluation_ExecuteSuccessValidJSON(t *testing.T) {
 	resourceMetrics := getTestResourceMetrics()
-	config := getTestConfig()
 	testEvaluation := getTestEvaluation()
+	evaluator := &evaluate.Evaluator{
+		Config:   test.GetTestConfig(),
+		Executer: &successExecuteValidEvaluation{},
+	}
 
-	evaluation, err := scaler.GetEvaluation(resourceMetrics, config, &successExecuteValidEvaluation{})
+	evaluation, err := evaluator.GetEvaluation(resourceMetrics)
 	if err != nil {
 		t.Error(err)
 		return
@@ -81,15 +103,18 @@ func TestGetEvaluation_ExecuteSuccessValidJSON(t *testing.T) {
 
 func TestGetEvaluation_ExecuteSuccessInvalidEvaluation(t *testing.T) {
 	resourceMetrics := getTestResourceMetrics()
-	config := getTestConfig()
-	_, err := scaler.GetEvaluation(resourceMetrics, config, &successExecuteInvalidEvaluation{})
+	evaluator := &evaluate.Evaluator{
+		Config:   test.GetTestConfig(),
+		Executer: &successExecuteInvalidEvaluation{},
+	}
+	_, err := evaluator.GetEvaluation(resourceMetrics)
 
 	if err == nil {
 		t.Errorf("Expected error due to executer returning an invalid evaluation")
 		return
 	}
 
-	if _, ok := err.(*scaler.ErrInvalidEvaluation); !ok {
+	if _, ok := err.(*evaluate.ErrInvalidEvaluation); !ok {
 		t.Errorf("Expected invalid evaluation, instead got: %v", err)
 	}
 
@@ -100,8 +125,12 @@ func TestGetEvaluation_ExecuteSuccessInvalidEvaluation(t *testing.T) {
 
 func TestGetEvaluation_ExecuteSuccessInvalidJSONSyntax(t *testing.T) {
 	resourceMetrics := getTestResourceMetrics()
-	config := getTestConfig()
-	_, err := scaler.GetEvaluation(resourceMetrics, config, &successExecuteInvalidJSON{})
+	evaluator := &evaluate.Evaluator{
+		Config:   test.GetTestConfig(),
+		Executer: &successExecuteInvalidJSON{},
+	}
+
+	_, err := evaluator.GetEvaluation(resourceMetrics)
 
 	if err == nil {
 		t.Errorf("Expected error due to executer returning invalid JSON syntax")
@@ -116,7 +145,7 @@ func TestGetEvaluation_ExecuteSuccessInvalidJSONSyntax(t *testing.T) {
 func getTestResourceMetrics() *models.ResourceMetrics {
 	return &models.ResourceMetrics{
 		DeploymentName: testDeploymentName,
-		Deployment:     getTestDeployment(),
+		Deployment:     test.GetTestDeployment(),
 		Metrics: []*models.Metric{
 			&models.Metric{
 				Pod:   testMetricPod,

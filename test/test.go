@@ -1,4 +1,20 @@
-package scaler_test
+/*
+Copyright 2019 The Custom Pod Autoscaler Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package test
 
 import (
 	"bytes"
@@ -11,7 +27,6 @@ import (
 )
 
 const (
-	invalidYAML                  = "- in: -: valid - yaml"
 	testEvaluate                 = "test evaluate"
 	testMetric                   = "test metric"
 	testInterval                 = 1234
@@ -28,13 +43,16 @@ const (
 	testExecuteSuccess           = "test success"
 )
 
-type failExecuteWithPipe struct{}
+// FailExecute allows creating a shell command that will fail, i.e return an error
+type FailExecute struct{}
 
-func (e *failExecuteWithPipe) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
+// ExecuteWithPipe is the implementation of ExecuteWithPipe that will return an error
+func (e *FailExecute) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
 	return nil, errors.New(testExecuteError)
 }
 
-func getTestDeployment() *appsv1.Deployment {
+// GetTestDeployment creates a deployment with test attributes
+func GetTestDeployment() *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testDeploymentName,
@@ -42,7 +60,8 @@ func getTestDeployment() *appsv1.Deployment {
 	}
 }
 
-func getTestConfig() *config.Config {
+// GetTestConfig creates a config with test attributes
+func GetTestConfig() *config.Config {
 	return &config.Config{
 		Evaluate:        testEvaluate,
 		Metric:          testMetric,

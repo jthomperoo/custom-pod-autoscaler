@@ -25,33 +25,21 @@ import (
 )
 
 // Command represents the function that builds the exec.Cmd to be used in shell commands.
-type Command = func(name string, arg ...string) *exec.Cmd
+type command = func(name string, arg ...string) *exec.Cmd
 
-// ExecuteWithPiper wraps the ExecuteWithPipe method for executing with a value piped to it.
-type ExecuteWithPiper interface {
-	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
-}
-
-// CommandExecuteWithPipe represents a way to execute commands with values piped to them.
-type CommandExecuteWithPipe struct {
-	command Command
-}
-
-// NewCommandExecuteWithPipe creates a new CommandExecuteWithPipe, which runs shell commands values piped to them.
-func NewCommandExecuteWithPipe(command Command) *CommandExecuteWithPipe {
-	return &CommandExecuteWithPipe{
-		command: command,
-	}
+// ExecuteWithPipe represents a way to execute commands with values piped to them.
+type ExecuteWithPipe struct {
+	Command command
 }
 
 // ExecuteWithPipe executes a shell command with a value piped to it.
 // If it exits with code 0, no error is returned and the stdout is captured and returned.
 // If it exits with code 1, an error is returned and the stderr is captured and returned.
 // If the timeout is reached, an error is returned.
-func (e *CommandExecuteWithPipe) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
+func (e *ExecuteWithPipe) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
 	// Build command string with value piped into it
 	commandString := fmt.Sprintf("echo '%s' | %s", value, command)
-	cmd := e.command("/bin/sh", "-c", commandString)
+	cmd := e.Command("/bin/sh", "-c", commandString)
 
 	// Set up byte buffers to read stdout and stderr
 	var outb, errb bytes.Buffer

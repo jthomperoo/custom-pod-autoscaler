@@ -14,27 +14,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaler
+package metric
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/models"
-	"github.com/jthomperoo/custom-pod-autoscaler/shell"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
+type executeWithPiper interface {
+	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
+}
+
+// Gatherer handles triggering the metric gathering logic to gather metrics for a resource
+type Gatherer struct {
+	Clientset kubernetes.Interface
+	Config    *config.Config
+	Executer  executeWithPiper
+}
+
 // GetMetrics gathers metrics for the deployments supplied
-func GetMetrics(clientset kubernetes.Interface, deployment *appsv1.Deployment, config *config.Config, executer shell.ExecuteWithPiper) (*models.ResourceMetrics, error) {
+func (m *Gatherer) GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error) {
 	// Get Deployment pods
 	labels := deployment.GetLabels()
-	pods, err := clientset.CoreV1().Pods(config.Namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", labels["app"])})
+	pods, err := m.Clientset.CoreV1().Pods(m.Config.Namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", labels["app"])})
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +53,7 @@ func GetMetrics(clientset kubernetes.Interface, deployment *appsv1.Deployment, c
 	// Gather metrics for each pod
 	var metrics []*models.Metric
 	for _, pod := range pods.Items {
-		metric, err := getMetricForPod(config.Metric, &pod, config.MetricTimeout, executer)
+		metric, err := m.getMetricForPod(m.Config.Metric, &pod, m.Config.MetricTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +68,7 @@ func GetMetrics(clientset kubernetes.Interface, deployment *appsv1.Deployment, c
 }
 
 // getMetricForPod gathers the metric for a specific pod
-func getMetricForPod(cmd string, pod *corev1.Pod, timeout int, executer shell.ExecuteWithPiper) (*models.Metric, error) {
+func (m *Gatherer) getMetricForPod(cmd string, pod *corev1.Pod, timeout int) (*models.Metric, error) {
 	// Convert the Pod description to JSON
 	podJSON, err := json.Marshal(pod)
 	if err != nil {
@@ -65,7 +76,7 @@ func getMetricForPod(cmd string, pod *corev1.Pod, timeout int, executer shell.Ex
 	}
 
 	// Execute the Metric command with the Pod JSON
-	outb, err := executer.ExecuteWithPipe(cmd, string(podJSON), timeout)
+	outb, err := m.Executer.ExecuteWithPipe(cmd, string(podJSON), timeout)
 	if err != nil {
 		log.Println(outb.String())
 		return nil, err
