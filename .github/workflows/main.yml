@@ -25,7 +25,7 @@ jobs:
         # Lint and test
         make vendor
         make lint
-        make test
+        make unittest
 
         # Build
         if [ ${{ github.event_name }} == "release" ]; then
