@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+// Package cpatest contains utility testing methods, used in multiple tests
+package cpatest
 
 import (
 	"bytes"
 	"errors"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v1"
@@ -27,6 +29,8 @@ import (
 )
 
 const (
+	testNamespace                = "test namespace"
+	testExecuteError             = "test error"
 	testEvaluate                 = "test evaluate"
 	testMetric                   = "test metric"
 	testInterval                 = 1234
@@ -34,12 +38,9 @@ const (
 	testPort                     = 1234
 	testMetricTimeout            = 4321
 	testEvaluateTimeout          = 8765
-	testNamespace                = "test namespace"
 	testScaleTargetRefKind       = "test kind"
 	testScaleTargetRefName       = "test name"
 	testScaleTargetRefAPIVersion = "test api version"
-	testDeploymentName           = "test deployment"
-	testExecuteError             = "test error"
 	testExecuteSuccess           = "test success"
 )
 
@@ -48,14 +49,26 @@ type FailExecute struct{}
 
 // ExecuteWithPipe is the implementation of ExecuteWithPipe that will return an error
 func (e *FailExecute) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
-	return nil, errors.New(testExecuteError)
+	return nil, GetFailExecuteErr()
 }
 
-// GetTestDeployment creates a deployment with test attributes
-func GetTestDeployment() *appsv1.Deployment {
+// EquateErrors creates a comparison option for cmp functions, allowing comparison of errors
+func EquateErrors() cmp.Option {
+	return cmp.Comparer(func(x, y error) bool {
+		if x == nil || y == nil {
+			return x == nil && y == nil
+		}
+		return x.Error() == y.Error()
+	})
+}
+
+// Deployment creates a deployment with test attributes
+func Deployment(name, namespace string, labels map[string]string) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: testDeploymentName,
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
 		},
 	}
 }
@@ -77,4 +90,9 @@ func GetTestConfig() *config.Config {
 			APIVersion: testScaleTargetRefAPIVersion,
 		},
 	}
+}
+
+// GetFailExecuteErr returns the error created by the fake shell command executing FailExecute
+func GetFailExecuteErr() error {
+	return errors.New(testExecuteError)
 }

@@ -9,7 +9,7 @@ default: vendor
 
 unittest: vendor
 	@echo "=============Testing============="
-	go test ./... -cover
+	go test ./... -cover --tags=unit
 
 lint: vendor
 	@echo "=============Linting============="

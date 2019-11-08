@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+// +build unit
 
 package config_test
 
@@ -22,7 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/test"
+	"github.com/jthomperoo/custom-pod-autoscaler/cpatest"
 	"gopkg.in/yaml.v2"
 )
 
@@ -80,7 +81,7 @@ func TestLoadConfig_InvalidIntEnv(t *testing.T) {
 }
 
 func TestLoadConfig_NoYAML(t *testing.T) {
-	testConfig := test.GetTestConfig()
+	testConfig := cpatest.GetTestConfig()
 
 	testEnvVars := getTestEnvVars()
 
@@ -95,7 +96,7 @@ func TestLoadConfig_NoYAML(t *testing.T) {
 }
 
 func TestLoadConfig_NoEnv(t *testing.T) {
-	testConfig := test.GetTestConfig()
+	testConfig := cpatest.GetTestConfig()
 
 	yamlConfig, err := yaml.Marshal(testConfig)
 	if err != nil {

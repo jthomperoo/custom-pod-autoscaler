@@ -1,3 +1,20 @@
+/*
+Copyright 2019 The Custom Pod Autoscaler Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+// +build unit
+
 package evaluate_test
 
 import (
@@ -7,12 +24,15 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/jthomperoo/custom-pod-autoscaler/cpatest"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/models"
-	"github.com/jthomperoo/custom-pod-autoscaler/test"
 )
 
 const (
+	testDeploymentName     = "test deployment"
+	testDeploymentAppLabel = "test-deployment"
+
 	testMetricPod                   = "test pod"
 	testMetricValue                 = "test value"
 	testEvaluationInvalidEvaluation = "{ \"invalid\": \"invalid\"}"
@@ -30,7 +50,6 @@ const (
 	testScaleTargetRefKind          = "test kind"
 	testScaleTargetRefName          = "test name"
 	testScaleTargetRefAPIVersion    = "test api version"
-	testDeploymentName              = "test deployment"
 	testExecuteError                = "test error"
 	testExecuteSuccess              = "test success"
 )
@@ -67,8 +86,8 @@ func (e *successExecuteInvalidJSON) ExecuteWithPipe(command string, value string
 func TestGetEvaluation_ExecuteFail(t *testing.T) {
 	resourceMetrics := getTestResourceMetrics()
 	evaluator := &evaluate.Evaluator{
-		Config:   test.GetTestConfig(),
-		Executer: &test.FailExecute{},
+		Config:   cpatest.GetTestConfig(),
+		Executer: &cpatest.FailExecute{},
 	}
 
 	_, err := evaluator.GetEvaluation(resourceMetrics)
@@ -86,7 +105,7 @@ func TestGetEvaluation_ExecuteSuccessValidJSON(t *testing.T) {
 	resourceMetrics := getTestResourceMetrics()
 	testEvaluation := getTestEvaluation()
 	evaluator := &evaluate.Evaluator{
-		Config:   test.GetTestConfig(),
+		Config:   cpatest.GetTestConfig(),
 		Executer: &successExecuteValidEvaluation{},
 	}
 
@@ -104,7 +123,7 @@ func TestGetEvaluation_ExecuteSuccessValidJSON(t *testing.T) {
 func TestGetEvaluation_ExecuteSuccessInvalidEvaluation(t *testing.T) {
 	resourceMetrics := getTestResourceMetrics()
 	evaluator := &evaluate.Evaluator{
-		Config:   test.GetTestConfig(),
+		Config:   cpatest.GetTestConfig(),
 		Executer: &successExecuteInvalidEvaluation{},
 	}
 	_, err := evaluator.GetEvaluation(resourceMetrics)
@@ -126,7 +145,7 @@ func TestGetEvaluation_ExecuteSuccessInvalidEvaluation(t *testing.T) {
 func TestGetEvaluation_ExecuteSuccessInvalidJSONSyntax(t *testing.T) {
 	resourceMetrics := getTestResourceMetrics()
 	evaluator := &evaluate.Evaluator{
-		Config:   test.GetTestConfig(),
+		Config:   cpatest.GetTestConfig(),
 		Executer: &successExecuteInvalidJSON{},
 	}
 
@@ -145,7 +164,7 @@ func TestGetEvaluation_ExecuteSuccessInvalidJSONSyntax(t *testing.T) {
 func getTestResourceMetrics() *models.ResourceMetrics {
 	return &models.ResourceMetrics{
 		DeploymentName: testDeploymentName,
-		Deployment:     test.GetTestDeployment(),
+		Deployment:     cpatest.Deployment(testDeploymentName, testNamespace, map[string]string{"app": testDeploymentAppLabel}),
 		Metrics: []*models.Metric{
 			&models.Metric{
 				Pod:   testMetricPod,
