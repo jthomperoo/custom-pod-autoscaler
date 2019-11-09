@@ -35,7 +35,7 @@ type command func(name string, arg ...string) *exec.Cmd
 
 type process func(t *testing.T)
 
-var tests []struct {
+type test struct {
 	description   string
 	expectedErr   error
 	expected      *string
@@ -45,19 +45,13 @@ var tests []struct {
 	command       command
 }
 
+var tests []test
+
 var processes map[string]process
 
 func TestMain(m *testing.M) {
 	processes = map[string]process{}
-	tests = []struct {
-		description   string
-		expectedErr   error
-		expected      *string
-		commandString string
-		value         string
-		timeout       int
-		command       command
-	}{
+	tests = []test{
 		{
 			"Successful shell command",
 			nil,
