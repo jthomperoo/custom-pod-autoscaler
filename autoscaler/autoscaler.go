@@ -44,7 +44,7 @@ type getEvaluationer interface {
 // feeding an evaluator these metrics, before taking the results and using them to interact with Kubernetes
 // to scale up/down
 type Autoscaler struct {
-	Clientset         *kubernetes.Clientset
+	Clientset         kubernetes.Interface
 	DeploymentsClient v1.DeploymentInterface
 	Config            *config.Config
 	Ticker            *time.Ticker
