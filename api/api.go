@@ -22,9 +22,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/go-chi/chi"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
@@ -43,60 +40,60 @@ type getEvaluationer interface {
 	GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error)
 }
 
+type server interface {
+	ListenAndServe() error
+	Shutdown(ctx context.Context) error
+}
+
+// Error is an error response from the API, with the status code and an error message
+type Error struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
 // API is the Custom Pod Autoscaler REST API, exposing endpoints to retrieve metrics/evaluations
 type API struct {
+	Router            chi.Router
 	Config            *config.Config
-	Clientset         *kubernetes.Clientset
+	Clientset         kubernetes.Interface
 	DeploymentsClient v1.DeploymentInterface
 	GetMetricer       getMetricer
 	GetEvaluationer   getEvaluationer
 }
 
-// Start sets up routing for the API and starts listening
-func (api *API) Start() {
+// Routes sets up routing for the API
+func (api *API) Routes() {
 	// Set up routing
-	r := chi.NewRouter()
-	r.Get("/metrics", api.getMetrics)
-	r.Get("/evaluation", api.getEvaluation)
-
-	// Set up server
-	srv := http.Server{Addr: fmt.Sprintf("%s:%d", api.Config.Host, api.Config.Port), Handler: r}
-
-	// Set up channel for handling shutdown requests
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-
-	// Handle shutdowns
-	go func() {
-		for range shutdown {
-			log.Println("Shutting down...")
-			// Immediate shutdown
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			srv.Shutdown(ctx)
-		}
-	}()
-
-	// Start API
-	srv.ListenAndServe()
+	api.Router.Get("/metrics", api.getMetrics)
+	api.Router.Get("/evaluation", api.getEvaluation)
+	api.Router.NotFound(api.notFound)
+	api.Router.MethodNotAllowed(api.methodNotAllowed)
 }
 
 func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 	// Get deployments being managed
 	deployment, err := api.Clientset.AppsV1().Deployments(api.Config.Namespace).Get(api.Config.ScaleTargetRef.Name, metav1.GetOptions{})
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		apiError(w, &Error{
+			err.Error(),
+			http.StatusInternalServerError,
+		})
+		return
 	}
 	// Get metrics
 	metrics, err := api.GetMetricer.GetMetrics(deployment)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		apiError(w, &Error{
+			err.Error(),
+			http.StatusInternalServerError,
+		})
 		return
 	}
 	// Convert metrics into JSON
 	response, err := json.Marshal(metrics)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		// Should not occur, fatal error
+		log.Panic(err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -107,26 +104,64 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 	// Get deployments being managed
 	deployment, err := api.Clientset.AppsV1().Deployments(api.Config.Namespace).Get(api.Config.ScaleTargetRef.Name, metav1.GetOptions{})
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		apiError(w, &Error{
+			err.Error(),
+			http.StatusInternalServerError,
+		})
+		return
 	}
 	// Get metrics
 	metrics, err := api.GetMetricer.GetMetrics(deployment)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		apiError(w, &Error{
+			err.Error(),
+			http.StatusInternalServerError,
+		})
 		return
 	}
 	// Get evaluations for metrics
 	evaluations, err := api.GetEvaluationer.GetEvaluation(metrics)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		apiError(w, &Error{
+			err.Error(),
+			http.StatusInternalServerError,
+		})
 		return
 	}
 	// Convert evaluations into JSON
 	response, err := json.Marshal(evaluations)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		// Should not occur, panic
+		log.Panic(err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+	w.Write(response)
+}
+
+func (api *API) notFound(w http.ResponseWriter, r *http.Request) {
+	apiError(w, &Error{
+		Message: fmt.Sprintf("Resource '%s' not found", r.URL.Path),
+		Code:    http.StatusNotFound,
+	})
+}
+
+func (api *API) methodNotAllowed(w http.ResponseWriter, r *http.Request) {
+	apiError(w, &Error{
+		Message: fmt.Sprintf("Method '%s' not allowed on resource '%s'", r.Method, r.URL.Path),
+		Code:    http.StatusMethodNotAllowed,
+	})
+}
+
+func apiError(w http.ResponseWriter, apiErr *Error) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	// Convert into JSON
+	response, err := json.Marshal(apiErr)
+	if err != nil {
+		// Should not occur, panic
+		log.Panic(err)
+	}
+	w.WriteHeader(apiErr.Code)
 	w.Write(response)
 }

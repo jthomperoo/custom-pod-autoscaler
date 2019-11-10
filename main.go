@@ -16,11 +16,14 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 
+	"github.com/go-chi/chi"
 	"github.com/jthomperoo/custom-pod-autoscaler/api"
 	"github.com/jthomperoo/custom-pod-autoscaler/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
@@ -103,15 +106,23 @@ func main() {
 	autoscaler := autoscaler.NewAutoscaler(clientset, deploymentsClient, config, metricGatherer, evaluator)
 	autoscaler.Start()
 
-	// Start API
+	// Set up API
 	api := &api.API{
+		Router:            chi.NewRouter(),
 		Config:            config,
 		Clientset:         clientset,
 		DeploymentsClient: deploymentsClient,
 		GetMetricer:       metricGatherer,
 		GetEvaluationer:   evaluator,
 	}
-	api.Start()
+	api.Routes()
+	srv := http.Server{
+		Addr:    fmt.Sprintf("%s:%d", api.Config.Host, api.Config.Port),
+		Handler: api.Router,
+	}
+
+	// Start API
+	srv.ListenAndServe()
 }
 
 // readEnvVars loads in all relevant environment variables if they exist,
