@@ -23,13 +23,18 @@ import (
 	"log"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/models"
+	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 )
 
 const invalidEvaluationMessage = "Invalid evaluation returned by evaluator: %s"
 
 type executeWithPiper interface {
 	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
+}
+
+// Evaluation represents a decision on how to scale a deployment
+type Evaluation struct {
+	TargetReplicas *int32 `json:"target_replicas"`
 }
 
 // Evaluator handles triggering the evaluation logic to decide how to scale a resource
@@ -48,7 +53,7 @@ func (e *ErrInvalidEvaluation) Error() string {
 }
 
 // GetEvaluation uses the metrics provided to determine a set of evaluations
-func (e *Evaluator) GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error) {
+func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Evaluation, error) {
 	// Convert metrics into JSON
 	metricJSON, err := json.Marshal(resourceMetrics.Metrics)
 	if err != nil {
@@ -62,7 +67,7 @@ func (e *Evaluator) GetEvaluation(resourceMetrics *models.ResourceMetrics) (*mod
 		log.Println(outb.String())
 		return nil, err
 	}
-	evaluation := &models.Evaluation{}
+	evaluation := &Evaluation{}
 	err = json.Unmarshal(outb.Bytes(), evaluation)
 	if err != nil {
 		return nil, err

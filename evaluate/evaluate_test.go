@@ -27,7 +27,7 @@ import (
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
-	"github.com/jthomperoo/custom-pod-autoscaler/models"
+	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 )
 
 type executeWithPiper interface {
@@ -57,8 +57,8 @@ func TestGetEvaluation(t *testing.T) {
 	var tests = []struct {
 		description string
 		expectedErr error
-		expected    *models.Evaluation
-		metrics     *models.ResourceMetrics
+		expected    *evaluate.Evaluation
+		metrics     *metric.ResourceMetrics
 		config      *config.Config
 		executer    executeWithPiper
 	}{
@@ -66,9 +66,9 @@ func TestGetEvaluation(t *testing.T) {
 			"Execute fail",
 			errors.New("fail to evaluate"),
 			nil,
-			&models.ResourceMetrics{
-				Metrics: []*models.Metric{
-					&models.Metric{
+			&metric.ResourceMetrics{
+				Metrics: []*metric.Metric{
+					&metric.Metric{
 						Pod:   "test pod",
 						Value: "test value",
 					},
@@ -89,12 +89,12 @@ func TestGetEvaluation(t *testing.T) {
 		{
 			"Execute success with valid JSON",
 			nil,
-			&models.Evaluation{
+			&evaluate.Evaluation{
 				TargetReplicas: int32ToPtr(int32(3)),
 			},
-			&models.ResourceMetrics{
-				Metrics: []*models.Metric{
-					&models.Metric{
+			&metric.ResourceMetrics{
+				Metrics: []*metric.Metric{
+					&metric.Metric{
 						Pod:   "test pod",
 						Value: "test value",
 					},
@@ -108,7 +108,7 @@ func TestGetEvaluation(t *testing.T) {
 				execute := executer{}
 				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
 					// Convert into JSON
-					jsonEvaluation, err := json.Marshal(&models.Evaluation{
+					jsonEvaluation, err := json.Marshal(&evaluate.Evaluation{
 						TargetReplicas: int32ToPtr(int32(3)),
 					})
 					if err != nil {
@@ -127,9 +127,9 @@ func TestGetEvaluation(t *testing.T) {
 				Message: `Invalid evaluation returned by evaluator: { "invalid": "invalid"}`,
 			},
 			nil,
-			&models.ResourceMetrics{
-				Metrics: []*models.Metric{
-					&models.Metric{
+			&metric.ResourceMetrics{
+				Metrics: []*metric.Metric{
+					&metric.Metric{
 						Pod:   "test pod",
 						Value: "test value",
 					},
@@ -153,9 +153,9 @@ func TestGetEvaluation(t *testing.T) {
 			"Execute success with invalid JSON",
 			errors.New(`invalid character 'i' looking for beginning of value`),
 			nil,
-			&models.ResourceMetrics{
-				Metrics: []*models.Metric{
-					&models.Metric{
+			&metric.ResourceMetrics{
+				Metrics: []*metric.Metric{
+					&metric.Metric{
 						Pod:   "test pod",
 						Value: "test value",
 					},

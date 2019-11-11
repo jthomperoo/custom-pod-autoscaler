@@ -24,7 +24,8 @@ import (
 	"time"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/models"
+	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,11 +34,11 @@ import (
 )
 
 type getMetricer interface {
-	GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error)
+	GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error)
 }
 
 type getEvaluationer interface {
-	GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error)
+	GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error)
 }
 
 // Autoscaler handles automatically scaling up/down the resource being managed; triggering metric gathering and
