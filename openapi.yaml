@@ -8,9 +8,9 @@ info:
   version: 1.0.0
 tags:
 - name: metric
-  description: Metrics for scaling
+  description: Metric for scaling
 - name: evaluation
-  description: Evaluation decisions for scaling
+  description: Evaluation decision for scaling
 paths:
   /metrics:
     get:
@@ -24,31 +24,27 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DeploymentMetric"
+                $ref: "#/components/schemas/ResourceMetric"
         default:
           description: Error
-  /evaluations:
+  /evaluation:
     get:
       tags:
       - evaluation
-      summary: Get evaluation decisions for CPA
-      operationId: getEvaluations
+      summary: Get evaluation decision for CPA
+      operationId: getEvaluation
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DeploymentEvaluation"
+                $ref: "#/components/schemas/Evaluation"
         default:
           description: Error
 components:
   schemas:
-    DeploymentMetric:
+    ResourceMetric:
       required:
       - deployment
       - metrics
@@ -61,17 +57,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Metric"
-    DeploymentEvaluation:
-      required:
-      - deployment
-      - evaluation
-      type: object
-      properties:
-        deployment:
-          type: string
-          example: example-deployment
-        evaluation:
-          $ref: "#/components/schemas/Evaluation"
     Evaluation:
       required:
       - target_replicas
