@@ -27,13 +27,58 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jthomperoo/custom-pod-autoscaler/cpatest"
 	"github.com/jthomperoo/custom-pod-autoscaler/shell"
 )
 
 type command func(name string, arg ...string) *exec.Cmd
 
 type process func(t *testing.T)
+
+func TestShellProcess(t *testing.T) {
+	if os.Getenv("GO_TEST_PROCESS") != "1" {
+		return
+	}
+
+	processName := strings.Split(os.Args[3], "=")[1]
+	process := processes[processName]
+
+	if process == nil {
+		t.Errorf("Process %s not found", processName)
+		os.Exit(1)
+	}
+
+	process(t)
+
+	// Process should call os.Exit itself, if not exit with error
+	os.Exit(1)
+}
+
+func fakeExecCommandAndStart(name string, process process) command {
+	processes[name] = process
+	return func(command string, args ...string) *exec.Cmd {
+		cs := []string{"-test.run=TestShellProcess", "--", fmt.Sprintf("-process=%s", name), command}
+		cs = append(cs, args...)
+		cmd := exec.Command(os.Args[0], cs...)
+		cmd.Env = []string{"GO_TEST_PROCESS=1"}
+		cmd.Start()
+		return cmd
+	}
+}
+
+func fakeExecCommand(name string, process process) command {
+	processes[name] = process
+	return func(command string, args ...string) *exec.Cmd {
+		cs := []string{"-test.run=TestShellProcess", "--", fmt.Sprintf("-process=%s", name), command}
+		cs = append(cs, args...)
+		cmd := exec.Command(os.Args[0], cs...)
+		cmd.Env = []string{"GO_TEST_PROCESS=1"}
+		return cmd
+	}
+}
+
+func stringPointer(value string) *string {
+	return &value
+}
 
 type test struct {
 	description   string
@@ -132,22 +177,21 @@ func TestMain(m *testing.M) {
 }
 
 func TestExecWithValuePipe(t *testing.T) {
+	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
+		if x == nil || y == nil {
+			return x == nil && y == nil
+		}
+		return x.Error() == y.Error()
+	})
+
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			s := &shell.ExecuteWithPipe{test.command}
 			stdout, err := s.ExecuteWithPipe(test.commandString, test.value, test.timeout)
-			if err == nil || test.expectedErr == nil {
-				if !(err == nil && test.expectedErr == nil) {
-					t.Errorf(stdout.String())
-					t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, cpatest.EquateErrors()))
-					return
-				}
-			} else {
-				if err.Error() != test.expectedErr.Error() {
-					t.Errorf(stdout.String())
-					t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, cpatest.EquateErrors()))
-					return
-				}
+			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
+				t.Errorf(stdout.String())
+				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
+				return
 			}
 
 			if test.expected == nil && stdout == nil {
@@ -160,50 +204,4 @@ func TestExecWithValuePipe(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestShellProcess(t *testing.T) {
-	if os.Getenv("GO_TEST_PROCESS") != "1" {
-		return
-	}
-
-	processName := strings.Split(os.Args[3], "=")[1]
-	process := processes[processName]
-
-	if process == nil {
-		t.Errorf("Process %s not found", processName)
-		os.Exit(1)
-	}
-
-	process(t)
-
-	// Process should call os.Exit itself, if not exit with error
-	os.Exit(1)
-}
-
-func fakeExecCommandAndStart(name string, process process) command {
-	processes[name] = process
-	return func(command string, args ...string) *exec.Cmd {
-		cs := []string{"-test.run=TestShellProcess", "--", fmt.Sprintf("-process=%s", name), command}
-		cs = append(cs, args...)
-		cmd := exec.Command(os.Args[0], cs...)
-		cmd.Env = []string{"GO_TEST_PROCESS=1"}
-		cmd.Start()
-		return cmd
-	}
-}
-
-func fakeExecCommand(name string, process process) command {
-	processes[name] = process
-	return func(command string, args ...string) *exec.Cmd {
-		cs := []string{"-test.run=TestShellProcess", "--", fmt.Sprintf("-process=%s", name), command}
-		cs = append(cs, args...)
-		cmd := exec.Command(os.Args[0], cs...)
-		cmd.Env = []string{"GO_TEST_PROCESS=1"}
-		return cmd
-	}
-}
-
-func stringPointer(value string) *string {
-	return &value
 }

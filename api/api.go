@@ -17,7 +17,6 @@ limitations under the License.
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -38,11 +37,6 @@ type getMetricer interface {
 
 type getEvaluationer interface {
 	GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error)
-}
-
-type server interface {
-	ListenAndServe() error
-	Shutdown(ctx context.Context) error
 }
 
 // Error is an error response from the API, with the status code and an error message
@@ -92,7 +86,7 @@ func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 	// Convert metrics into JSON
 	response, err := json.Marshal(metrics)
 	if err != nil {
-		// Should not occur, fatal error
+		// Should not occur, panic
 		log.Panic(err)
 		return
 	}

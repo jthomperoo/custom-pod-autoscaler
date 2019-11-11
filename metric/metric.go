@@ -72,7 +72,8 @@ func (m *Gatherer) getMetricForPod(cmd string, pod *corev1.Pod, timeout int) (*m
 	// Convert the Pod description to JSON
 	podJSON, err := json.Marshal(pod)
 	if err != nil {
-		return nil, err
+		// Should not occur, panic
+		log.Panic(err)
 	}
 
 	// Execute the Metric command with the Pod JSON

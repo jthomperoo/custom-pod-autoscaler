@@ -24,13 +24,16 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi"
+
 	"github.com/google/go-cmp/cmp"
+
 	"github.com/jthomperoo/custom-pod-autoscaler/api"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/cpatest"
 	"github.com/jthomperoo/custom-pod-autoscaler/models"
+
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/autoscaling/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -41,6 +44,42 @@ type getMetricer interface {
 
 type getEvaluationer interface {
 	GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error)
+}
+
+type failGetMetrics struct{}
+
+func (f *failGetMetrics) GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error) {
+	return nil, errors.New("FAIL GET METRICS")
+}
+
+type successGetMetrics struct{}
+
+func (s *successGetMetrics) GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error) {
+	return &models.ResourceMetrics{
+		DeploymentName: deployment.Name,
+		Metrics: []*models.Metric{
+			&models.Metric{
+				Value: "SUCCESS",
+				Pod:   "SUCCESS_POD",
+			},
+		},
+		Deployment: deployment,
+	}, nil
+}
+
+type failGetEvaluation struct{}
+
+func (f *failGetEvaluation) GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error) {
+	return nil, errors.New("FAIL GET EVALUATION")
+}
+
+type successGetEvaluation struct{}
+
+func (s *successGetEvaluation) GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error) {
+	targetReplicas := int32(1)
+	return &models.Evaluation{
+		TargetReplicas: &targetReplicas,
+	}, nil
 }
 
 func TestAPI(t *testing.T) {
@@ -88,7 +127,13 @@ func TestAPI(t *testing.T) {
 				},
 			},
 			fake.NewSimpleClientset(
-				cpatest.Deployment("test", "test-namespace", nil),
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test-namespace",
+						Labels:    nil,
+					},
+				},
 			),
 			&failGetMetrics{},
 			nil,
@@ -108,7 +153,13 @@ func TestAPI(t *testing.T) {
 				},
 			},
 			fake.NewSimpleClientset(
-				cpatest.Deployment("test", "test-namespace", nil),
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test-namespace",
+						Labels:    nil,
+					},
+				},
 			),
 			&successGetMetrics{},
 			nil,
@@ -128,15 +179,27 @@ func TestAPI(t *testing.T) {
 				},
 			},
 			fake.NewSimpleClientset(
-				cpatest.Deployment("target", "test-namespace", nil),
-				cpatest.Deployment("not target", "test-namespace", nil),
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "target",
+						Namespace: "test-namespace",
+						Labels:    nil,
+					},
+				},
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "not target",
+						Namespace: "test-namespace",
+						Labels:    nil,
+					},
+				},
 			),
 			&successGetMetrics{},
 			nil,
 		},
 		{
 			"Get metrics success metric gathering two deployment different namespaces",
-			"{\"deployment\":\"target\",\"metrics\":[{\"pod\":\"SUCCESS_POD\",\"value\":\"SUCCESS\"}]}",
+			"{\"deployment\":\"test\",\"metrics\":[{\"pod\":\"SUCCESS_POD\",\"value\":\"SUCCESS\"}]}",
 			http.StatusOK,
 			"GET",
 			"/metrics",
@@ -144,13 +207,25 @@ func TestAPI(t *testing.T) {
 				Namespace: "target-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
 					Kind:       "deployment",
-					Name:       "target",
+					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			fake.NewSimpleClientset(
-				cpatest.Deployment("target", "target-namespace", nil),
-				cpatest.Deployment("target", "not-target-namespace", nil),
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "target-namespace",
+						Labels:    nil,
+					},
+				},
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "not-target-namespace",
+						Labels:    nil,
+					},
+				},
 			),
 			&successGetMetrics{},
 			nil,
@@ -188,7 +263,13 @@ func TestAPI(t *testing.T) {
 				},
 			},
 			fake.NewSimpleClientset(
-				cpatest.Deployment("test", "test-namespace", nil),
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test-namespace",
+						Labels:    nil,
+					},
+				},
 			),
 			&successGetMetrics{},
 			&failGetEvaluation{},
@@ -208,7 +289,13 @@ func TestAPI(t *testing.T) {
 				},
 			},
 			fake.NewSimpleClientset(
-				cpatest.Deployment("test", "test-namespace", nil),
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test-namespace",
+						Labels:    nil,
+					},
+				},
 			),
 			&failGetMetrics{},
 			&successGetEvaluation{},
@@ -228,7 +315,13 @@ func TestAPI(t *testing.T) {
 				},
 			},
 			fake.NewSimpleClientset(
-				cpatest.Deployment("test", "test-namespace", nil),
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test-namespace",
+						Labels:    nil,
+					},
+				},
 			),
 			&successGetMetrics{},
 			&successGetEvaluation{},
@@ -317,40 +410,4 @@ func TestAPI(t *testing.T) {
 			}
 		})
 	}
-}
-
-type failGetMetrics struct{}
-
-func (f *failGetMetrics) GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error) {
-	return nil, errors.New("FAIL GET METRICS")
-}
-
-type successGetMetrics struct{}
-
-func (s *successGetMetrics) GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error) {
-	return &models.ResourceMetrics{
-		DeploymentName: deployment.Name,
-		Metrics: []*models.Metric{
-			&models.Metric{
-				Value: "SUCCESS",
-				Pod:   "SUCCESS_POD",
-			},
-		},
-		Deployment: deployment,
-	}, nil
-}
-
-type failGetEvaluation struct{}
-
-func (f *failGetEvaluation) GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error) {
-	return nil, errors.New("FAIL GET EVALUATION")
-}
-
-type successGetEvaluation struct{}
-
-func (s *successGetEvaluation) GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error) {
-	targetReplicas := int32(1)
-	return &models.Evaluation{
-		TargetReplicas: &targetReplicas,
-	}, nil
 }

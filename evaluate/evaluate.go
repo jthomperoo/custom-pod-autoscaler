@@ -40,18 +40,11 @@ type Evaluator struct {
 
 // ErrInvalidEvaluation occurs when the the evaluator reports success but returns invalid JSON
 type ErrInvalidEvaluation struct {
-	message string
+	Message string
 }
 
 func (e *ErrInvalidEvaluation) Error() string {
-	return e.message
-}
-
-// NewErrInvalidEvaluation creates a new ErrInvalidEvaluation with the evaluation provided after the error message
-func NewErrInvalidEvaluation(evaluation string) *ErrInvalidEvaluation {
-	return &ErrInvalidEvaluation{
-		message: fmt.Sprintf(invalidEvaluationMessage, evaluation),
-	}
+	return e.Message
 }
 
 // GetEvaluation uses the metrics provided to determine a set of evaluations
@@ -59,7 +52,8 @@ func (e *Evaluator) GetEvaluation(resourceMetrics *models.ResourceMetrics) (*mod
 	// Convert metrics into JSON
 	metricJSON, err := json.Marshal(resourceMetrics.Metrics)
 	if err != nil {
-		return nil, err
+		// Should not occur, panic
+		log.Panic(err)
 	}
 
 	// Execute the Evaluate command with the metric JSON
@@ -74,7 +68,9 @@ func (e *Evaluator) GetEvaluation(resourceMetrics *models.ResourceMetrics) (*mod
 		return nil, err
 	}
 	if evaluation.TargetReplicas == nil {
-		return nil, NewErrInvalidEvaluation(outb.String())
+		return nil, &ErrInvalidEvaluation{
+			Message: fmt.Sprintf(invalidEvaluationMessage, outb.String()),
+		}
 	}
 	return evaluation, nil
 }

@@ -20,163 +20,177 @@ package evaluate_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jthomperoo/custom-pod-autoscaler/cpatest"
+
+	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/models"
 )
 
-const (
-	testDeploymentName     = "test deployment"
-	testDeploymentAppLabel = "test-deployment"
-
-	testMetricPod                   = "test pod"
-	testMetricValue                 = "test value"
-	testEvaluationInvalidEvaluation = "{ \"invalid\": \"invalid\"}"
-	testEvaluationInvalidJSON       = "invalid}"
-	testEvaluationTargetReplicas    = int32(3)
-	invalidYAML                     = "- in: -: valid - yaml"
-	testEvaluate                    = "test evaluate"
-	testMetric                      = "test metric"
-	testInterval                    = 1234
-	testHost                        = "1.2.3.4"
-	testPort                        = 1234
-	testMetricTimeout               = 4321
-	testEvaluateTimeout             = 8765
-	testNamespace                   = "test namespace"
-	testScaleTargetRefKind          = "test kind"
-	testScaleTargetRefName          = "test name"
-	testScaleTargetRefAPIVersion    = "test api version"
-	testExecuteError                = "test error"
-	testExecuteSuccess              = "test success"
-)
-
-type successExecuteValidEvaluation struct{}
-
-func (e *successExecuteValidEvaluation) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
-	// Convert into JSON
-	jsonEvaluation, err := json.Marshal(getTestEvaluation())
-	if err != nil {
-		return nil, err
-	}
-	var buffer bytes.Buffer
-	buffer.WriteString(string(jsonEvaluation))
-	return &buffer, nil
+type executeWithPiper interface {
+	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
 }
 
-type successExecuteInvalidEvaluation struct{}
-
-func (e *successExecuteInvalidEvaluation) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
-	var buffer bytes.Buffer
-	buffer.WriteString(testEvaluationInvalidEvaluation)
-	return &buffer, nil
+type executer struct {
+	executeWithPipe func(command string, value string, timeout int) (*bytes.Buffer, error)
 }
 
-type successExecuteInvalidJSON struct{}
-
-func (e *successExecuteInvalidJSON) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
-	var buffer bytes.Buffer
-	buffer.WriteString(testEvaluationInvalidJSON)
-	return &buffer, nil
+func (e *executer) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
+	return e.executeWithPipe(command, value, timeout)
 }
 
-func TestGetEvaluation_ExecuteFail(t *testing.T) {
-	resourceMetrics := getTestResourceMetrics()
-	evaluator := &evaluate.Evaluator{
-		Config:   cpatest.GetTestConfig(),
-		Executer: &cpatest.FailExecute{},
-	}
-
-	_, err := evaluator.GetEvaluation(resourceMetrics)
-	if err == nil {
-		t.Errorf("Expected error due to executer failing and returning an error")
-		return
-	}
-
-	if err.Error() != testExecuteError {
-		t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(testExecuteError, err.Error()))
-	}
+func int32ToPtr(value int32) *int32 {
+	return &value
 }
 
-func TestGetEvaluation_ExecuteSuccessValidJSON(t *testing.T) {
-	resourceMetrics := getTestResourceMetrics()
-	testEvaluation := getTestEvaluation()
-	evaluator := &evaluate.Evaluator{
-		Config:   cpatest.GetTestConfig(),
-		Executer: &successExecuteValidEvaluation{},
-	}
+func TestGetEvaluation(t *testing.T) {
+	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
+		if x == nil || y == nil {
+			return x == nil && y == nil
+		}
+		return x.Error() == y.Error()
+	})
 
-	evaluation, err := evaluator.GetEvaluation(resourceMetrics)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	if !cmp.Equal(testEvaluation, evaluation) {
-		t.Errorf("Evaluation mismatch (-want +got):\n%s", cmp.Diff(testEvaluation, evaluation))
-	}
-}
-
-func TestGetEvaluation_ExecuteSuccessInvalidEvaluation(t *testing.T) {
-	resourceMetrics := getTestResourceMetrics()
-	evaluator := &evaluate.Evaluator{
-		Config:   cpatest.GetTestConfig(),
-		Executer: &successExecuteInvalidEvaluation{},
-	}
-	_, err := evaluator.GetEvaluation(resourceMetrics)
-
-	if err == nil {
-		t.Errorf("Expected error due to executer returning an invalid evaluation")
-		return
-	}
-
-	if _, ok := err.(*evaluate.ErrInvalidEvaluation); !ok {
-		t.Errorf("Expected invalid evaluation, instead got: %v", err)
-	}
-
-	if err.Error() != fmt.Sprintf("Invalid evaluation returned by evaluator: %s", testEvaluationInvalidEvaluation) {
-		t.Errorf("Error mismatch (-want +got):\n%s", cmp.Diff(testEvaluationInvalidEvaluation, err.Error()))
-	}
-}
-
-func TestGetEvaluation_ExecuteSuccessInvalidJSONSyntax(t *testing.T) {
-	resourceMetrics := getTestResourceMetrics()
-	evaluator := &evaluate.Evaluator{
-		Config:   cpatest.GetTestConfig(),
-		Executer: &successExecuteInvalidJSON{},
-	}
-
-	_, err := evaluator.GetEvaluation(resourceMetrics)
-
-	if err == nil {
-		t.Errorf("Expected error due to executer returning invalid JSON syntax")
-		return
-	}
-
-	if _, ok := err.(*json.SyntaxError); !ok {
-		t.Errorf("Expected invalid JSON syntax, instead got: %v", err)
-	}
-}
-
-func getTestResourceMetrics() *models.ResourceMetrics {
-	return &models.ResourceMetrics{
-		DeploymentName: testDeploymentName,
-		Deployment:     cpatest.Deployment(testDeploymentName, testNamespace, map[string]string{"app": testDeploymentAppLabel}),
-		Metrics: []*models.Metric{
-			&models.Metric{
-				Pod:   testMetricPod,
-				Value: testMetricValue,
+	var tests = []struct {
+		description string
+		expectedErr error
+		expected    *models.Evaluation
+		metrics     *models.ResourceMetrics
+		config      *config.Config
+		executer    executeWithPiper
+	}{
+		{
+			"Execute fail",
+			errors.New("fail to evaluate"),
+			nil,
+			&models.ResourceMetrics{
+				Metrics: []*models.Metric{
+					&models.Metric{
+						Pod:   "test pod",
+						Value: "test value",
+					},
+				},
 			},
+			&config.Config{
+				Evaluate:        "test evaluate command",
+				EvaluateTimeout: 10,
+			},
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					return nil, errors.New("fail to evaluate")
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Execute success with valid JSON",
+			nil,
+			&models.Evaluation{
+				TargetReplicas: int32ToPtr(int32(3)),
+			},
+			&models.ResourceMetrics{
+				Metrics: []*models.Metric{
+					&models.Metric{
+						Pod:   "test pod",
+						Value: "test value",
+					},
+				},
+			},
+			&config.Config{
+				Evaluate:        "test evaluate command",
+				EvaluateTimeout: 10,
+			},
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					// Convert into JSON
+					jsonEvaluation, err := json.Marshal(&models.Evaluation{
+						TargetReplicas: int32ToPtr(int32(3)),
+					})
+					if err != nil {
+						return nil, err
+					}
+					var buffer bytes.Buffer
+					buffer.WriteString(string(jsonEvaluation))
+					return &buffer, nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Execute success with invalid evaluation",
+			&evaluate.ErrInvalidEvaluation{
+				Message: `Invalid evaluation returned by evaluator: { "invalid": "invalid"}`,
+			},
+			nil,
+			&models.ResourceMetrics{
+				Metrics: []*models.Metric{
+					&models.Metric{
+						Pod:   "test pod",
+						Value: "test value",
+					},
+				},
+			},
+			&config.Config{
+				Evaluate:        "test evaluate command",
+				EvaluateTimeout: 10,
+			},
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					var buffer bytes.Buffer
+					buffer.WriteString(`{ "invalid": "invalid"}`)
+					return &buffer, nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Execute success with invalid JSON",
+			errors.New(`invalid character 'i' looking for beginning of value`),
+			nil,
+			&models.ResourceMetrics{
+				Metrics: []*models.Metric{
+					&models.Metric{
+						Pod:   "test pod",
+						Value: "test value",
+					},
+				},
+			},
+			&config.Config{
+				Evaluate:        "test evaluate command",
+				EvaluateTimeout: 10,
+			},
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					var buffer bytes.Buffer
+					buffer.WriteString(`invalid`)
+					return &buffer, nil
+				}
+				return &execute
+			}(),
 		},
 	}
-}
 
-func getTestEvaluation() *models.Evaluation {
-	targetReplicas := testEvaluationTargetReplicas
-	return &models.Evaluation{
-		TargetReplicas: &targetReplicas,
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			evaluator := &evaluate.Evaluator{
+				Config:   test.config,
+				Executer: test.executer,
+			}
+			evaluation, err := evaluator.GetEvaluation(test.metrics)
+			if !cmp.Equal(&test.expectedErr, &err, equateErrorMessage) {
+				t.Errorf("Error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
+				return
+			}
+			if !cmp.Equal(test.expected, evaluation) {
+				t.Errorf("Evaluation mismatch (-want +got):\n%s", cmp.Diff(test.expected, evaluation))
+			}
+		})
 	}
 }
