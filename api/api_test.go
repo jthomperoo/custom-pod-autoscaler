@@ -29,7 +29,8 @@ import (
 
 	"github.com/jthomperoo/custom-pod-autoscaler/api"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/models"
+	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/autoscaling/v1"
@@ -39,26 +40,26 @@ import (
 )
 
 type getMetricer interface {
-	GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error)
+	GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error)
 }
 
 type getEvaluationer interface {
-	GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error)
+	GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error)
 }
 
 type failGetMetrics struct{}
 
-func (f *failGetMetrics) GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error) {
+func (f *failGetMetrics) GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error) {
 	return nil, errors.New("FAIL GET METRICS")
 }
 
 type successGetMetrics struct{}
 
-func (s *successGetMetrics) GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error) {
-	return &models.ResourceMetrics{
+func (s *successGetMetrics) GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error) {
+	return &metric.ResourceMetrics{
 		DeploymentName: deployment.Name,
-		Metrics: []*models.Metric{
-			&models.Metric{
+		Metrics: []*metric.Metric{
+			&metric.Metric{
 				Value: "SUCCESS",
 				Pod:   "SUCCESS_POD",
 			},
@@ -69,15 +70,15 @@ func (s *successGetMetrics) GetMetrics(deployment *appsv1.Deployment) (*models.R
 
 type failGetEvaluation struct{}
 
-func (f *failGetEvaluation) GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error) {
+func (f *failGetEvaluation) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
 	return nil, errors.New("FAIL GET EVALUATION")
 }
 
 type successGetEvaluation struct{}
 
-func (s *successGetEvaluation) GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error) {
+func (s *successGetEvaluation) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
 	targetReplicas := int32(1)
-	return &models.Evaluation{
+	return &evaluate.Evaluation{
 		TargetReplicas: &targetReplicas,
 	}, nil
 }

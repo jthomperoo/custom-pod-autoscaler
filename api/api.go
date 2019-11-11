@@ -24,7 +24,8 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/models"
+	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -32,11 +33,11 @@ import (
 )
 
 type getMetricer interface {
-	GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error)
+	GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error)
 }
 
 type getEvaluationer interface {
-	GetEvaluation(resourceMetrics *models.ResourceMetrics) (*models.Evaluation, error)
+	GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error)
 }
 
 // Error is an error response from the API, with the status code and an error message

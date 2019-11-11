@@ -25,7 +25,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
-	"github.com/jthomperoo/custom-pod-autoscaler/models"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,7 +58,7 @@ func TestGetMetrics(t *testing.T) {
 	var tests = []struct {
 		description string
 		expectedErr error
-		expected    []*models.Metric
+		expected    []*metric.Metric
 		deployment  *appsv1.Deployment
 		config      *config.Config
 		clientset   kubernetes.Interface
@@ -207,8 +206,8 @@ func TestGetMetrics(t *testing.T) {
 		{
 			"Single pod single deployment shell execute success",
 			nil,
-			[]*models.Metric{
-				&models.Metric{
+			[]*metric.Metric{
+				&metric.Metric{
 					Pod:   "test pod",
 					Value: "test value",
 				},
@@ -245,12 +244,12 @@ func TestGetMetrics(t *testing.T) {
 		{
 			"Multiple pod single deployment shell execute success",
 			nil,
-			[]*models.Metric{
-				&models.Metric{
+			[]*metric.Metric{
+				&metric.Metric{
 					Pod:   "first pod",
 					Value: "test value",
 				},
-				&models.Metric{
+				&metric.Metric{
 					Pod:   "second pod",
 					Value: "test value",
 				},
@@ -295,7 +294,7 @@ func TestGetMetrics(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			result := &models.ResourceMetrics{
+			result := &metric.ResourceMetrics{
 				Metrics:        test.expected,
 				Deployment:     test.deployment,
 				DeploymentName: test.deployment.Name,

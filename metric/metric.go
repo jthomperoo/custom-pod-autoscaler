@@ -23,15 +23,27 @@ import (
 	"log"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/models"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
 type executeWithPiper interface {
 	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
+}
+
+// ResourceMetrics represents a resource's metrics, including each pod's metrics
+type ResourceMetrics struct {
+	DeploymentName string             `json:"deployment"`
+	Metrics        []*Metric          `json:"metrics"`
+	Deployment     *appsv1.Deployment `json:"-"` // hide
+}
+
+// Metric is the result of the custom metric calculation, containing information on the
+// relevant pod and the metric value
+type Metric struct {
+	Pod   string `json:"pod,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 // Gatherer handles triggering the metric gathering logic to gather metrics for a resource
@@ -42,7 +54,7 @@ type Gatherer struct {
 }
 
 // GetMetrics gathers metrics for the deployments supplied
-func (m *Gatherer) GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMetrics, error) {
+func (m *Gatherer) GetMetrics(deployment *appsv1.Deployment) (*ResourceMetrics, error) {
 	// Get Deployment pods
 	labels := deployment.GetLabels()
 	pods, err := m.Clientset.CoreV1().Pods(m.Config.Namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", labels["app"])})
@@ -51,40 +63,32 @@ func (m *Gatherer) GetMetrics(deployment *appsv1.Deployment) (*models.ResourceMe
 	}
 
 	// Gather metrics for each pod
-	var metrics []*models.Metric
+	var metrics []*Metric
 	for _, pod := range pods.Items {
-		metric, err := m.getMetricForPod(m.Config.Metric, &pod, m.Config.MetricTimeout)
+		// Convert the Pod description to JSON
+		podJSON, err := json.Marshal(pod)
 		if err != nil {
+			// Should not occur, panic
+			log.Panic(err)
+		}
+
+		// Execute the Metric command with the Pod JSON
+		outb, err := m.Executer.ExecuteWithPipe(m.Config.Metric, string(podJSON), m.Config.MetricTimeout)
+		if err != nil {
+			log.Println(outb.String())
 			return nil, err
 		}
-		metrics = append(metrics, metric)
+
+		// Add metric to metrics array
+		metrics = append(metrics, &Metric{
+			Pod:   pod.GetName(),
+			Value: outb.String(),
+		})
 	}
 
-	return &models.ResourceMetrics{
+	return &ResourceMetrics{
 		DeploymentName: deployment.GetName(),
 		Deployment:     deployment,
 		Metrics:        metrics,
-	}, nil
-}
-
-// getMetricForPod gathers the metric for a specific pod
-func (m *Gatherer) getMetricForPod(cmd string, pod *corev1.Pod, timeout int) (*models.Metric, error) {
-	// Convert the Pod description to JSON
-	podJSON, err := json.Marshal(pod)
-	if err != nil {
-		// Should not occur, panic
-		log.Panic(err)
-	}
-
-	// Execute the Metric command with the Pod JSON
-	outb, err := m.Executer.ExecuteWithPipe(cmd, string(podJSON), timeout)
-	if err != nil {
-		log.Println(outb.String())
-		return nil, err
-	}
-
-	return &models.Metric{
-		Pod:   pod.GetName(),
-		Value: outb.String(),
 	}, nil
 }
