@@ -19,48 +19,43 @@ package metric_test
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/cpatest"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/models"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
-)
-
-const (
-	testManagedDeploymentName     = "test managed deployment"
-	testManagedNamespace          = "test managed namespace"
-	testManagedDeploymentAppLabel = "test-managed"
-
-	testUnmanagedDeploymentName     = "test unmanaged deployment"
-	testUnmanagedNamespace          = "test unmanaged namespace"
-	testUnmanagedDeploymentAppLabel = "test-unmanaged"
-
-	testFirstPodName  = "first pod"
-	testSecondPodName = "second pod"
-
-	testMetricValue = "test value"
+	fakeappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 type executeWithPiper interface {
 	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
 }
 
-type successExecuteMetric struct{}
+type executer struct {
+	executeWithPipe func(command string, value string, timeout int) (*bytes.Buffer, error)
+}
 
-func (e *successExecuteMetric) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
-	var buffer bytes.Buffer
-	buffer.WriteString(testMetricValue)
-	return &buffer, nil
+func (e *executer) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
+	return e.executeWithPipe(command, value, timeout)
 }
 
 func TestGetMetrics(t *testing.T) {
+	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
+		if x == nil || y == nil {
+			return x == nil && y == nil
+		}
+		return x.Error() == y.Error()
+	})
+
 	var tests = []struct {
 		description string
 		expectedErr error
@@ -71,74 +66,230 @@ func TestGetMetrics(t *testing.T) {
 		executer    executeWithPiper
 	}{
 		{
+			"Error when listing pods",
+			errors.New("fail to list pods"),
+			nil,
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+					Labels:    map[string]string{"app": "test"},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+			},
+			func() *fake.Clientset {
+				clientset := fake.NewSimpleClientset()
+				clientset.AppsV1().(*fakeappsv1.FakeAppsV1).Fake.PrependReactor("list", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+					return true, nil, errors.New("fail to list pods")
+				})
+				return clientset
+			}(),
+			nil,
+		},
+		{
+			"Single pod single deployment shell execute fail",
+			errors.New("fail to get metric"),
+			nil,
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+					Labels:    map[string]string{"app": "test"},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+			},
+			fake.NewSimpleClientset(
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test pod",
+						Namespace: "test namespace",
+						Labels:    map[string]string{"app": "test"},
+					},
+				},
+			),
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					return nil, errors.New("fail to get metric")
+				}
+				return &execute
+			}(),
+		},
+		{
 			"No resources",
 			nil,
 			nil,
 			&appsv1.Deployment{},
-			getConfig(testManagedNamespace),
+			&config.Config{
+				Namespace: "test namespace",
+			},
 			fake.NewSimpleClientset(),
-			&successExecuteMetric{},
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					var buffer bytes.Buffer
+					buffer.WriteString("test value")
+					return &buffer, nil
+				}
+				return &execute
+			}(),
 		},
 		{
 			"No pod in managed deployment, but pod in other deployment with different name in same namespace",
 			nil,
 			nil,
-			cpatest.Deployment(testManagedDeploymentName, testManagedNamespace, map[string]string{"app": testManagedDeploymentAppLabel}),
-			getConfig(testManagedNamespace),
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test managed deployment",
+					Namespace: "test managed namespace",
+					Labels:    map[string]string{"app": "test-managed"},
+				},
+			},
+			&config.Config{
+				Namespace: "test managed namespace",
+			},
 			fake.NewSimpleClientset(
-				pod(testFirstPodName, testManagedNamespace, map[string]string{"app": testUnmanagedDeploymentAppLabel}),
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test pod",
+						Namespace: "test managed namespace",
+						Labels:    map[string]string{"app": "test-unmanaged"},
+					},
+				},
 			),
-			&successExecuteMetric{},
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					var buffer bytes.Buffer
+					buffer.WriteString("test value")
+					return &buffer, nil
+				}
+				return &execute
+			}(),
 		},
 		{
 			"No pod in managed deployment, but pod in other deployment with same name in different namespace",
 			nil,
 			nil,
-			cpatest.Deployment(testManagedDeploymentName, testManagedNamespace, map[string]string{"app": testManagedDeploymentAppLabel}),
-			getConfig(testManagedNamespace),
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test managed deployment",
+					Namespace: "test managed namespace",
+					Labels:    map[string]string{"app": "test-managed"},
+				},
+			},
+			&config.Config{
+				Namespace: "test managed namespace",
+			},
 			fake.NewSimpleClientset(
-				pod(testFirstPodName, testUnmanagedNamespace, map[string]string{"app": testManagedDeploymentAppLabel}),
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test pod",
+						Namespace: "test unmanaged namespace",
+						Labels:    map[string]string{"app": "test-managed"},
+					},
+				},
 			),
-			&successExecuteMetric{},
-		},
-		{
-			"Single pod single deployment shell execute fail",
-			cpatest.GetFailExecuteErr(),
-			nil,
-			cpatest.Deployment(testManagedDeploymentName, testManagedNamespace, map[string]string{"app": testManagedDeploymentAppLabel}),
-			getConfig(testManagedNamespace),
-			fake.NewSimpleClientset(
-				pod(testFirstPodName, testManagedNamespace, map[string]string{"app": testManagedDeploymentAppLabel}),
-			),
-			&cpatest.FailExecute{},
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					var buffer bytes.Buffer
+					buffer.WriteString("test value")
+					return &buffer, nil
+				}
+				return &execute
+			}(),
 		},
 		{
 			"Single pod single deployment shell execute success",
 			nil,
 			[]*models.Metric{
-				getTestMetric(testFirstPodName, testMetricValue),
+				&models.Metric{
+					Pod:   "test pod",
+					Value: "test value",
+				},
 			},
-			cpatest.Deployment(testManagedDeploymentName, testManagedNamespace, map[string]string{"app": testManagedDeploymentAppLabel}),
-			getConfig(testManagedNamespace),
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+					Labels:    map[string]string{"app": "test"},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+			},
 			fake.NewSimpleClientset(
-				pod(testFirstPodName, testManagedNamespace, map[string]string{"app": testManagedDeploymentAppLabel}),
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test pod",
+						Namespace: "test namespace",
+						Labels:    map[string]string{"app": "test"},
+					},
+				},
 			),
-			&successExecuteMetric{},
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					var buffer bytes.Buffer
+					buffer.WriteString("test value")
+					return &buffer, nil
+				}
+				return &execute
+			}(),
 		},
 		{
 			"Multiple pod single deployment shell execute success",
 			nil,
 			[]*models.Metric{
-				getTestMetric(testFirstPodName, testMetricValue),
-				getTestMetric(testSecondPodName, testMetricValue),
+				&models.Metric{
+					Pod:   "first pod",
+					Value: "test value",
+				},
+				&models.Metric{
+					Pod:   "second pod",
+					Value: "test value",
+				},
 			},
-			cpatest.Deployment(testManagedDeploymentName, testManagedNamespace, map[string]string{"app": testManagedDeploymentAppLabel}),
-			getConfig(testManagedNamespace),
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+					Labels:    map[string]string{"app": "test"},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+			},
 			fake.NewSimpleClientset(
-				pod(testFirstPodName, testManagedNamespace, map[string]string{"app": testManagedDeploymentAppLabel}),
-				pod(testSecondPodName, testManagedNamespace, map[string]string{"app": testManagedDeploymentAppLabel}),
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "first pod",
+						Namespace: "test namespace",
+						Labels:    map[string]string{"app": "test"},
+					},
+				},
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "second pod",
+						Namespace: "test namespace",
+						Labels:    map[string]string{"app": "test"},
+					},
+				},
 			),
-			&successExecuteMetric{},
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					var buffer bytes.Buffer
+					buffer.WriteString("test value")
+					return &buffer, nil
+				}
+				return &execute
+			}(),
 		},
 	}
 
@@ -155,8 +306,8 @@ func TestGetMetrics(t *testing.T) {
 				Executer:  test.executer,
 			}
 			metrics, err := gatherer.GetMetrics(test.deployment)
-			if !cmp.Equal(err, test.expectedErr, cpatest.EquateErrors()) {
-				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, cpatest.EquateErrors()))
+			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
+				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return
 			}
 			if test.expectedErr != nil {
@@ -166,36 +317,5 @@ func TestGetMetrics(t *testing.T) {
 				t.Errorf("metrics mismatch (-want +got):\n%s", cmp.Diff(result, metrics))
 			}
 		})
-	}
-}
-
-func pod(name, namespace string, labels map[string]string) *v1.Pod {
-	return &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      name,
-			Labels:    labels,
-		},
-	}
-}
-
-func getConfig(namespace string) *config.Config {
-	return &config.Config{
-		Namespace: namespace,
-	}
-}
-
-func getTestResourceMetrics(metrics []*models.Metric, deployment *appsv1.Deployment) *models.ResourceMetrics {
-	return &models.ResourceMetrics{
-		Metrics:        metrics,
-		DeploymentName: deployment.Name,
-		Deployment:     deployment,
-	}
-}
-
-func getTestMetric(pod, value string) *models.Metric {
-	return &models.Metric{
-		Pod:   pod,
-		Value: value,
 	}
 }

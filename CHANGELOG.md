@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Not Found (404) and Method Not Allowed (405) now return valid JSON alongside the error code with a message explaining the error.
 - Only allow management of a single deployment.
 - Use `ScaleTargetRef` rather than `selector` for deciding which resources to manage, more consistent with Horizontal Pod Autoscaler.
 - Simplified evaluation, now when hitting CPA API will just return the `target_replicas` rather than additional info and complicated JSON.
