@@ -1,9 +1,10 @@
+[![Build](https://github.com/jthomperoo/custom-pod-autoscaler/workflows/main/badge.svg)](https://github.com/jthomperoo/custom-pod-autoscaler/actions)
+[![GoDoc](https://godoc.org/github.com/jthomperoo/custom-pod-autoscaler?status.svg)](https://godoc.org/github.com/jthomperoo/custom-pod-autoscaler)
 # Custom Pod Autoscaler
 
 This is the Custom Pod Autoscaler (CPA) code and base images.  
 
 The CPA is part of the [Custom Pod Autoscaler Framework](https://github.com/jthomperoo/custom-pod-autoscaler/wiki/Custom-Pod-Autoscaler-Framework).  
-
 ## Use
 
 The CPA can be used to create custom scaling logic for Kubernetes; similar to the Horizontal Pod Autoscaler, but allowing the use of user defined commands and scripts to manage metric gathering and evaluating how many replicas to scale to.

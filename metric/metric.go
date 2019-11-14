@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package metric provides functionality for managing gathering metrics,
+// calling external metric gathering logic through shell commands with
+// relevant data piped to them.
 package metric
 
 import (

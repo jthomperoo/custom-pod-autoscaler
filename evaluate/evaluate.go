@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package evaluate provides functionality for managing evaluating,
+// calling external evaluation logic through shell commands with
+// relevant data piped to them.
 package evaluate
 
 import (

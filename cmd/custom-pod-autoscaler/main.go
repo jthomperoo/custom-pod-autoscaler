@@ -13,9 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+// Custom Pod Autoscaler is the core program that runs inside a Custom Pod Autoscaler Image.
+// The program handles interactions with the Kubernetes API, manages triggering Custom Pod
+// Autoscaler User Logic through shell commands, exposes a simple HTTP REST API for viewing
+// metrics and evaluations, and handles parsing user configuration to specify polling intervals,
+// Kubernetes namespaces, command timeouts etc.
+// The Custom Pod Autoscaler must be run inside a Kubernetes cluster.
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -116,27 +124,9 @@ func main() {
 		Clientset:         clientset,
 		DeploymentsClient: deploymentsClient,
 		Config:            config,
-		Ticker:            ticker,
-		Shutdown:          shutdown,
 		GetMetricer:       metricGatherer,
 		GetEvaluationer:   evaluator,
 	}
-
-	// Run the scaler in a goroutine, triggered by the ticker
-	go func() {
-		for {
-			select {
-			case <-shutdown:
-				ticker.Stop()
-				return
-			case <-ticker.C:
-				err := autoscaler.Scale()
-				if err != nil {
-					log.Println(err)
-				}
-			}
-		}
-	}()
 
 	// Set up API
 	api := &api.API{
@@ -151,6 +141,30 @@ func main() {
 		Addr:    fmt.Sprintf("%s:%d", api.Config.Host, api.Config.Port),
 		Handler: api.Router,
 	}
+
+	// Run the scaler in a goroutine, triggered by the ticker
+	// listen for shutdown requests, once recieved shut down the autoscaler
+	// and the API
+	go func() {
+		for {
+			select {
+			case <-shutdown:
+				log.Println("Shutting down...")
+				// Stop API
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				srv.Shutdown(ctx)
+				// Stop autoscaler
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				err := autoscaler.Scale()
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}
+	}()
 
 	// Start API
 	srv.ListenAndServe()
