@@ -36,7 +36,7 @@ jobs:
         fi
         make docker VERSION=${VERSION}
     - uses: codecov/codecov-action@v1.0.3
-      if: github.event_name != 'pull_request' && github.repository == 'jthomperoo/custom-pod-autoscaler'
+      if: github.repository == 'jthomperoo/custom-pod-autoscaler'
       with:
         token: ${{secrets.CODECOV_TOKEN}}
         file: ./coverage.txt
