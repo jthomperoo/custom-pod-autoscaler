@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package api provides routing and endpoints for the Custom Pod Autoscaler
+// HTTP REST API. Endpoints implemented as handlers, errors returned as valid
+// JSON.
 package api
 
 import (

@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package config handles parsing YAML and environment variable input into a
+// Custom Pod Autoscaler configuration file. Contains a set of defaults that
+// can be overridden by provided YAML and env vars.
 package config
 
 import (

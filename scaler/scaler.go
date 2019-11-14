@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package scaler provides methods for scaling a resource - by triggering metric
+// gathering, feeding these metrics to an evaluation and using this evaluation
+// to scale the resource. Handles interactions with Kubernetes API for scaling.
 package scaler
 
 import (
-	"os"
-	"time"
-
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
@@ -44,8 +44,6 @@ type Scaler struct {
 	Clientset         kubernetes.Interface
 	DeploymentsClient v1.DeploymentInterface
 	Config            *config.Config
-	Ticker            *time.Ticker
-	Shutdown          chan os.Signal
 	GetMetricer       getMetricer
 	GetEvaluationer   getEvaluationer
 }
