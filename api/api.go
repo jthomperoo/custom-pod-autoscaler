@@ -29,7 +29,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
 
 type getMetricer interface {
@@ -48,12 +47,11 @@ type Error struct {
 
 // API is the Custom Pod Autoscaler REST API, exposing endpoints to retrieve metrics/evaluations
 type API struct {
-	Router            chi.Router
-	Config            *config.Config
-	Clientset         kubernetes.Interface
-	DeploymentsClient v1.DeploymentInterface
-	GetMetricer       getMetricer
-	GetEvaluationer   getEvaluationer
+	Router          chi.Router
+	Config          *config.Config
+	Clientset       kubernetes.Interface
+	GetMetricer     getMetricer
+	GetEvaluationer getEvaluationer
 }
 
 // Routes sets up routing for the API
