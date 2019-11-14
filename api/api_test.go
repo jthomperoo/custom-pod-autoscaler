@@ -385,12 +385,11 @@ func TestAPI(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			api := &api.API{
-				Router:            chi.NewRouter(),
-				Config:            test.config,
-				Clientset:         test.clientset,
-				DeploymentsClient: test.clientset.AppsV1().Deployments(test.config.Namespace),
-				GetMetricer:       test.getMetricer,
-				GetEvaluationer:   test.getEvaluationer,
+				Router:          chi.NewRouter(),
+				Config:          test.config,
+				Clientset:       test.clientset,
+				GetMetricer:     test.getMetricer,
+				GetEvaluationer: test.getEvaluationer,
 			}
 			api.Routes()
 			req, err := http.NewRequest(test.method, test.endpoint, nil)

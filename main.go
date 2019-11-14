@@ -22,20 +22,23 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/jthomperoo/custom-pod-autoscaler/api"
-	"github.com/jthomperoo/custom-pod-autoscaler/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
+	"github.com/jthomperoo/custom-pod-autoscaler/scaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/shell"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 const (
-	configEnvName          = "config_path"
+	configEnvName          = "configPath"
 	evaluateEnvName        = "evaluate"
 	metricEnvName          = "metric"
 	intervalEnvName        = "interval"
@@ -50,18 +53,6 @@ const (
 const defaultConfig = "/config.yaml"
 
 func main() {
-	// Create the in-cluster config
-	clusterConfig, err := rest.InClusterConfig()
-	if err != nil {
-		log.Panicf(err.Error())
-	}
-
-	// Create the clientset
-	clientset, err := kubernetes.NewForConfig(clusterConfig)
-	if err != nil {
-		log.Panicf(err.Error())
-	}
-
 	// Read in environment variables
 	configPath, exists := os.LookupEnv(configEnvName)
 	if !exists {
@@ -72,16 +63,28 @@ func main() {
 	// Read in config file
 	configFileData, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panic(err)
 	}
 
-	// Load CPA config
+	// Load Custom Pod Autoscaler config
 	config, err := config.LoadConfig(configFileData, configEnvs)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panic(err)
 	}
 
-	// Set up client for managing deployments
+	// Create the in-cluster Kubernetes config
+	clusterConfig, err := rest.InClusterConfig()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// Create the Kubernetes clientset
+	clientset, err := kubernetes.NewForConfig(clusterConfig)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// Set up client for managing Kubernetes deployments
 	deploymentsClient := clientset.AppsV1().Deployments(config.Namespace)
 
 	// Set up shell executer
@@ -102,18 +105,46 @@ func main() {
 		Executer: &executer,
 	}
 
-	// Set up autoscaler and start it
-	autoscaler := autoscaler.NewAutoscaler(clientset, deploymentsClient, config, metricGatherer, evaluator)
-	autoscaler.Start()
+	// Set up time ticker with configured interval
+	ticker := time.NewTicker(time.Duration(config.Interval) * time.Millisecond)
+	// Set up shutdown channel, which will listen for UNIX shutdown commands
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	// Set up scaler
+	autoscaler := &scaler.Scaler{
+		Clientset:         clientset,
+		DeploymentsClient: deploymentsClient,
+		Config:            config,
+		Ticker:            ticker,
+		Shutdown:          shutdown,
+		GetMetricer:       metricGatherer,
+		GetEvaluationer:   evaluator,
+	}
+
+	// Run the scaler in a goroutine, triggered by the ticker
+	go func() {
+		for {
+			select {
+			case <-shutdown:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				err := autoscaler.Scale()
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}
+	}()
 
 	// Set up API
 	api := &api.API{
-		Router:            chi.NewRouter(),
-		Config:            config,
-		Clientset:         clientset,
-		DeploymentsClient: deploymentsClient,
-		GetMetricer:       metricGatherer,
-		GetEvaluationer:   evaluator,
+		Router:          chi.NewRouter(),
+		Config:          config,
+		Clientset:       clientset,
+		GetMetricer:     metricGatherer,
+		GetEvaluationer: evaluator,
 	}
 	api.Routes()
 	srv := http.Server{
