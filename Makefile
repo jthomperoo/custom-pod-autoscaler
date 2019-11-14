@@ -8,8 +8,8 @@ default: vendor
 	cp LICENSE dist/LICENSE
 
 unittest: vendor
-	@echo "=============Testing============="
-	go test ./... -cover --tags=unit
+	@echo "=============Running unit tests============="
+	go test ./... -cover -covermode atomic -coverprofile coverage.txt --tags=unit
 
 lint: vendor
 	@echo "=============Linting============="
