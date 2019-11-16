@@ -3,7 +3,12 @@ kind: CustomPodAutoscaler
 metadata:
   name: player-count-scaler
 spec:
-  image: example-python-custom-pod-autoscaler:latest
+  template:
+    spec:
+      containers:
+      - name: example-python-custom-pod-autoscaler
+        image: example-python-custom-pod-autoscaler:latest
+        imagePullPolicy: IfNotPresent
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment

@@ -1,6 +1,8 @@
 [![Build](https://github.com/jthomperoo/custom-pod-autoscaler/workflows/main/badge.svg)](https://github.com/jthomperoo/custom-pod-autoscaler/actions)
 [![codecov](https://codecov.io/gh/jthomperoo/custom-pod-autoscaler/branch/master/graph/badge.svg)](https://codecov.io/gh/jthomperoo/custom-pod-autoscaler)
 [![GoDoc](https://godoc.org/github.com/jthomperoo/custom-pod-autoscaler?status.svg)](https://godoc.org/github.com/jthomperoo/custom-pod-autoscaler)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jthomperoo/custom-pod-autoscaler)](https://goreportcard.com/report/github.com/jthomperoo/custom-pod-autoscaler)
+[![License](http://img.shields.io/:license-apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 # Custom Pod Autoscaler
 
 This is the Custom Pod Autoscaler (CPA) code and base images.  
@@ -39,8 +41,8 @@ Developing this project requires these dependencies:
 
 ### Commands
 
-* make - builds the CPA binary.
-* make docker - builds the CPA base images.
-* make lint - lints the code.
-* make unittest - runs the unit tests.
-* make vendor - generates a vendor folder.
+* `make` - builds the CPA binary.
+* `make docker` - builds the CPA base images.
+* `make lint` - lints the code.
+* `make unittest` - runs the unit tests.
+* `make vendor` - generates a vendor folder.
