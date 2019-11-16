@@ -39,7 +39,7 @@ jobs:
       if: github.repository == 'jthomperoo/custom-pod-autoscaler'
       with:
         token: ${{secrets.CODECOV_TOKEN}}
-        file: ./coverage.txt
+        file: ./unit_cover.out
         flags: unittests
         name: custom-pod-autoscaler-unittests
     - name: Deploy
