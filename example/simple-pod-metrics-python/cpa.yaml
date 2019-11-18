@@ -1,13 +1,13 @@
 apiVersion: custompodautoscaler.com/v1alpha1
 kind: CustomPodAutoscaler
 metadata:
-  name: player-count-scaler
+  name: simple-pod-metrics-python
 spec:
   template:
     spec:
       containers:
-      - name: example-python-custom-pod-autoscaler
-        image: example-python-custom-pod-autoscaler:latest
+      - name: simple-pod-metrics-python
+        image: simple-pod-metrics-python:latest
         imagePullPolicy: IfNotPresent
   scaleTargetRef:
     apiVersion: apps/v1

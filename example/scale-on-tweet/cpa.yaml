@@ -1,0 +1,28 @@
+apiVersion: custompodautoscaler.com/v1alpha1
+kind: CustomPodAutoscaler
+metadata:
+  name: scale-on-tweet
+spec:
+  template:
+    spec:
+      containers:
+      - name: scale-on-tweet
+        image: scale-on-tweet:latest
+        imagePullPolicy: IfNotPresent
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hello-kubernetes
+  config: 
+    - name: interval
+      value: "5000"
+    - name: consumerKey
+      value: <PUT YOUR CONSUMER KEY HERE>
+    - name: consumerSecret
+      value: <PUT YOUR CONSUMER SECRET HERE>
+    - name: accessToken
+      value: <PUT YOUR ACCESS TOKEN HERE>
+    - name: accessTokenSecret
+      value: <PUT YOUR ACCESS TOKEN SECRET HERE>
+    - name: hashtag
+      value: <HASHTAG TO WATCH>

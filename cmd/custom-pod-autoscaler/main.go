@@ -56,6 +56,7 @@ const (
 	evaluateTimeoutEnvName = "evaluateTimeout"
 	namespaceEnvName       = "namespace"
 	scaleTargetRefEnvName  = "scaleTargetRef"
+	runModeEnvName         = "runMode"
 )
 
 const defaultConfig = "/config.yaml"
@@ -184,6 +185,7 @@ func readEnvVars() map[string]string {
 		metricTimeoutEnvName,
 		evaluateTimeoutEnvName,
 		scaleTargetRefEnvName,
+		runModeEnvName,
 	}
 	configEnvs := map[string]string{}
 	for _, envName := range configEnvsNames {

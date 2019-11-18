@@ -1,4 +1,4 @@
-# Python Custom Pod Autoscaler
+# Python Simple Pod Metrics Example
 This example shows how to make a Custom Pod Autoscaler (CPA) using Python. The example extends the Python CPA base image (custompodautoscaler/python) and sets up an environment to allow python scripts to be used to determine metrics and evaluate how to scale. The code is verbosely commented and designed to be read and understood for building your own CPAs.
 
 ## Overview
@@ -32,14 +32,13 @@ You need to deploy an app for the CPA to manage:
 `docker build -t flask-metric .`  
 * Deploy the app using a deployment.  
 `kubectl apply -f deployment.yaml`  
-Now you have CPAs enabled on your cluster, the example CPA running and an app deployment that it is managing.
 
 ### Build CPA image
 Once CPAs have been enabled on your cluster, you need to build this example, run these commands to build the example:  
 * Target the Minikube registry for building the image.  
 `eval $(minikube docker-env)`  
 * Build the example image.  
-`docker build -t example-python-custom-pod-autoscaler .`  
+`docker build -t simple-pod-metrics-python .`  
 * Deploy the CPA using the image just built.  
 `kubectl apply -f cpa.yaml`  
 Now the CPA should be running on your cluster, managing the app we previously deployed.

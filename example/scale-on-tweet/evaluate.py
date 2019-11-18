@@ -14,24 +14,25 @@
 
 import json
 import sys
-import requests
 
 def main():
-    pod = json.loads(sys.stdin.read())
-    metric(pod)
+    metrics = json.loads(sys.stdin.read())
+    evaluate(metrics)
 
-def metric(pod):
-    status = pod["status"]
-    ip = status["podIP"]
-    try:
-        response = requests.get(f"http://{ip}:5000/metric")
-        sys.stdout.write(response.text)
-    except HTTPError as http_err:
-        sys.stderr.write(f"HTTP error occurred: {http_err}")
+def evaluate(metrics):
+    if len(metrics) != 1:
+        sys.stderr.write("Expected 1 metric")
         exit(1)
-    except Exception as err:
-        sys.stderr.write(f"Other error occurred: {err}")
-        exit(1)
+
+    tweet_ratio_json = json.loads(metrics[0]["value"])
+    up = int(tweet_ratio_json["up"])
+    down = int(tweet_ratio_json["down"])
+
+    replicas = up - down
+
+    evaluation = {}
+    evaluation["target_replicas"] = replicas
+    sys.stdout.write(json.dumps(evaluation))
 
 if __name__ == "__main__":
     main()
