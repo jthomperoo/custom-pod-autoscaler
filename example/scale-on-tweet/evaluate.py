@@ -15,21 +15,34 @@
 import json
 import sys
 
+# JSON piped into this script example:
+# [
+#     {
+#         "resource": "hello-kubernetes",
+#         "value": "{\"up\": 3,\"down\": 2}"
+#     },
+# ]
+
 def main():
+    # Parse metrics in JSON
     metrics = json.loads(sys.stdin.read())
     evaluate(metrics)
 
 def evaluate(metrics):
+    # Only expect 1 metric provided
     if len(metrics) != 1:
         sys.stderr.write("Expected 1 metric")
         exit(1)
 
+    # Get thumbs up and thumbs down values
     tweet_ratio_json = json.loads(metrics[0]["value"])
     up = int(tweet_ratio_json["up"])
     down = int(tweet_ratio_json["down"])
 
+    # Calculate number of replicas
     replicas = up - down
 
+    # Output target number of replicas to stdout
     evaluation = {}
     evaluation["target_replicas"] = replicas
     sys.stdout.write(json.dumps(evaluation))
