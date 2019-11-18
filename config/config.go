@@ -29,6 +29,15 @@ import (
 )
 
 const (
+	// PerPodRunMode runs metric gathering per Pod, individually running the script for each Pod being managed
+	// with the Pod information piped into the metric gathering script
+	PerPodRunMode = "per-pod"
+	// PerResourceRunMode runs metric gathering per Deployment, running the script only once for the resource
+	// being managed, with the resource information piped into the metric gathering script
+	PerResourceRunMode = "per-resource"
+)
+
+const (
 	defaultEvaluate        = ">&2 echo 'ERROR: No evaluate command set' && exit 1"
 	defaultMetric          = ">&2 echo 'ERROR: No metric command set' && exit 1"
 	defaultInterval        = 15000
@@ -37,6 +46,7 @@ const (
 	defaultMetricTimeout   = 5000
 	defaultEvaluateTimeout = 5000
 	defaultNamespace       = "default"
+	defaultRunMode         = PerPodRunMode
 )
 
 const yamlStructTag = "yaml"
@@ -52,6 +62,7 @@ type Config struct {
 	EvaluateTimeout int                                      `yaml:"evaluateTimeout"`
 	MetricTimeout   int                                      `yaml:"metricTimeout"`
 	Namespace       string                                   `yaml:"namespace"`
+	RunMode         string                                   `yaml:"runMode"`
 }
 
 // LoadConfig loads in the default configuration, then overrides it from the config file,
@@ -135,5 +146,6 @@ func newDefaultConfig() *Config {
 		EvaluateTimeout: defaultEvaluateTimeout,
 		MetricTimeout:   defaultMetricTimeout,
 		Namespace:       defaultNamespace,
+		RunMode:         defaultRunMode,
 	}
 }

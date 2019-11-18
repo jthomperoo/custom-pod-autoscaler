@@ -36,6 +36,7 @@ const (
 	defaultMetricTimeout   = 5000
 	defaultEvaluateTimeout = 5000
 	defaultNamespace       = "default"
+	defaultRunMode         = "per-pod"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -99,6 +100,7 @@ func TestLoadConfig(t *testing.T) {
 				MetricTimeout:   defaultMetricTimeout,
 				EvaluateTimeout: defaultEvaluateTimeout,
 				Namespace:       defaultNamespace,
+				RunMode:         defaultRunMode,
 				ScaleTargetRef:  nil,
 			},
 		},
@@ -114,6 +116,7 @@ func TestLoadConfig(t *testing.T) {
 				"metricTimeout":   "13",
 				"evaluateTimeout": "14",
 				"namespace":       "test env namespace",
+				"runMode":         "test run mode",
 				"scaleTargetRef":  `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
 			},
 			nil,
@@ -126,6 +129,7 @@ func TestLoadConfig(t *testing.T) {
 				MetricTimeout:   13,
 				EvaluateTimeout: 14,
 				Namespace:       "test env namespace",
+				RunMode:         "test run mode",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
 					Name:       "test target name",
 					Kind:       "test target kind",
@@ -143,6 +147,7 @@ func TestLoadConfig(t *testing.T) {
 				port: 7890
 				metricTimeout: 10
 				evaluateTimeout: 11
+				runMode: "test run mode"
 				namespace: "test yaml namespace"
 			`, "\t", "", -1)),
 			nil,
@@ -155,6 +160,7 @@ func TestLoadConfig(t *testing.T) {
 				Port:            7890,
 				MetricTimeout:   10,
 				EvaluateTimeout: 11,
+				RunMode:         "test run mode",
 				Namespace:       "test yaml namespace",
 			},
 		},

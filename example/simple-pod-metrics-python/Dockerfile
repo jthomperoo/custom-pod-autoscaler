@@ -12,26 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import sys
-import requests
-
-def main():
-    pod = json.loads(sys.stdin.read())
-    metric(pod)
-
-def metric(pod):
-    status = pod["status"]
-    ip = status["podIP"]
-    try:
-        response = requests.get(f"http://{ip}:5000/metric")
-        sys.stdout.write(response.text)
-    except HTTPError as http_err:
-        sys.stderr.write(f"HTTP error occurred: {http_err}")
-        exit(1)
-    except Exception as err:
-        sys.stderr.write(f"Other error occurred: {err}")
-        exit(1)
-
-if __name__ == "__main__":
-    main()
+# Pull in Python build of DPA
+FROM custompodautoscaler/python:latest
+# Add in python requirements to install dependencies
+ADD requirements.txt /
+# Install dependencies, done before adding Py files to allow Docker to cache better
+RUN pip install -r /requirements.txt
+# Add config, evaluator and metric gathering Py scripts
+ADD config.yaml evaluate.py metric.py /

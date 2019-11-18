@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Allow specification of how metrics/evaluations should be run with `runMode`, either `per-pod` or `per-resource`. Mode `per-pod` means run the metric gathering command individually per pod, with pod info piped in. `per-resource` means run the metric gathering command per resource, with the resource info piped in. 
 
 ## [0.4.0] - 2019-11-16
 ### Changed

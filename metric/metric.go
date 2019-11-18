@@ -35,7 +35,7 @@ type executeWithPiper interface {
 	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
 }
 
-// ResourceMetrics represents a resource's metrics, including each pod's metrics
+// ResourceMetrics represents a resource's metrics, including each resource's metrics
 type ResourceMetrics struct {
 	DeploymentName string             `json:"deployment"`
 	Metrics        []*Metric          `json:"metrics"`
@@ -43,10 +43,10 @@ type ResourceMetrics struct {
 }
 
 // Metric is the result of the custom metric calculation, containing information on the
-// relevant pod and the metric value
+// relevant resource and the metric value
 type Metric struct {
-	Pod   string `json:"pod,omitempty"`
-	Value string `json:"value,omitempty"`
+	Resource string `json:"resource,omitempty"`
+	Value    string `json:"value,omitempty"`
 }
 
 // Gatherer handles triggering the metric gathering logic to gather metrics for a resource
@@ -56,8 +56,46 @@ type Gatherer struct {
 	Executer  executeWithPiper
 }
 
-// GetMetrics gathers metrics for the deployments supplied
+// GetMetrics gathers metrics for the resource supplied
 func (m *Gatherer) GetMetrics(deployment *appsv1.Deployment) (*ResourceMetrics, error) {
+	switch m.Config.RunMode {
+	case config.PerPodRunMode:
+		return m.getMetricsForPods(deployment)
+	case config.PerResourceRunMode:
+		return m.getMetricsForResource(deployment)
+	default:
+		return nil, fmt.Errorf("Unknown run mode: %s", m.Config.RunMode)
+	}
+}
+
+func (m *Gatherer) getMetricsForResource(deployment *appsv1.Deployment) (*ResourceMetrics, error) {
+	// Convert the Deployment description to JSON
+	podJSON, err := json.Marshal(deployment)
+	if err != nil {
+		// Should not occur, panic
+		log.Panic(err)
+	}
+
+	// Execute the Metric command with the Deployment JSON
+	outb, err := m.Executer.ExecuteWithPipe(m.Config.Metric, string(podJSON), m.Config.MetricTimeout)
+	if err != nil {
+		log.Println(outb.String())
+		return nil, err
+	}
+
+	return &ResourceMetrics{
+		DeploymentName: deployment.GetName(),
+		Deployment:     deployment,
+		Metrics: []*Metric{
+			&Metric{
+				Resource: deployment.GetName(),
+				Value:    outb.String(),
+			},
+		},
+	}, nil
+}
+
+func (m *Gatherer) getMetricsForPods(deployment *appsv1.Deployment) (*ResourceMetrics, error) {
 	// Get Deployment pods
 	labels := deployment.GetLabels()
 	pods, err := m.Clientset.CoreV1().Pods(m.Config.Namespace).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", labels["app"])})
@@ -84,11 +122,10 @@ func (m *Gatherer) GetMetrics(deployment *appsv1.Deployment) (*ResourceMetrics, 
 
 		// Add metric to metrics array
 		metrics = append(metrics, &Metric{
-			Pod:   pod.GetName(),
-			Value: outb.String(),
+			Resource: pod.GetName(),
+			Value:    outb.String(),
 		})
 	}
-
 	return &ResourceMetrics{
 		DeploymentName: deployment.GetName(),
 		Deployment:     deployment,

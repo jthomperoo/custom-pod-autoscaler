@@ -69,8 +69,8 @@ func TestGetEvaluation(t *testing.T) {
 			&metric.ResourceMetrics{
 				Metrics: []*metric.Metric{
 					&metric.Metric{
-						Pod:   "test pod",
-						Value: "test value",
+						Resource: "test pod",
+						Value:    "test value",
 					},
 				},
 			},
@@ -95,8 +95,8 @@ func TestGetEvaluation(t *testing.T) {
 			&metric.ResourceMetrics{
 				Metrics: []*metric.Metric{
 					&metric.Metric{
-						Pod:   "test pod",
-						Value: "test value",
+						Resource: "test pod",
+						Value:    "test value",
 					},
 				},
 			},
@@ -130,8 +130,8 @@ func TestGetEvaluation(t *testing.T) {
 			&metric.ResourceMetrics{
 				Metrics: []*metric.Metric{
 					&metric.Metric{
-						Pod:   "test pod",
-						Value: "test value",
+						Resource: "test pod",
+						Value:    "test value",
 					},
 				},
 			},
@@ -156,8 +156,8 @@ func TestGetEvaluation(t *testing.T) {
 			&metric.ResourceMetrics{
 				Metrics: []*metric.Metric{
 					&metric.Metric{
-						Pod:   "test pod",
-						Value: "test value",
+						Resource: "test pod",
+						Value:    "test value",
 					},
 				},
 			},

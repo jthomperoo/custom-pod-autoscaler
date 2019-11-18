@@ -14,31 +14,37 @@
 
 import json
 import sys
-import requests
-import math
+
+# JSON piped into this script example:
+# [
+#     {
+#         "resource": "hello-kubernetes",
+#         "value": "{\"up\": 3,\"down\": 2}"
+#     },
+# ]
 
 def main():
+    # Parse metrics in JSON
     metrics = json.loads(sys.stdin.read())
     evaluate(metrics)
 
 def evaluate(metrics):
-    total_available = 0
-    for metric in metrics:
-        pod = metric["pod"]
-        json_value = json.loads(metric["value"])
-        available = json_value["available"]
-        total_available += int(available)
+    # Only expect 1 metric provided
+    if len(metrics) != 1:
+        sys.stderr.write("Expected 1 metric")
+        exit(1)
 
-    target_replica_count = len(metrics)
+    # Get thumbs up and thumbs down values
+    tweet_ratio_json = json.loads(metrics[0]["value"])
+    up = int(tweet_ratio_json["up"])
+    down = int(tweet_ratio_json["down"])
 
-    if total_available > 5:
-        target_replica_count -= 1
-    
-    if total_available <= 0:
-        target_replica_count += 1
+    # Calculate number of replicas
+    replicas = up - down
 
+    # Output target number of replicas to stdout
     evaluation = {}
-    evaluation["target_replicas"] = target_replica_count
+    evaluation["target_replicas"] = replicas
     sys.stdout.write(json.dumps(evaluation))
 
 if __name__ == "__main__":

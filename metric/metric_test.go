@@ -65,8 +65,8 @@ func TestGetMetrics(t *testing.T) {
 		executer    executeWithPiper
 	}{
 		{
-			"Error when listing pods",
-			errors.New("fail to list pods"),
+			"Invalid run mode",
+			errors.New("Unknown run mode: invalid"),
 			nil,
 			&appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
@@ -77,6 +77,7 @@ func TestGetMetrics(t *testing.T) {
 			},
 			&config.Config{
 				Namespace: "test namespace",
+				RunMode:   "invalid",
 			},
 			func() *fake.Clientset {
 				clientset := fake.NewSimpleClientset()
@@ -88,7 +89,31 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 		},
 		{
-			"Single pod single deployment shell execute fail",
+			"Per pod error when listing pods",
+			errors.New("fail to list pods"),
+			nil,
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+					Labels:    map[string]string{"app": "test"},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+			},
+			func() *fake.Clientset {
+				clientset := fake.NewSimpleClientset()
+				clientset.AppsV1().(*fakeappsv1.FakeAppsV1).Fake.PrependReactor("list", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+					return true, nil, errors.New("fail to list pods")
+				})
+				return clientset
+			}(),
+			nil,
+		},
+		{
+			"Per pod single pod single deployment shell execute fail",
 			errors.New("fail to get metric"),
 			nil,
 			&appsv1.Deployment{
@@ -100,6 +125,7 @@ func TestGetMetrics(t *testing.T) {
 			},
 			&config.Config{
 				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
 			},
 			fake.NewSimpleClientset(
 				&v1.Pod{
@@ -119,12 +145,13 @@ func TestGetMetrics(t *testing.T) {
 			}(),
 		},
 		{
-			"No resources",
+			"Per pod no resources",
 			nil,
 			nil,
 			&appsv1.Deployment{},
 			&config.Config{
 				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
 			},
 			fake.NewSimpleClientset(),
 			func() *executer {
@@ -138,7 +165,7 @@ func TestGetMetrics(t *testing.T) {
 			}(),
 		},
 		{
-			"No pod in managed deployment, but pod in other deployment with different name in same namespace",
+			"Per pod no pod in managed deployment, but pod in other deployment with different name in same namespace",
 			nil,
 			nil,
 			&appsv1.Deployment{
@@ -150,6 +177,7 @@ func TestGetMetrics(t *testing.T) {
 			},
 			&config.Config{
 				Namespace: "test managed namespace",
+				RunMode:   config.PerPodRunMode,
 			},
 			fake.NewSimpleClientset(
 				&v1.Pod{
@@ -171,7 +199,7 @@ func TestGetMetrics(t *testing.T) {
 			}(),
 		},
 		{
-			"No pod in managed deployment, but pod in other deployment with same name in different namespace",
+			"Per pod no pod in managed deployment, but pod in other deployment with same name in different namespace",
 			nil,
 			nil,
 			&appsv1.Deployment{
@@ -183,6 +211,7 @@ func TestGetMetrics(t *testing.T) {
 			},
 			&config.Config{
 				Namespace: "test managed namespace",
+				RunMode:   config.PerPodRunMode,
 			},
 			fake.NewSimpleClientset(
 				&v1.Pod{
@@ -204,12 +233,12 @@ func TestGetMetrics(t *testing.T) {
 			}(),
 		},
 		{
-			"Single pod single deployment shell execute success",
+			"Per pod single pod single deployment shell execute success",
 			nil,
 			[]*metric.Metric{
 				&metric.Metric{
-					Pod:   "test pod",
-					Value: "test value",
+					Resource: "test pod",
+					Value:    "test value",
 				},
 			},
 			&appsv1.Deployment{
@@ -221,6 +250,7 @@ func TestGetMetrics(t *testing.T) {
 			},
 			&config.Config{
 				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
 			},
 			fake.NewSimpleClientset(
 				&v1.Pod{
@@ -242,16 +272,16 @@ func TestGetMetrics(t *testing.T) {
 			}(),
 		},
 		{
-			"Multiple pod single deployment shell execute success",
+			"Per pod multiple pod single deployment shell execute success",
 			nil,
 			[]*metric.Metric{
 				&metric.Metric{
-					Pod:   "first pod",
-					Value: "test value",
+					Resource: "first pod",
+					Value:    "test value",
 				},
 				&metric.Metric{
-					Pod:   "second pod",
-					Value: "test value",
+					Resource: "second pod",
+					Value:    "test value",
 				},
 			},
 			&appsv1.Deployment{
@@ -263,6 +293,7 @@ func TestGetMetrics(t *testing.T) {
 			},
 			&config.Config{
 				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
 			},
 			fake.NewSimpleClientset(
 				&v1.Pod{
@@ -280,6 +311,59 @@ func TestGetMetrics(t *testing.T) {
 					},
 				},
 			),
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					var buffer bytes.Buffer
+					buffer.WriteString("test value")
+					return &buffer, nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Per resource shell execute fail",
+			errors.New("fail to get metric"),
+			nil,
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerResourceRunMode,
+			},
+			fake.NewSimpleClientset(),
+			func() *executer {
+				execute := executer{}
+				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+					return nil, errors.New("fail to get metric")
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Per resource shell execute success",
+			nil,
+			[]*metric.Metric{
+				&metric.Metric{
+					Resource: "test deployment",
+					Value:    "test value",
+				},
+			},
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerResourceRunMode,
+			},
+			fake.NewSimpleClientset(),
 			func() *executer {
 				execute := executer{}
 				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {

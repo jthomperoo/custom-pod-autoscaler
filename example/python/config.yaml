@@ -1,2 +1,0 @@
-evaluate: "python /evaluate.py"
-metric: "python /metric.py"
