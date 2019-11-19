@@ -22,7 +22,6 @@ package evaluate
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
@@ -37,22 +36,13 @@ type executeWithPiper interface {
 
 // Evaluation represents a decision on how to scale a deployment
 type Evaluation struct {
-	TargetReplicas *int32 `json:"target_replicas"`
+	TargetReplicas int32 `json:"target_replicas"`
 }
 
 // Evaluator handles triggering the evaluation logic to decide how to scale a resource
 type Evaluator struct {
 	Config   *config.Config
 	Executer executeWithPiper
-}
-
-// ErrInvalidEvaluation occurs when the the evaluator reports success but returns invalid JSON
-type ErrInvalidEvaluation struct {
-	Message string
-}
-
-func (e *ErrInvalidEvaluation) Error() string {
-	return e.Message
 }
 
 // GetEvaluation uses the metrics provided to determine a set of evaluations
@@ -74,11 +64,6 @@ func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Eva
 	err = json.Unmarshal(outb.Bytes(), evaluation)
 	if err != nil {
 		return nil, err
-	}
-	if evaluation.TargetReplicas == nil {
-		return nil, &ErrInvalidEvaluation{
-			Message: fmt.Sprintf(invalidEvaluationMessage, outb.String()),
-		}
 	}
 	return evaluation, nil
 }

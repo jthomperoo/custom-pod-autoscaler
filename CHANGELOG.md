@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Allow setting minimum and maximum replicas, with `minReplicas` and `maxReplicas` options - if the evaluation is above maxReplicas the resource is only scaled up to `maxReplicas` value, if the evaluation is below `minReplicas` the resource is only scaled down to `minReplicas`.
+- Can disable autoscaling for a resource by setting its `replicas` to `0`.
+### Changed
+- The `target_replicas` field in an evaluation is no longer optional.
 
 ## [0.5.0] - 2019-11-18
 ### Added

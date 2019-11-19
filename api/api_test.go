@@ -77,9 +77,8 @@ func (f *failGetEvaluation) GetEvaluation(resourceMetrics *metric.ResourceMetric
 type successGetEvaluation struct{}
 
 func (s *successGetEvaluation) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
-	targetReplicas := int32(1)
 	return &evaluate.Evaluation{
-		TargetReplicas: &targetReplicas,
+		TargetReplicas: int32(1),
 	}, nil
 }
 

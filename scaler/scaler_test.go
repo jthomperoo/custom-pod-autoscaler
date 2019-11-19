@@ -180,13 +180,39 @@ func TestScaler(t *testing.T) {
 			func() *getEvaluationer {
 				getEvaluation := getEvaluationer{}
 				getEvaluation.getEvaluation = func(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
-					replicas := int32(1)
 					return &evaluate.Evaluation{
-						TargetReplicas: &replicas,
+						TargetReplicas: int32(1),
 					}, nil
 				}
 				return &getEvaluation
 			}(),
+		},
+		{
+			"Success, autoscaling disabled",
+			nil,
+			func() *fake.Clientset {
+				replicas := int32(0)
+				clientset := fake.NewSimpleClientset(&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Replicas: &replicas,
+					},
+				})
+				return clientset
+			}(),
+			&config.Config{
+				Namespace: "test namespace",
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+			},
+			nil,
+			nil,
 		},
 		{
 			"Success, no change in scale",
@@ -222,16 +248,15 @@ func TestScaler(t *testing.T) {
 			func() *getEvaluationer {
 				getEvaluation := getEvaluationer{}
 				getEvaluation.getEvaluation = func(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
-					replicas := int32(3)
 					return &evaluate.Evaluation{
-						TargetReplicas: &replicas,
+						TargetReplicas: int32(3),
 					}, nil
 				}
 				return &getEvaluation
 			}(),
 		},
 		{
-			"Success scale up to 5",
+			"Success evaluation above max replicas, scale to max replicas",
 			nil,
 			func() *fake.Clientset {
 				replicas := int32(3)
@@ -256,7 +281,7 @@ func TestScaler(t *testing.T) {
 						return true, nil, errors.New("fail to cast runtime.object to deployment")
 					}
 					replicas := int32(5)
-					if *spec.Replicas != replicas {
+					if *spec.Replicas != 3 {
 						return true, nil, fmt.Errorf("Replicas mismatch (-want +got):\n%s", cmp.Diff(replicas, spec.Replicas))
 					}
 					return true, nil, nil
@@ -270,6 +295,8 @@ func TestScaler(t *testing.T) {
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
+				MinReplicas: 1,
+				MaxReplicas: 3,
 			},
 			func() *getMetricer {
 				getMetric := getMetricer{}
@@ -281,16 +308,15 @@ func TestScaler(t *testing.T) {
 			func() *getEvaluationer {
 				getEvaluation := getEvaluationer{}
 				getEvaluation.getEvaluation = func(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
-					replicas := int32(5)
 					return &evaluate.Evaluation{
-						TargetReplicas: &replicas,
+						TargetReplicas: int32(5),
 					}, nil
 				}
 				return &getEvaluation
 			}(),
 		},
 		{
-			"Success scale down to 1",
+			"Success evaluation below min replicas, scale to min replicas",
 			nil,
 			func() *fake.Clientset {
 				replicas := int32(3)
@@ -314,7 +340,7 @@ func TestScaler(t *testing.T) {
 					if !ok {
 						return true, nil, errors.New("fail to cast runtime.object to deployment")
 					}
-					replicas := int32(1)
+					replicas := int32(2)
 					if *spec.Replicas != replicas {
 						return true, nil, fmt.Errorf("Replicas mismatch (-want +got):\n%s", cmp.Diff(replicas, spec.Replicas))
 					}
@@ -329,6 +355,8 @@ func TestScaler(t *testing.T) {
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
+				MinReplicas: 2,
+				MaxReplicas: 10,
 			},
 			func() *getMetricer {
 				getMetric := getMetricer{}
@@ -340,9 +368,68 @@ func TestScaler(t *testing.T) {
 			func() *getEvaluationer {
 				getEvaluation := getEvaluationer{}
 				getEvaluation.getEvaluation = func(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
-					replicas := int32(1)
 					return &evaluate.Evaluation{
-						TargetReplicas: &replicas,
+						TargetReplicas: int32(1),
+					}, nil
+				}
+				return &getEvaluation
+			}(),
+		},
+		{
+			"Success evaluation within min-max bounds, scale to evaluation",
+			nil,
+			func() *fake.Clientset {
+				replicas := int32(3)
+				clientset := fake.NewSimpleClientset(&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Replicas: &replicas,
+					},
+				})
+				clientset.AppsV1().(*fakeappsv1.FakeAppsV1).Fake.PrependReactor("update", "deployments", func(action k8stesting.Action) (bool, runtime.Object, error) {
+					update, ok := action.(k8stesting.UpdateAction)
+					if !ok {
+						return true, nil, errors.New("fail to cast action to update action")
+					}
+					obj := update.GetObject()
+					deployment := reflect.ValueOf(obj).Elem()
+					spec, ok := deployment.FieldByName("Spec").Interface().(appsv1.DeploymentSpec)
+					if !ok {
+						return true, nil, errors.New("fail to cast runtime.object to deployment")
+					}
+					replicas := int32(7)
+					if *spec.Replicas != replicas {
+						return true, nil, fmt.Errorf("Replicas mismatch (-want +got):\n%s", cmp.Diff(replicas, spec.Replicas))
+					}
+					return true, nil, nil
+				})
+				return clientset
+			}(),
+			&config.Config{
+				Namespace: "test namespace",
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				MinReplicas: 1,
+				MaxReplicas: 10,
+			},
+			func() *getMetricer {
+				getMetric := getMetricer{}
+				getMetric.getMetrics = func(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error) {
+					return &metric.ResourceMetrics{}, nil
+				}
+				return &getMetric
+			}(),
+			func() *getEvaluationer {
+				getEvaluation := getEvaluationer{}
+				getEvaluation.getEvaluation = func(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
+					return &evaluate.Evaluation{
+						TargetReplicas: int32(7),
 					}, nil
 				}
 				return &getEvaluation

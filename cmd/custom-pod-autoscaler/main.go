@@ -57,6 +57,8 @@ const (
 	namespaceEnvName       = "namespace"
 	scaleTargetRefEnvName  = "scaleTargetRef"
 	runModeEnvName         = "runMode"
+	minReplicasEnvName     = "minReplicas"
+	maxReplicasEnvName     = "maxReplicas"
 )
 
 const defaultConfig = "/config.yaml"
@@ -186,6 +188,8 @@ func readEnvVars() map[string]string {
 		evaluateTimeoutEnvName,
 		scaleTargetRefEnvName,
 		runModeEnvName,
+		minReplicasEnvName,
+		maxReplicasEnvName,
 	}
 	configEnvs := map[string]string{}
 	for _, envName := range configEnvsNames {

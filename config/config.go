@@ -46,6 +46,8 @@ const (
 	defaultMetricTimeout   = 5000
 	defaultEvaluateTimeout = 5000
 	defaultNamespace       = "default"
+	defaultMinReplicas     = 1
+	defaultMaxReplicas     = 10
 	defaultRunMode         = PerPodRunMode
 )
 
@@ -62,6 +64,8 @@ type Config struct {
 	EvaluateTimeout int                                      `yaml:"evaluateTimeout"`
 	MetricTimeout   int                                      `yaml:"metricTimeout"`
 	Namespace       string                                   `yaml:"namespace"`
+	MinReplicas     int32                                    `yaml:"minReplicas"`
+	MaxReplicas     int32                                    `yaml:"maxReplicas"`
 	RunMode         string                                   `yaml:"runMode"`
 }
 
@@ -146,6 +150,8 @@ func newDefaultConfig() *Config {
 		EvaluateTimeout: defaultEvaluateTimeout,
 		MetricTimeout:   defaultMetricTimeout,
 		Namespace:       defaultNamespace,
+		MinReplicas:     defaultMinReplicas,
+		MaxReplicas:     defaultMaxReplicas,
 		RunMode:         defaultRunMode,
 	}
 }
