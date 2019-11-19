@@ -42,10 +42,6 @@ func (e *executer) ExecuteWithPipe(command string, value string, timeout int) (*
 	return e.executeWithPipe(command, value, timeout)
 }
 
-func int32ToPtr(value int32) *int32 {
-	return &value
-}
-
 func TestGetEvaluation(t *testing.T) {
 	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
 		if x == nil || y == nil {
@@ -90,7 +86,7 @@ func TestGetEvaluation(t *testing.T) {
 			"Execute success with valid JSON",
 			nil,
 			&evaluate.Evaluation{
-				TargetReplicas: int32ToPtr(int32(3)),
+				TargetReplicas: int32(3),
 			},
 			&metric.ResourceMetrics{
 				Metrics: []*metric.Metric{
@@ -109,41 +105,13 @@ func TestGetEvaluation(t *testing.T) {
 				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
 					// Convert into JSON
 					jsonEvaluation, err := json.Marshal(&evaluate.Evaluation{
-						TargetReplicas: int32ToPtr(int32(3)),
+						TargetReplicas: int32(3),
 					})
 					if err != nil {
 						return nil, err
 					}
 					var buffer bytes.Buffer
 					buffer.WriteString(string(jsonEvaluation))
-					return &buffer, nil
-				}
-				return &execute
-			}(),
-		},
-		{
-			"Execute success with invalid evaluation",
-			&evaluate.ErrInvalidEvaluation{
-				Message: `Invalid evaluation returned by evaluator: { "invalid": "invalid"}`,
-			},
-			nil,
-			&metric.ResourceMetrics{
-				Metrics: []*metric.Metric{
-					&metric.Metric{
-						Resource: "test pod",
-						Value:    "test value",
-					},
-				},
-			},
-			&config.Config{
-				Evaluate:        "test evaluate command",
-				EvaluateTimeout: 10,
-			},
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
-					var buffer bytes.Buffer
-					buffer.WriteString(`{ "invalid": "invalid"}`)
 					return &buffer, nil
 				}
 				return &execute

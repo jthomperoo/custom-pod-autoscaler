@@ -20,6 +20,8 @@ limitations under the License.
 package scaler
 
 import (
+	"log"
+
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
@@ -57,6 +59,16 @@ func (s *Scaler) Scale() error {
 		return err
 	}
 
+	currentReplicas := int32(1)
+	if deployment.Spec.Replicas != nil {
+		currentReplicas = *deployment.Spec.Replicas
+	}
+
+	if currentReplicas == 0 {
+		log.Printf("No scaling, autoscaling disabled on resource %s", deployment.Name)
+		return nil
+	}
+
 	// Gather metrics
 	metrics, err := s.GetMetricer.GetMetrics(deployment)
 	if err != nil {
@@ -69,15 +81,30 @@ func (s *Scaler) Scale() error {
 		return err
 	}
 
+	targetReplicas := currentReplicas
+	if evaluation.TargetReplicas < s.Config.MinReplicas {
+		log.Printf("Scale target less than min at %d replicas, setting target to min %d replicas", evaluation.TargetReplicas, s.Config.MinReplicas)
+		targetReplicas = s.Config.MinReplicas
+	} else if evaluation.TargetReplicas > s.Config.MaxReplicas {
+		log.Printf("Scale target greater than max at %d replicas, setting target to max %d replicas", evaluation.TargetReplicas, s.Config.MaxReplicas)
+		targetReplicas = s.Config.MaxReplicas
+	} else {
+		log.Printf("Scale target set to %d replicas", evaluation.TargetReplicas)
+		targetReplicas = evaluation.TargetReplicas
+	}
+
 	// Check if evaluation requires an action
 	// If the deployment needs scaled up/down
-	if evaluation.TargetReplicas != deployment.Spec.Replicas {
+	if targetReplicas != currentReplicas {
+		log.Printf("Rescaling to %d replicas", targetReplicas)
 		// Scale deployment
-		deployment.Spec.Replicas = evaluation.TargetReplicas
+		deployment.Spec.Replicas = &targetReplicas
 		_, err = s.DeploymentsClient.Update(deployment)
 		if err != nil {
 			return err
 		}
+		return nil
 	}
+	log.Printf("No change in target replicas, maintaining %d replicas", currentReplicas)
 	return nil
 }
