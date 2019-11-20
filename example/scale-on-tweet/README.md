@@ -1,7 +1,7 @@
 # Scale on Tweet example
 This is a novelty example, showing an autoscaler that queries the Twitter API searching for tweets with a specific hashtag. Counting the number of tweets that contain '👍' and the number of tweets that contain '👎' and sets the number of replicas to the difference between number of tweets containing 👍 and 👎.
 
-## Overview
+## Usage
 Trying out this example requires a kubernetes cluster to try it out on. This guide will assume you are using a Minikube cluster.
 
 ### Deploy an app for the Tweet Scaler to manage
@@ -23,7 +23,7 @@ Using this Tweet Scaler example requires Custom Pod Autoscalers to be enabled on
 If you are using Minikube, use this command to set up Docker to point to the Minikube registry:  
 `eval $(minikube docker-env)`  
 Use this docker command to build the tweet scaler:  
-`docker build -t simple-pod-metrics-python .`  
+`docker build -t scale-on-tweet .`  
 
 ### Deploy the Tweet scaler
 There is a Custom Pod Autoscaler YAML definition in this example, `cpa.yaml`, you just need to update some of the placholder values in it to the Twitter auth keys and whatever hashtag you want to watch.

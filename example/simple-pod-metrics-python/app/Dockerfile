@@ -14,6 +14,13 @@
 
 FROM python:3.6-slim
 
+# Install dependencies for debugging
+RUN apt-get update
+RUN apt-get install jq curl -y
+# Set up aliases for easy debugging
+RUN echo 'alias metric="curl http://localhost:5000/metric | jq ."' >> ~/.bashrc
+RUN echo 'alias increment="curl -X POST http://localhost:5000/increment | jq ."' >> ~/.bashrc
+RUN echo 'alias decrement="curl -X POST http://localhost:5000/decrement | jq ."' >> ~/.bashrc
 # We copy just the requirements.txt first to leverage Docker cache
 COPY ./requirements.txt /app/requirements.txt
 WORKDIR /app
@@ -21,6 +28,5 @@ WORKDIR /app
 RUN pip install -r requirements.txt
 # Copy in source files
 COPY . /app
-
 ENTRYPOINT [ "python" ]
 CMD [ "api.py" ]

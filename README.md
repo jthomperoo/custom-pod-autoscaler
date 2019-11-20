@@ -8,9 +8,10 @@
 This is the Custom Pod Autoscaler (CPA) code and base images.  
 
 The CPA is part of the [Custom Pod Autoscaler Framework](https://github.com/jthomperoo/custom-pod-autoscaler/wiki/Custom-Pod-Autoscaler-Framework).  
-## Use
 
-The CPA can be used to create custom scaling logic for Kubernetes; similar to the Horizontal Pod Autoscaler, but allowing the use of user defined commands and scripts to manage metric gathering and evaluating how many replicas to scale to.
+## What is it?
+
+A Custom Pod Autoscaler is a Kubernetes autoscaler that runs on custom logic. Custom Pod Autoscalers are designed to be similar to the Kubernetes Horizontal Pod Autoscaler. A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting your own logic; see the [example for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).
 
 ## Developing your own Custom Pod Autoscaler
 
@@ -25,7 +26,6 @@ CPA binaries are distributed in [GitHub Releases as an asset](https://github.com
 
 See the [example for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).
 
-
 ## Installing a Custom Pod Autoscaler
 
 The easiest way to install a CPA is using the [Custom Pod Autoscaler Operator](https://github.com/jthomperoo/custom-pod-autoscaler-operator), follow the [installation guide for instructions for installing the operator](https://github.com/jthomperoo/custom-pod-autoscaler-operator/blob/master/INSTALL.md).
@@ -35,7 +35,7 @@ The easiest way to install a CPA is using the [Custom Pod Autoscaler Operator](h
 ### Environment
 Developing this project requires these dependencies:
 
-* Go >= 1.13
+* Go >= `1.13`
 * Golint
 * Docker
 
