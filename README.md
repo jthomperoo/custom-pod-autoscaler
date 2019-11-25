@@ -11,11 +11,20 @@ The CPA is part of the [Custom Pod Autoscaler Framework](https://github.com/jtho
 
 ## What is it?
 
-A Custom Pod Autoscaler is a Kubernetes autoscaler that runs on custom logic. Custom Pod Autoscalers are designed to be similar to the Kubernetes Horizontal Pod Autoscaler. A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting your own logic; see the [example for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).
+A Custom Pod Autoscaler is a Kubernetes autoscaler that runs on custom logic. Custom Pod Autoscalers are designed to be similar to the Kubernetes Horizontal Pod Autoscaler. A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting your own logic; see the [examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).  
+
+## How does it work?
+
+A Custom Pod Autoscaler has a base program that interacts with user-defined scaling logic through shell commands, piping relevant information into them. When developing a Custom Pod Autoscaler you define logic for two stages:
+
+* Metric gathering - collecting or generating metrics; can be calling metrics APIs, running calculations locally, making HTTP requests.
+* Evaluating metrics - taking these gathered metrics and using them to decide how many replicas a resource should have.
+
+These two pieces of logic are all the custom logic required to build a Custom Pod Autoscaler, the base program will handle all Kubernetes API interactions for scaling/retrieving resources. This logic just needs to communicate back to the base program by writing the output of its results to standard out.
 
 ## Developing your own Custom Pod Autoscaler
 
-Custom Pod Autoscalers are Docker images that are designed to run in a Kubernetes cluster, you can build your own either by extending one of the Docker images provided, or by taking the CPA binary and inserting it into your own Docker image.  
+Custom Pod Autoscalers are Docker images that are designed to run in a Kubernetes cluster, you can build your own either by extending one of the Docker images provided, or by taking the CPA binary and inserting it into your own Docker image. Custom Pod Autoscaler logic can be implemented in any language, the only requirement is that the program must be able to read piped in values from standard in, and be able to communicate back through standard error/out.  
 
 Docker images provided:
 
@@ -24,7 +33,7 @@ Docker images provided:
 
 CPA binaries are distributed in [GitHub Releases as an asset](https://github.com/jthomperoo/custom-pod-autoscaler/releases), inside `custom-pod-autoscaler.tar.gz`.
 
-See the [example for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).
+See the [examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).
 
 ## Installing a Custom Pod Autoscaler
 
