@@ -38,6 +38,7 @@ type executeWithPiper interface {
 // ResourceMetrics represents a resource's metrics, including each resource's metrics
 type ResourceMetrics struct {
 	DeploymentName string             `json:"deployment"`
+	RunType        string             `json:"run_type"`
 	Metrics        []*Metric          `json:"metrics"`
 	Deployment     *appsv1.Deployment `json:"-"` // hide
 }
@@ -70,14 +71,14 @@ func (m *Gatherer) GetMetrics(deployment *appsv1.Deployment) (*ResourceMetrics, 
 
 func (m *Gatherer) getMetricsForResource(deployment *appsv1.Deployment) (*ResourceMetrics, error) {
 	// Convert the Deployment description to JSON
-	podJSON, err := json.Marshal(deployment)
+	resourceJSON, err := json.Marshal(deployment)
 	if err != nil {
 		// Should not occur, panic
 		log.Panic(err)
 	}
 
 	// Execute the Metric command with the Deployment JSON
-	outb, err := m.Executer.ExecuteWithPipe(m.Config.Metric, string(podJSON), m.Config.MetricTimeout)
+	outb, err := m.Executer.ExecuteWithPipe(m.Config.Metric, string(resourceJSON), m.Config.MetricTimeout)
 	if err != nil {
 		log.Println(outb.String())
 		return nil, err

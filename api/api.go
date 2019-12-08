@@ -34,6 +34,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// RunType api marks the metric gathering/evaluation as running during an API request
+const RunType = "api"
+
 type getMetricer interface {
 	GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error)
 }
@@ -85,6 +88,7 @@ func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	metrics.RunType = RunType
 	// Convert metrics into JSON
 	response, err := json.Marshal(metrics)
 	if err != nil {
@@ -115,6 +119,7 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+	metrics.RunType = RunType
 	// Get evaluations for metrics
 	evaluations, err := api.GetEvaluationer.GetEvaluation(metrics)
 	if err != nil {

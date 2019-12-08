@@ -140,7 +140,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			"Get metrics success metric gathering",
-			"{\"deployment\":\"test\",\"metrics\":[{\"resource\":\"SUCCESS_POD\",\"value\":\"SUCCESS\"}]}",
+			`{"deployment":"test","run_type":"api","metrics":[{"resource":"SUCCESS_POD","value":"SUCCESS"}]}`,
 			http.StatusOK,
 			"GET",
 			"/metrics",
@@ -166,7 +166,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			"Get metrics success metric gathering two deployment same namespace",
-			"{\"deployment\":\"target\",\"metrics\":[{\"resource\":\"SUCCESS_POD\",\"value\":\"SUCCESS\"}]}",
+			`{"deployment":"target","run_type":"api","metrics":[{"resource":"SUCCESS_POD","value":"SUCCESS"}]}`,
 			http.StatusOK,
 			"GET",
 			"/metrics",
@@ -199,7 +199,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			"Get metrics success metric gathering two deployment different namespaces",
-			"{\"deployment\":\"test\",\"metrics\":[{\"resource\":\"SUCCESS_POD\",\"value\":\"SUCCESS\"}]}",
+			`{"deployment":"test","run_type":"api","metrics":[{"resource":"SUCCESS_POD","value":"SUCCESS"}]}`,
 			http.StatusOK,
 			"GET",
 			"/metrics",

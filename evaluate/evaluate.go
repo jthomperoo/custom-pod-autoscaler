@@ -48,7 +48,7 @@ type Evaluator struct {
 // GetEvaluation uses the metrics provided to determine a set of evaluations
 func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Evaluation, error) {
 	// Convert metrics into JSON
-	metricJSON, err := json.Marshal(resourceMetrics.Metrics)
+	metricJSON, err := json.Marshal(resourceMetrics)
 	if err != nil {
 		// Should not occur, panic
 		log.Panic(err)

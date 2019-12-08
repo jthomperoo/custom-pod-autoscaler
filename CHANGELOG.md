@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- New `run_type` flag to the ResourceMetrics; allows scripts to understand the context of how it is being called.
+    * Two values, either `api` triggered by an API call, or `scaler` which means it was triggered by the autoscaling logic.
+### Changed
+- Provide full metric information to be piped into the evaluation command, including the resource being managed.
 
 ## [0.6.0] - 2019-11-20
 ### Added
