@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.7.0] - 2019-12-08
 ### Added
 - New `run_type` flag to the ResourceMetrics; allows scripts to understand the context of how it is being called.
     * Two values, either `api` triggered by an API call, or `scaler` which means it was triggered by the autoscaling logic.
@@ -61,7 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updates target number of replicas for a deployment based on evaluation.
 - Deploy image to Docker Hub.
 
-[Unreleased]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.6.0...HEAD
+[Unreleased]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.7.0...HEAD
+[0.7.0]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.6.0...0.7.0
 [0.6.0]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.5.0...0.6.0
 [0.5.0]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.3.0...0.4.0
