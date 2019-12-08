@@ -16,12 +16,17 @@ import json
 import sys
 
 # JSON piped into this script example:
-# [
+# {
+#   "deployment": "hello-kubernetes",
+#   "run_type": "api",
+#   "metrics": [
 #     {
-#         "resource": "hello-kubernetes",
-#         "value": "{\"up\": 3,\"down\": 2}"
-#     },
-# ]
+#       "resource": "hello-kubernetes",
+#       "value": "{\"up\": 0, \"down\": 0}"
+#     }
+#   ]
+# }
+
 
 def main():
     # Parse metrics in JSON
@@ -30,12 +35,12 @@ def main():
 
 def evaluate(metrics):
     # Only expect 1 metric provided
-    if len(metrics) != 1:
+    if len(metrics["metrics"]) != 1:
         sys.stderr.write("Expected 1 metric")
         exit(1)
 
     # Get thumbs up and thumbs down values
-    tweet_ratio_json = json.loads(metrics[0]["value"])
+    tweet_ratio_json = json.loads(metrics["metrics"][0]["value"])
     up = int(tweet_ratio_json["up"])
     down = int(tweet_ratio_json["down"])
 

@@ -31,6 +31,9 @@ import (
 	v1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
 
+// RunType scaler marks the metric gathering/evaluation as running during a scale
+const RunType = "scaler"
+
 type getMetricer interface {
 	GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error)
 }
@@ -74,6 +77,9 @@ func (s *Scaler) Scale() error {
 	if err != nil {
 		return err
 	}
+
+	// Mark the runtype as scaler
+	metrics.RunType = RunType
 
 	// Evaluate based on metrics
 	evaluation, err := s.GetEvaluationer.GetEvaluation(metrics)
