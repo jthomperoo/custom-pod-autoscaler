@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- New `startTime` configuration option in milliseconds; allows specifying a time that the interval should count up from when starting. This allows specifying a nearest time to start at, for example setting it to `60000` would start running at the closest minute, setting it to `15000` would start running at the closest 15 seconds e.g. :15 :30 :45.
 
 ## [0.7.0] - 2019-12-08
 ### Added

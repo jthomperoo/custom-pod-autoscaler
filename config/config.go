@@ -48,6 +48,7 @@ const (
 	defaultNamespace       = "default"
 	defaultMinReplicas     = 1
 	defaultMaxReplicas     = 10
+	defaultStartTime       = 1
 	defaultRunMode         = PerPodRunMode
 )
 
@@ -67,6 +68,7 @@ type Config struct {
 	MinReplicas     int32                                    `yaml:"minReplicas"`
 	MaxReplicas     int32                                    `yaml:"maxReplicas"`
 	RunMode         string                                   `yaml:"runMode"`
+	StartTime       int64                                    `yaml:"startTime"`
 }
 
 // LoadConfig loads in the default configuration, then overrides it from the config file,
@@ -152,6 +154,7 @@ func newDefaultConfig() *Config {
 		Namespace:       defaultNamespace,
 		MinReplicas:     defaultMinReplicas,
 		MaxReplicas:     defaultMaxReplicas,
+		StartTime:       defaultStartTime,
 		RunMode:         defaultRunMode,
 	}
 }
