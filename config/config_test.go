@@ -38,6 +38,7 @@ const (
 	defaultNamespace       = "default"
 	defaultMinReplicas     = 1
 	defaultMaxReplicas     = 10
+	defaultStartTime       = 1
 	defaultRunMode         = "per-pod"
 )
 
@@ -105,6 +106,7 @@ func TestLoadConfig(t *testing.T) {
 				RunMode:         defaultRunMode,
 				MinReplicas:     defaultMinReplicas,
 				MaxReplicas:     defaultMaxReplicas,
+				StartTime:       defaultStartTime,
 				ScaleTargetRef:  nil,
 			},
 		},
@@ -123,6 +125,7 @@ func TestLoadConfig(t *testing.T) {
 				"runMode":         "test run mode",
 				"minReplicas":     "3",
 				"maxReplicas":     "6",
+				"startTime":       "0",
 				"scaleTargetRef":  `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
 			},
 			nil,
@@ -138,6 +141,7 @@ func TestLoadConfig(t *testing.T) {
 				RunMode:         "test run mode",
 				MinReplicas:     3,
 				MaxReplicas:     6,
+				StartTime:       0,
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
 					Name:       "test target name",
 					Kind:       "test target kind",
@@ -158,6 +162,7 @@ func TestLoadConfig(t *testing.T) {
 				runMode: "test run mode"
 				minReplicas: 2
 				maxReplicas: 7
+				startTime: 0
 				namespace: "test yaml namespace"
 			`, "\t", "", -1)),
 			nil,
@@ -173,6 +178,7 @@ func TestLoadConfig(t *testing.T) {
 				RunMode:         "test run mode",
 				MinReplicas:     2,
 				MaxReplicas:     7,
+				StartTime:       0,
 				Namespace:       "test yaml namespace",
 			},
 		},

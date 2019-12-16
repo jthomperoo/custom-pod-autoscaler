@@ -57,6 +57,7 @@ const (
 	namespaceEnvName       = "namespace"
 	scaleTargetRefEnvName  = "scaleTargetRef"
 	runModeEnvName         = "runMode"
+	startTimeEnvName       = "startTime"
 	minReplicasEnvName     = "minReplicas"
 	maxReplicasEnvName     = "maxReplicas"
 )
@@ -116,21 +117,6 @@ func main() {
 		Executer: &executer,
 	}
 
-	// Set up time ticker with configured interval
-	ticker := time.NewTicker(time.Duration(config.Interval) * time.Millisecond)
-	// Set up shutdown channel, which will listen for UNIX shutdown commands
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-
-	// Set up scaler
-	autoscaler := &scaler.Scaler{
-		Clientset:         clientset,
-		DeploymentsClient: deploymentsClient,
-		Config:            config,
-		GetMetricer:       metricGatherer,
-		GetEvaluationer:   evaluator,
-	}
-
 	// Set up API
 	api := &api.API{
 		Router:          chi.NewRouter(),
@@ -145,30 +131,56 @@ func main() {
 		Handler: api.Router,
 	}
 
-	// Run the scaler in a goroutine, triggered by the ticker
-	// listen for shutdown requests, once recieved shut down the autoscaler
-	// and the API
+	delayTime := config.StartTime - (time.Now().UTC().UnixNano() / int64(time.Millisecond) % config.StartTime)
+	delayStartTimer := time.NewTimer(time.Duration(delayTime) * time.Millisecond)
+
+	log.Printf("Waiting %d milliseconds before starting autoscaler\n", delayTime)
+
 	go func() {
-		for {
-			select {
-			case <-shutdown:
-				log.Println("Shutting down...")
-				// Stop API
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
-				srv.Shutdown(ctx)
-				// Stop autoscaler
-				ticker.Stop()
-				return
-			case <-ticker.C:
-				err := autoscaler.Scale()
-				if err != nil {
-					log.Println(err)
+		// Wait for delay to start at expected time
+		<-delayStartTimer.C
+		log.Println("Starting autoscaler")
+		// Set up time ticker with configured interval
+		ticker := time.NewTicker(time.Duration(config.Interval) * time.Millisecond)
+		// Set up shutdown channel, which will listen for UNIX shutdown commands
+		shutdown := make(chan os.Signal, 1)
+		signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+		// Set up scaler
+		autoscaler := &scaler.Scaler{
+			Clientset:         clientset,
+			DeploymentsClient: deploymentsClient,
+			Config:            config,
+			GetMetricer:       metricGatherer,
+			GetEvaluationer:   evaluator,
+		}
+
+		// Run the scaler in a goroutine, triggered by the ticker
+		// listen for shutdown requests, once recieved shut down the autoscaler
+		// and the API
+		go func() {
+			for {
+				select {
+				case <-shutdown:
+					log.Println("Shutting down...")
+					// Stop API
+					ctx, cancel := context.WithCancel(context.Background())
+					defer cancel()
+					srv.Shutdown(ctx)
+					// Stop autoscaler
+					ticker.Stop()
+					return
+				case <-ticker.C:
+					err := autoscaler.Scale()
+					if err != nil {
+						log.Println(err)
+					}
 				}
 			}
-		}
+		}()
 	}()
 
+	log.Println("Starting API")
 	// Start API
 	srv.ListenAndServe()
 }
@@ -190,6 +202,7 @@ func readEnvVars() map[string]string {
 		runModeEnvName,
 		minReplicasEnvName,
 		maxReplicasEnvName,
+		startTimeEnvName,
 	}
 	configEnvs := map[string]string{}
 	for _, envName := range configEnvsNames {
