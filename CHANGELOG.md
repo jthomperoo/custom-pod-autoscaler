@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v0.8.0] - 2019-12-17
 ### Added
 - New `startTime` configuration option in milliseconds; allows specifying a time that the interval should count up from when starting. This allows specifying a nearest time to start at, for example setting it to `60000` would start running at the closest minute, setting it to `15000` would start running at the closest 15 seconds e.g. :15 :30 :45.
 - Support for JSON configuration, configuration file can now be in either YAML or JSON.
@@ -22,7 +24,7 @@ evaluate:
   shell: "python /evaluate.py"
 ```
 
-## [0.7.0] - 2019-12-08
+## [v0.7.0] - 2019-12-08
 ### Added
 - New `run_type` flag to the ResourceMetrics; allows scripts to understand the context of how it is being called.
     * Two values, either `api` triggered by an API call, or `scaler` which means it was triggered by the autoscaling logic.
@@ -79,8 +81,9 @@ evaluate:
 - Updates target number of replicas for a deployment based on evaluation.
 - Deploy image to Docker Hub.
 
-[Unreleased]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.7.0...HEAD
-[0.7.0]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.6.0...0.7.0
+[Unreleased]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/v0.8.0...HEAD
+[v0.8.0]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/v0.7.0...v0.8.0
+[v0.7.0]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.6.0...v0.7.0
 [0.6.0]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.5.0...0.6.0
 [0.5.0]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/jthomperoo/custom-pod-autoscaler/compare/0.3.0...0.4.0
