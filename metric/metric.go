@@ -20,20 +20,16 @@ limitations under the License.
 package metric
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
-
-type executeWithPiper interface {
-	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
-}
 
 // ResourceMetrics represents a resource's metrics, including each resource's metrics
 type ResourceMetrics struct {
@@ -54,7 +50,7 @@ type Metric struct {
 type Gatherer struct {
 	Clientset kubernetes.Interface
 	Config    *config.Config
-	Executer  executeWithPiper
+	Execute   execute.Executer
 }
 
 // GetMetrics gathers metrics for the resource supplied
@@ -77,10 +73,9 @@ func (m *Gatherer) getMetricsForResource(deployment *appsv1.Deployment) (*Resour
 		log.Panic(err)
 	}
 
-	// Execute the Metric command with the Deployment JSON
-	outb, err := m.Executer.ExecuteWithPipe(m.Config.Metric, string(resourceJSON), m.Config.MetricTimeout)
+	// Execute with the value
+	gathered, err := m.Execute.ExecuteWithValue(m.Config.Metric, string(resourceJSON))
 	if err != nil {
-		log.Println(outb.String())
 		return nil, err
 	}
 
@@ -90,7 +85,7 @@ func (m *Gatherer) getMetricsForResource(deployment *appsv1.Deployment) (*Resour
 		Metrics: []*Metric{
 			&Metric{
 				Resource: deployment.GetName(),
-				Value:    outb.String(),
+				Value:    gathered,
 			},
 		},
 	}, nil
@@ -114,17 +109,16 @@ func (m *Gatherer) getMetricsForPods(deployment *appsv1.Deployment) (*ResourceMe
 			log.Panic(err)
 		}
 
-		// Execute the Metric command with the Pod JSON
-		outb, err := m.Executer.ExecuteWithPipe(m.Config.Metric, string(podJSON), m.Config.MetricTimeout)
+		// Execute with the value
+		gathered, err := m.Execute.ExecuteWithValue(m.Config.Metric, string(podJSON))
 		if err != nil {
-			log.Println(outb.String())
 			return nil, err
 		}
 
 		// Add metric to metrics array
 		metrics = append(metrics, &Metric{
 			Resource: pod.GetName(),
-			Value:    outb.String(),
+			Value:    gathered,
 		})
 	}
 	return &ResourceMetrics{

@@ -9,7 +9,7 @@ default: vendor
 
 unittest: vendor
 	@echo "=============Running unit tests============="
-	go test ./... -cover -covermode atomic -coverprofile unit_cover.out --tags=unit
+	go test ./... -cover -coverprofile unit_cover.out --tags=unit
 
 lint: vendor
 	@echo "=============Linting============="

@@ -28,8 +28,6 @@ import (
 )
 
 const (
-	defaultEvaluate        = ">&2 echo 'ERROR: No evaluate command set' && exit 1"
-	defaultMetric          = ">&2 echo 'ERROR: No metric command set' && exit 1"
 	defaultInterval        = 15000
 	defaultHost            = "0.0.0.0"
 	defaultPort            = 5000
@@ -58,17 +56,17 @@ func TestLoadConfig(t *testing.T) {
 		expected    *config.Config
 	}{
 		{
-			"Invalid YAML",
+			"Invalid JSON or YAML",
 			[]byte("invalid"),
 			nil,
-			errors.New("yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `invalid` into config.Config"),
+			errors.New("error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type config.Config"),
 			nil,
 		},
 		{
-			"Invalid int YAML config",
+			"Invalid int JSON or YAML config",
 			[]byte("interval: \"invalid\""),
 			nil,
-			errors.New("yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `invalid` into int"),
+			errors.New("error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go struct field Config.interval of type int"),
 			nil,
 		},
 		{
@@ -86,62 +84,56 @@ func TestLoadConfig(t *testing.T) {
 			map[string]string{
 				"scaleTargetRef": "invalid JSON",
 			},
-			errors.New("invalid character 'i' looking for beginning of value"),
+			errors.New("error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type v1.CrossVersionObjectReference"),
 			nil,
 		},
 		{
-			"No YAML no env return default",
+			"No JSON or YAML no env return default",
 			nil,
 			nil,
 			nil,
 			&config.Config{
-				Evaluate:        defaultEvaluate,
-				Metric:          defaultMetric,
-				Interval:        defaultInterval,
-				Host:            defaultHost,
-				Port:            defaultPort,
-				MetricTimeout:   defaultMetricTimeout,
-				EvaluateTimeout: defaultEvaluateTimeout,
-				Namespace:       defaultNamespace,
-				RunMode:         defaultRunMode,
-				MinReplicas:     defaultMinReplicas,
-				MaxReplicas:     defaultMaxReplicas,
-				StartTime:       defaultStartTime,
-				ScaleTargetRef:  nil,
+				Interval:       defaultInterval,
+				Host:           defaultHost,
+				Port:           defaultPort,
+				Namespace:      defaultNamespace,
+				RunMode:        defaultRunMode,
+				MinReplicas:    defaultMinReplicas,
+				MaxReplicas:    defaultMaxReplicas,
+				StartTime:      defaultStartTime,
+				ScaleTargetRef: nil,
 			},
 		},
 		{
-			"No YAML override with env",
+			"No JSON or YAML override with env",
 			nil,
 			map[string]string{
-				"evaluate":        "test env evaluate",
-				"metric":          "test env metric",
-				"interval":        "35",
-				"host":            "test env host",
-				"port":            "1234",
-				"metricTimeout":   "13",
-				"evaluateTimeout": "14",
-				"namespace":       "test env namespace",
-				"runMode":         "test run mode",
-				"minReplicas":     "3",
-				"maxReplicas":     "6",
-				"startTime":       "0",
-				"scaleTargetRef":  `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
+				"metric":         `{ "type" : "shell", "timeout": 10, "shell": "testcommand"}`,
+				"interval":       "35",
+				"host":           "test env host",
+				"port":           "1234",
+				"namespace":      "test env namespace",
+				"runMode":        "test run mode",
+				"minReplicas":    "3",
+				"maxReplicas":    "6",
+				"startTime":      "0",
+				"scaleTargetRef": `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
 			},
 			nil,
 			&config.Config{
-				Evaluate:        "test env evaluate",
-				Metric:          "test env metric",
-				Interval:        35,
-				Host:            "test env host",
-				Port:            1234,
-				MetricTimeout:   13,
-				EvaluateTimeout: 14,
-				Namespace:       "test env namespace",
-				RunMode:         "test run mode",
-				MinReplicas:     3,
-				MaxReplicas:     6,
-				StartTime:       0,
+				Interval:    35,
+				Host:        "test env host",
+				Port:        1234,
+				Namespace:   "test env namespace",
+				RunMode:     "test run mode",
+				MinReplicas: 3,
+				MaxReplicas: 6,
+				StartTime:   0,
+				Metric: &config.Method{
+					Type:    "shell",
+					Timeout: 10,
+					Shell:   "testcommand",
+				},
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
 					Name:       "test target name",
 					Kind:       "test target kind",
@@ -152,13 +144,17 @@ func TestLoadConfig(t *testing.T) {
 		{
 			"No env override with YAML",
 			[]byte(strings.Replace(`
-				evaluate: "test yaml evaluate"
-				metric: "test yaml metric"
+				evaluate: 
+				  type: shell
+				  timeout: 10
+				  shell: testcommand
+				metric: 
+				  type: shell
+				  timeout: 10
+				  shell: testcommand
 				interval: 30
 				host: "test yaml host"
 				port: 7890
-				metricTimeout: 10
-				evaluateTimeout: 11
 				runMode: "test run mode"
 				minReplicas: 2
 				maxReplicas: 7
@@ -168,18 +164,171 @@ func TestLoadConfig(t *testing.T) {
 			nil,
 			nil,
 			&config.Config{
-				Evaluate:        "test yaml evaluate",
-				Metric:          "test yaml metric",
-				Interval:        30,
-				Host:            "test yaml host",
-				Port:            7890,
-				MetricTimeout:   10,
-				EvaluateTimeout: 11,
-				RunMode:         "test run mode",
-				MinReplicas:     2,
-				MaxReplicas:     7,
-				StartTime:       0,
-				Namespace:       "test yaml namespace",
+				Interval:    30,
+				Host:        "test yaml host",
+				Port:        7890,
+				RunMode:     "test run mode",
+				MinReplicas: 2,
+				MaxReplicas: 7,
+				StartTime:   0,
+				Namespace:   "test yaml namespace",
+				Evaluate: &config.Method{
+					Type:    "shell",
+					Timeout: 10,
+					Shell:   "testcommand",
+				},
+				Metric: &config.Method{
+					Type:    "shell",
+					Timeout: 10,
+					Shell:   "testcommand",
+				},
+			},
+		},
+		{
+			"No env override with JSON",
+			[]byte(`{
+				"evaluate":{
+					"type":"shell",
+					"timeout":10,
+					"shell":"testcommand"
+				},
+				"metric":{
+					"type":"shell",
+					"timeout":10,
+					"shell":"testcommand"
+				},
+				"interval":30,
+				"host":"test yaml host",
+				"port":7890,
+				"runMode":"test run mode",
+				"minReplicas":2,
+				"maxReplicas":7,
+				"startTime":0,
+				"namespace":"test yaml namespace"
+			}`),
+			nil,
+			nil,
+			&config.Config{
+				Interval:    30,
+				Host:        "test yaml host",
+				Port:        7890,
+				RunMode:     "test run mode",
+				MinReplicas: 2,
+				MaxReplicas: 7,
+				StartTime:   0,
+				Namespace:   "test yaml namespace",
+				Evaluate: &config.Method{
+					Type:    "shell",
+					Timeout: 10,
+					Shell:   "testcommand",
+				},
+				Metric: &config.Method{
+					Type:    "shell",
+					Timeout: 10,
+					Shell:   "testcommand",
+				},
+			},
+		},
+		{
+			"Partial YAML partial env",
+			[]byte(strings.Replace(`
+				evaluate: 
+				  type: shell
+				  timeout: 10
+				  shell: testcommand
+				metric: 
+				  type: shell
+				  timeout: 10
+				  shell: testcommand
+				host: "test yaml host"
+				port: 7890
+				runMode: "test run mode"
+				namespace: "test yaml namespace"
+			`, "\t", "", -1)),
+			map[string]string{
+				"interval":       "35",
+				"minReplicas":    "3",
+				"maxReplicas":    "6",
+				"startTime":      "0",
+				"scaleTargetRef": `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
+			},
+			nil,
+			&config.Config{
+				Interval:    35,
+				Host:        "test yaml host",
+				Port:        7890,
+				RunMode:     "test run mode",
+				MinReplicas: 3,
+				MaxReplicas: 6,
+				StartTime:   0,
+				Namespace:   "test yaml namespace",
+				ScaleTargetRef: &v1.CrossVersionObjectReference{
+					Name:       "test target name",
+					Kind:       "test target kind",
+					APIVersion: "test target api version",
+				},
+				Evaluate: &config.Method{
+					Type:    "shell",
+					Timeout: 10,
+					Shell:   "testcommand",
+				},
+				Metric: &config.Method{
+					Type:    "shell",
+					Timeout: 10,
+					Shell:   "testcommand",
+				},
+			},
+		},
+		{
+			"Partial JSON partial env",
+			[]byte(`{
+				"evaluate": {
+					"type": "shell",
+					"timeout": 10,
+					"shell": "testcommand"
+				},
+				"metric": {
+					"type": "shell",
+					"timeout": 10,
+					"shell": "testcommand"
+				},
+				"host": "test yaml host",
+				"port": 7890,
+				"runMode": "test run mode",
+				"namespace": "test yaml namespace"
+			}`),
+			map[string]string{
+				"interval":       "35",
+				"minReplicas":    "3",
+				"maxReplicas":    "6",
+				"startTime":      "0",
+				"scaleTargetRef": `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
+			},
+			nil,
+			&config.Config{
+				Interval:    35,
+				Host:        "test yaml host",
+				Port:        7890,
+				RunMode:     "test run mode",
+				MinReplicas: 3,
+				MaxReplicas: 6,
+				StartTime:   0,
+				Namespace:   "test yaml namespace",
+				ScaleTargetRef: &v1.CrossVersionObjectReference{
+					Name:       "test target name",
+					Kind:       "test target kind",
+					APIVersion: "test target api version",
+				},
+				Evaluate: &config.Method{
+					Type:    "shell",
+					Timeout: 10,
+					Shell:   "testcommand",
+				},
+				Metric: &config.Method{
+					Type:    "shell",
+					Timeout: 10,
+					Shell:   "testcommand",
+				},
 			},
 		},
 	}

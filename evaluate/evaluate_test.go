@@ -18,7 +18,6 @@ limitations under the License.
 package evaluate_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -27,20 +26,10 @@ import (
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/execute"
+	"github.com/jthomperoo/custom-pod-autoscaler/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 )
-
-type executeWithPiper interface {
-	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
-}
-
-type executer struct {
-	executeWithPipe func(command string, value string, timeout int) (*bytes.Buffer, error)
-}
-
-func (e *executer) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
-	return e.executeWithPipe(command, value, timeout)
-}
 
 func TestGetEvaluation(t *testing.T) {
 	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
@@ -56,7 +45,7 @@ func TestGetEvaluation(t *testing.T) {
 		expected    *evaluate.Evaluation
 		metrics     *metric.ResourceMetrics
 		config      *config.Config
-		executer    executeWithPiper
+		execute     execute.Executer
 	}{
 		{
 			"Execute fail",
@@ -71,13 +60,16 @@ func TestGetEvaluation(t *testing.T) {
 				},
 			},
 			&config.Config{
-				Evaluate:        "test evaluate command",
-				EvaluateTimeout: 10,
+				Evaluate: &config.Method{
+					Type:    "fake",
+					Timeout: 10,
+					Shell:   "test evaluate command",
+				},
 			},
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
-					return nil, errors.New("fail to evaluate")
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "", errors.New("fail to evaluate")
 				}
 				return &execute
 			}(),
@@ -97,22 +89,23 @@ func TestGetEvaluation(t *testing.T) {
 				},
 			},
 			&config.Config{
-				Evaluate:        "test evaluate command",
-				EvaluateTimeout: 10,
+				Evaluate: &config.Method{
+					Type:    "fake",
+					Timeout: 10,
+					Shell:   "test evaluate command",
+				},
 			},
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
 					// Convert into JSON
 					jsonEvaluation, err := json.Marshal(&evaluate.Evaluation{
 						TargetReplicas: int32(3),
 					})
 					if err != nil {
-						return nil, err
+						return "", err
 					}
-					var buffer bytes.Buffer
-					buffer.WriteString(string(jsonEvaluation))
-					return &buffer, nil
+					return string(jsonEvaluation), nil
 				}
 				return &execute
 			}(),
@@ -130,15 +123,16 @@ func TestGetEvaluation(t *testing.T) {
 				},
 			},
 			&config.Config{
-				Evaluate:        "test evaluate command",
-				EvaluateTimeout: 10,
+				Evaluate: &config.Method{
+					Type:    "fake",
+					Timeout: 10,
+					Shell:   "test evaluate command",
+				},
 			},
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
-					var buffer bytes.Buffer
-					buffer.WriteString(`invalid`)
-					return &buffer, nil
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "invalid", nil
 				}
 				return &execute
 			}(),
@@ -148,8 +142,8 @@ func TestGetEvaluation(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			evaluator := &evaluate.Evaluator{
-				Config:   test.config,
-				Executer: test.executer,
+				Config:  test.config,
+				Execute: test.execute,
 			}
 			evaluation, err := evaluator.GetEvaluation(test.metrics)
 			if !cmp.Equal(&test.expectedErr, &err, equateErrorMessage) {

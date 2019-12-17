@@ -20,12 +20,13 @@ limitations under the License.
 package config
 
 import (
-	"encoding/json"
+	"bytes"
 	"reflect"
 	"strconv"
+	"strings"
 
-	"gopkg.in/yaml.v2"
 	autoscaling "k8s.io/api/autoscaling/v1"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 const (
@@ -38,44 +39,46 @@ const (
 )
 
 const (
-	defaultEvaluate        = ">&2 echo 'ERROR: No evaluate command set' && exit 1"
-	defaultMetric          = ">&2 echo 'ERROR: No metric command set' && exit 1"
-	defaultInterval        = 15000
-	defaultHost            = "0.0.0.0"
-	defaultPort            = 5000
-	defaultMetricTimeout   = 5000
-	defaultEvaluateTimeout = 5000
-	defaultNamespace       = "default"
-	defaultMinReplicas     = 1
-	defaultMaxReplicas     = 10
-	defaultStartTime       = 1
-	defaultRunMode         = PerPodRunMode
+	defaultInterval    = 15000
+	defaultHost        = "0.0.0.0"
+	defaultPort        = 5000
+	defaultNamespace   = "default"
+	defaultMinReplicas = 1
+	defaultMaxReplicas = 10
+	defaultStartTime   = 1
+	defaultRunMode     = PerPodRunMode
 )
 
-const yamlStructTag = "yaml"
+const jsonStructTag = "json"
 
 // Config is the configuration options for the CPA
 type Config struct {
-	ScaleTargetRef  *autoscaling.CrossVersionObjectReference `yaml:"scaleTargetRef"`
-	Evaluate        string                                   `yaml:"evaluate"`
-	Metric          string                                   `yaml:"metric"`
-	Interval        int                                      `yaml:"interval"`
-	Host            string                                   `yaml:"host"`
-	Port            int                                      `yaml:"port"`
-	EvaluateTimeout int                                      `yaml:"evaluateTimeout"`
-	MetricTimeout   int                                      `yaml:"metricTimeout"`
-	Namespace       string                                   `yaml:"namespace"`
-	MinReplicas     int32                                    `yaml:"minReplicas"`
-	MaxReplicas     int32                                    `yaml:"maxReplicas"`
-	RunMode         string                                   `yaml:"runMode"`
-	StartTime       int64                                    `yaml:"startTime"`
+	ScaleTargetRef *autoscaling.CrossVersionObjectReference `json:"scaleTargetRef"`
+	Evaluate       *Method                                  `json:"evaluate"`
+	Metric         *Method                                  `json:"metric"`
+	Interval       int                                      `json:"interval"`
+	Host           string                                   `json:"host"`
+	Port           int                                      `json:"port"`
+	Namespace      string                                   `json:"namespace"`
+	MinReplicas    int32                                    `json:"minReplicas"`
+	MaxReplicas    int32                                    `json:"maxReplicas"`
+	RunMode        string                                   `json:"runMode"`
+	StartTime      int64                                    `json:"startTime"`
+}
+
+// Method describes a method for passing data/triggerering logic, such as through a shell
+// command
+type Method struct {
+	Type    string `json:"type"`
+	Timeout int    `json:"timeout"`
+	Shell   string `json:"shell"`
 }
 
 // LoadConfig loads in the default configuration, then overrides it from the config file,
 // then any env vars set.
 func LoadConfig(configFileData []byte, envVars map[string]string) (*Config, error) {
 	config := newDefaultConfig()
-	err := loadFromYAML(configFileData, config)
+	err := loadFromBytes(configFileData, config)
 	if err != nil {
 		return nil, err
 	}
@@ -86,8 +89,12 @@ func LoadConfig(configFileData []byte, envVars map[string]string) (*Config, erro
 	return config, nil
 }
 
-func loadFromYAML(data []byte, config *Config) error {
-	err := yaml.Unmarshal(data, config)
+func loadFromBytes(data []byte, config *Config) error {
+	// If no bytes file data provided, skip trying to parse it
+	if data == nil {
+		return nil
+	}
+	err := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(data), 10).Decode(config)
 	if err != nil {
 		return err
 	}
@@ -105,8 +112,8 @@ func loadFromEnv(config *Config, envVars map[string]string) error {
 		fieldType := configTypes.Field(i)
 		fieldValue := configValues.Field(i)
 
-		// Extract YAML tag from the type, e.g `yaml:"example"` would return example
-		tag := fieldType.Tag.Get(yamlStructTag)
+		// Extract JSON tag from the type, e.g `json:"example"` would return example
+		tag := fieldType.Tag.Get(jsonStructTag)
 
 		// Check if there is an environment variable provided with the same tag
 		value, exists := envVars[tag]
@@ -128,10 +135,10 @@ func loadFromEnv(config *Config, envVars map[string]string) error {
 			continue
 		}
 
-		// If the type is not one of the primitives above, it must be in JSON form, so try to parse
-		// it and set the value from the unmarshalled JSON value
+		// If the type is not one of the primitives above, it must be in JSON or YAML form, so try to parse
+		// it and set the value from the unmarshalled JSON or YAML value
 		fieldRef := reflect.New(fieldType.Type)
-		err := json.Unmarshal([]byte(value), fieldRef.Interface())
+		err := yaml.NewYAMLOrJSONDecoder(strings.NewReader(value), 10).Decode(fieldRef.Interface())
 		if err != nil {
 			return err
 		}
@@ -144,17 +151,13 @@ func loadFromEnv(config *Config, envVars map[string]string) error {
 
 func newDefaultConfig() *Config {
 	return &Config{
-		Interval:        defaultInterval,
-		Metric:          defaultMetric,
-		Evaluate:        defaultEvaluate,
-		Host:            defaultHost,
-		Port:            defaultPort,
-		EvaluateTimeout: defaultEvaluateTimeout,
-		MetricTimeout:   defaultMetricTimeout,
-		Namespace:       defaultNamespace,
-		MinReplicas:     defaultMinReplicas,
-		MaxReplicas:     defaultMaxReplicas,
-		StartTime:       defaultStartTime,
-		RunMode:         defaultRunMode,
+		Interval:    defaultInterval,
+		Host:        defaultHost,
+		Port:        defaultPort,
+		Namespace:   defaultNamespace,
+		MinReplicas: defaultMinReplicas,
+		MaxReplicas: defaultMaxReplicas,
+		StartTime:   defaultStartTime,
+		RunMode:     defaultRunMode,
 	}
 }

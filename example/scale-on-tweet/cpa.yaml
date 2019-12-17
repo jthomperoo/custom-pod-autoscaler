@@ -15,7 +15,7 @@ spec:
     name: hello-kubernetes
   config: 
     - name: interval
-      value: "5000"
+      value: "10000"
     - name: consumerKey
       value: <PUT YOUR CONSUMER KEY HERE>
     - name: consumerSecret
