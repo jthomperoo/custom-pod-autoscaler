@@ -18,34 +18,23 @@ limitations under the License.
 package metric_test
 
 import (
-	"bytes"
 	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/execute"
+	"github.com/jthomperoo/custom-pod-autoscaler/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
 	fakeappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1/fake"
 	k8stesting "k8s.io/client-go/testing"
 )
-
-type executeWithPiper interface {
-	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
-}
-
-type executer struct {
-	executeWithPipe func(command string, value string, timeout int) (*bytes.Buffer, error)
-}
-
-func (e *executer) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
-	return e.executeWithPipe(command, value, timeout)
-}
 
 func TestGetMetrics(t *testing.T) {
 	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
@@ -62,7 +51,7 @@ func TestGetMetrics(t *testing.T) {
 		deployment  *appsv1.Deployment
 		config      *config.Config
 		clientset   kubernetes.Interface
-		executer    executeWithPiper
+		execute     execute.Executer
 	}{
 		{
 			"Invalid run mode",
@@ -79,8 +68,8 @@ func TestGetMetrics(t *testing.T) {
 				Namespace: "test namespace",
 				RunMode:   "invalid",
 			},
-			func() *fake.Clientset {
-				clientset := fake.NewSimpleClientset()
+			func() *k8sfake.Clientset {
+				clientset := k8sfake.NewSimpleClientset()
 				clientset.AppsV1().(*fakeappsv1.FakeAppsV1).Fake.PrependReactor("list", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
 					return true, nil, errors.New("fail to list pods")
 				})
@@ -103,8 +92,8 @@ func TestGetMetrics(t *testing.T) {
 				Namespace: "test namespace",
 				RunMode:   config.PerPodRunMode,
 			},
-			func() *fake.Clientset {
-				clientset := fake.NewSimpleClientset()
+			func() *k8sfake.Clientset {
+				clientset := k8sfake.NewSimpleClientset()
 				clientset.AppsV1().(*fakeappsv1.FakeAppsV1).Fake.PrependReactor("list", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
 					return true, nil, errors.New("fail to list pods")
 				})
@@ -127,7 +116,7 @@ func TestGetMetrics(t *testing.T) {
 				Namespace: "test namespace",
 				RunMode:   config.PerPodRunMode,
 			},
-			fake.NewSimpleClientset(
+			k8sfake.NewSimpleClientset(
 				&v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test pod",
@@ -136,10 +125,10 @@ func TestGetMetrics(t *testing.T) {
 					},
 				},
 			),
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
-					return nil, errors.New("fail to get metric")
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "", errors.New("fail to get metric")
 				}
 				return &execute
 			}(),
@@ -153,13 +142,11 @@ func TestGetMetrics(t *testing.T) {
 				Namespace: "test namespace",
 				RunMode:   config.PerPodRunMode,
 			},
-			fake.NewSimpleClientset(),
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
-					var buffer bytes.Buffer
-					buffer.WriteString("test value")
-					return &buffer, nil
+			k8sfake.NewSimpleClientset(),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
 				}
 				return &execute
 			}(),
@@ -179,7 +166,7 @@ func TestGetMetrics(t *testing.T) {
 				Namespace: "test managed namespace",
 				RunMode:   config.PerPodRunMode,
 			},
-			fake.NewSimpleClientset(
+			k8sfake.NewSimpleClientset(
 				&v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test pod",
@@ -188,12 +175,10 @@ func TestGetMetrics(t *testing.T) {
 					},
 				},
 			),
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
-					var buffer bytes.Buffer
-					buffer.WriteString("test value")
-					return &buffer, nil
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
 				}
 				return &execute
 			}(),
@@ -213,7 +198,7 @@ func TestGetMetrics(t *testing.T) {
 				Namespace: "test managed namespace",
 				RunMode:   config.PerPodRunMode,
 			},
-			fake.NewSimpleClientset(
+			k8sfake.NewSimpleClientset(
 				&v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test pod",
@@ -222,12 +207,10 @@ func TestGetMetrics(t *testing.T) {
 					},
 				},
 			),
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
-					var buffer bytes.Buffer
-					buffer.WriteString("test value")
-					return &buffer, nil
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
 				}
 				return &execute
 			}(),
@@ -252,7 +235,7 @@ func TestGetMetrics(t *testing.T) {
 				Namespace: "test namespace",
 				RunMode:   config.PerPodRunMode,
 			},
-			fake.NewSimpleClientset(
+			k8sfake.NewSimpleClientset(
 				&v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test pod",
@@ -261,12 +244,10 @@ func TestGetMetrics(t *testing.T) {
 					},
 				},
 			),
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
-					var buffer bytes.Buffer
-					buffer.WriteString("test value")
-					return &buffer, nil
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
 				}
 				return &execute
 			}(),
@@ -295,7 +276,7 @@ func TestGetMetrics(t *testing.T) {
 				Namespace: "test namespace",
 				RunMode:   config.PerPodRunMode,
 			},
-			fake.NewSimpleClientset(
+			k8sfake.NewSimpleClientset(
 				&v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "first pod",
@@ -311,12 +292,10 @@ func TestGetMetrics(t *testing.T) {
 					},
 				},
 			),
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
-					var buffer bytes.Buffer
-					buffer.WriteString("test value")
-					return &buffer, nil
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
 				}
 				return &execute
 			}(),
@@ -335,11 +314,11 @@ func TestGetMetrics(t *testing.T) {
 				Namespace: "test namespace",
 				RunMode:   config.PerResourceRunMode,
 			},
-			fake.NewSimpleClientset(),
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
-					return nil, errors.New("fail to get metric")
+			k8sfake.NewSimpleClientset(),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "", errors.New("fail to get metric")
 				}
 				return &execute
 			}(),
@@ -363,13 +342,11 @@ func TestGetMetrics(t *testing.T) {
 				Namespace: "test namespace",
 				RunMode:   config.PerResourceRunMode,
 			},
-			fake.NewSimpleClientset(),
-			func() *executer {
-				execute := executer{}
-				execute.executeWithPipe = func(command string, value string, timeout int) (*bytes.Buffer, error) {
-					var buffer bytes.Buffer
-					buffer.WriteString("test value")
-					return &buffer, nil
+			k8sfake.NewSimpleClientset(),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
 				}
 				return &execute
 			}(),
@@ -386,7 +363,7 @@ func TestGetMetrics(t *testing.T) {
 			gatherer := &metric.Gatherer{
 				Clientset: test.clientset,
 				Config:    test.config,
-				Executer:  test.executer,
+				Execute:   test.execute,
 			}
 			metrics, err := gatherer.GetMetrics(test.deployment)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {

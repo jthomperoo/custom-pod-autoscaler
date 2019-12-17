@@ -1,3 +1,9 @@
-evaluate: "python /evaluate.py"
-metric: "python /metric.py"
+evaluate:
+  type: "shell"
+  timeout: 2500
+  shell: "python /evaluate.py"
+metric:
+  type: "shell"
+  timeout: 2500
+  shell: "python /metric.py"
 runMode: "per-pod"

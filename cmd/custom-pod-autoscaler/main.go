@@ -38,9 +38,10 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/api"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/execute"
+	"github.com/jthomperoo/custom-pod-autoscaler/execute/shell"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/scaler"
-	"github.com/jthomperoo/custom-pod-autoscaler/shell"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -100,7 +101,7 @@ func main() {
 	deploymentsClient := clientset.AppsV1().Deployments(config.Namespace)
 
 	// Set up shell executer
-	executer := shell.ExecuteWithPipe{
+	shellExec := &shell.Execute{
 		Command: exec.Command,
 	}
 
@@ -108,13 +109,21 @@ func main() {
 	metricGatherer := &metric.Gatherer{
 		Clientset: clientset,
 		Config:    config,
-		Executer:  &executer,
+		Execute: &execute.CombinedExecute{
+			Executers: []execute.Executer{
+				shellExec,
+			},
+		},
 	}
 
 	// Set up evaluator
 	evaluator := &evaluate.Evaluator{
-		Config:   config,
-		Executer: &executer,
+		Config: config,
+		Execute: &execute.CombinedExecute{
+			Executers: []execute.Executer{
+				shellExec,
+			},
+		},
 	}
 
 	// Set up API

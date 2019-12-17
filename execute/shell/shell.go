@@ -22,23 +22,28 @@ import (
 	"fmt"
 	"os/exec"
 	"time"
+
+	"github.com/jthomperoo/custom-pod-autoscaler/config"
 )
+
+// Type shell represents a shell command
+const Type = "shell"
 
 // Command represents the function that builds the exec.Cmd to be used in shell commands.
 type command = func(name string, arg ...string) *exec.Cmd
 
-// ExecuteWithPipe represents a way to execute commands with values piped to them.
-type ExecuteWithPipe struct {
+// Execute represents a way to execute shell commands with values piped to them.
+type Execute struct {
 	Command command
 }
 
-// ExecuteWithPipe executes a shell command with a value piped to it.
+// ExecuteWithValue executes a shell command with a value piped to it.
 // If it exits with code 0, no error is returned and the stdout is captured and returned.
 // If it exits with code 1, an error is returned and the stderr is captured and returned.
 // If the timeout is reached, an error is returned.
-func (e *ExecuteWithPipe) ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error) {
+func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string, error) {
 	// Build command string with value piped into it
-	commandString := fmt.Sprintf("echo '%s' | %s", value, command)
+	commandString := fmt.Sprintf("echo '%s' | %s", value, method.Shell)
 	cmd := e.Command("/bin/sh", "-c", commandString)
 
 	// Set up byte buffers to read stdout and stderr
@@ -49,7 +54,7 @@ func (e *ExecuteWithPipe) ExecuteWithPipe(command string, value string, timeout 
 	// Start command
 	err := cmd.Start()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// Set up channel to wait for command to finish
@@ -57,16 +62,21 @@ func (e *ExecuteWithPipe) ExecuteWithPipe(command string, value string, timeout 
 	go func() { done <- cmd.Wait() }()
 
 	// Set up a timeout, after which if the command hasn't finished it will be stopped
-	timeoutListener := time.After(time.Duration(timeout) * time.Millisecond)
+	timeoutListener := time.After(time.Duration(method.Timeout) * time.Millisecond)
 
 	select {
 	case <-timeoutListener:
 		cmd.Process.Kill()
-		return nil, fmt.Errorf("Command %s timed out", command)
+		return "", fmt.Errorf("Command %s timed out", method.Shell)
 	case err = <-done:
 		if err != nil {
-			return &errb, err
+			return errb.String(), err
 		}
 	}
-	return &outb, nil
+	return outb.String(), nil
+}
+
+// GetType returns the shell executer type
+func (e *Execute) GetType() string {
+	return Type
 }

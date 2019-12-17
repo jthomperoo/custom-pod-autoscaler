@@ -27,7 +27,8 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jthomperoo/custom-pod-autoscaler/shell"
+	"github.com/jthomperoo/custom-pod-autoscaler/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/execute/shell"
 )
 
 type command func(name string, arg ...string) *exec.Cmd
@@ -76,18 +77,13 @@ func fakeExecCommand(name string, process process) command {
 	}
 }
 
-func stringPointer(value string) *string {
-	return &value
-}
-
 type test struct {
-	description   string
-	expectedErr   error
-	expected      *string
-	commandString string
-	value         string
-	timeout       int
-	command       command
+	description string
+	expectedErr error
+	expected    string
+	method      *config.Method
+	pipeValue   string
+	command     command
 }
 
 var tests []test
@@ -100,10 +96,13 @@ func TestMain(m *testing.M) {
 		{
 			"Successful shell command",
 			nil,
-			stringPointer("test std out"),
-			"command",
+			"test std out",
+			&config.Method{
+				Type:    shell.Type,
+				Timeout: 100,
+				Shell:   "command",
+			},
 			"pipe value",
-			100,
 			fakeExecCommand("success", func(t *testing.T) {
 				// Check provided values are correct
 				// Due to the fake shell command, the actual command and value piped to it
@@ -137,10 +136,13 @@ func TestMain(m *testing.M) {
 		{
 			"Failed shell command",
 			errors.New("exit status 1"),
-			stringPointer("shell command failed"),
-			"command",
+			"shell command failed",
+			&config.Method{
+				Type:    shell.Type,
+				Timeout: 100,
+				Shell:   "command",
+			},
 			"pipe value",
-			100,
 			fakeExecCommand("failed", func(t *testing.T) {
 				fmt.Fprint(os.Stderr, "shell command failed")
 				os.Exit(1)
@@ -149,10 +151,13 @@ func TestMain(m *testing.M) {
 		{
 			"Failed shell command timeout",
 			errors.New("Command command timed out"),
-			nil,
-			"command",
+			"",
+			&config.Method{
+				Type:    shell.Type,
+				Timeout: 5,
+				Shell:   "command",
+			},
 			"pipe value",
-			1,
 			fakeExecCommand("timeout", func(t *testing.T) {
 				fmt.Fprint(os.Stdout, "test std out")
 				time.Sleep(10 * time.Millisecond)
@@ -162,10 +167,13 @@ func TestMain(m *testing.M) {
 		{
 			"Failed shell command fail to start",
 			errors.New("exec: already started"),
-			nil,
-			"command",
+			"",
+			&config.Method{
+				Type:    shell.Type,
+				Timeout: 100,
+				Shell:   "command",
+			},
 			"pipe value",
-			100,
 			fakeExecCommandAndStart("fail to start", func(t *testing.T) {
 				fmt.Fprint(os.Stdout, "test std out")
 				os.Exit(0)
@@ -176,7 +184,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestExecWithValuePipe(t *testing.T) {
+func TestExecute_ExecuteWithValue(t *testing.T) {
 	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
 		if x == nil || y == nil {
 			return x == nil && y == nil
@@ -186,21 +194,41 @@ func TestExecWithValuePipe(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			s := &shell.ExecuteWithPipe{test.command}
-			stdout, err := s.ExecuteWithPipe(test.commandString, test.value, test.timeout)
+			s := &shell.Execute{test.command}
+			result, err := s.ExecuteWithValue(test.method, test.pipeValue)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
-				t.Errorf(stdout.String())
+				t.Errorf(result)
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return
 			}
 
-			if test.expected == nil && stdout == nil {
-				return
+			if !cmp.Equal(result, test.expected) {
+				t.Errorf("stdout mismatch (-want +got):\n%s", cmp.Diff(result, test.expected))
 			}
+		})
+	}
+}
 
-			stdoutStr := stdout.String()
-			if !cmp.Equal(stdoutStr, *test.expected) {
-				t.Errorf("stdout mismatch (-want +got):\n%s", cmp.Diff(stdoutStr, *test.expected))
+func TestExecute_GetType(t *testing.T) {
+	var tests = []struct {
+		description string
+		expected    string
+		command     func(name string, arg ...string) *exec.Cmd
+	}{
+		{
+			"Return type",
+			"shell",
+			nil,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			execute := &shell.Execute{
+				Command: test.command,
+			}
+			result := execute.GetType()
+			if !cmp.Equal(test.expected, result) {
+				t.Errorf("metrics mismatch (-want +got):\n%s", cmp.Diff(test.expected, result))
 			}
 		})
 	}

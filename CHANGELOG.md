@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - New `startTime` configuration option in milliseconds; allows specifying a time that the interval should count up from when starting. This allows specifying a nearest time to start at, for example setting it to `60000` would start running at the closest minute, setting it to `15000` would start running at the closest 15 seconds e.g. :15 :30 :45.
+- Support for JSON configuration, configuration file can now be in either YAML or JSON.
+### Changed
+- Replaced shell command with a generic method, allowing different methods to be supported. For example, instead of:
+```yaml
+evaluate: "python /evaluate.py"
+evaluateTimeout: 2500
+```
+It is now:
+```yaml
+evaluate: 
+  type: "shell"
+  timeout: 2500
+  shell: "python /evaluate.py"
+```
 
 ## [0.7.0] - 2019-12-08
 ### Added

@@ -20,19 +20,15 @@ limitations under the License.
 package evaluate
 
 import (
-	"bytes"
 	"encoding/json"
 	"log"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 )
 
 const invalidEvaluationMessage = "Invalid evaluation returned by evaluator: %s"
-
-type executeWithPiper interface {
-	ExecuteWithPipe(command string, value string, timeout int) (*bytes.Buffer, error)
-}
 
 // Evaluation represents a decision on how to scale a deployment
 type Evaluation struct {
@@ -41,8 +37,8 @@ type Evaluation struct {
 
 // Evaluator handles triggering the evaluation logic to decide how to scale a resource
 type Evaluator struct {
-	Config   *config.Config
-	Executer executeWithPiper
+	Config  *config.Config
+	Execute execute.Executer
 }
 
 // GetEvaluation uses the metrics provided to determine a set of evaluations
@@ -54,14 +50,14 @@ func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Eva
 		log.Panic(err)
 	}
 
-	// Execute the Evaluate command with the metric JSON
-	outb, err := e.Executer.ExecuteWithPipe(e.Config.Evaluate, string(metricJSON), e.Config.EvaluateTimeout)
+	// Execute with the value
+	gathered, err := e.Execute.ExecuteWithValue(e.Config.Evaluate, string(metricJSON))
 	if err != nil {
-		log.Println(outb.String())
 		return nil, err
 	}
+
 	evaluation := &Evaluation{}
-	err = json.Unmarshal(outb.Bytes(), evaluation)
+	err = json.Unmarshal([]byte(gathered), evaluation)
 	if err != nil {
 		return nil, err
 	}

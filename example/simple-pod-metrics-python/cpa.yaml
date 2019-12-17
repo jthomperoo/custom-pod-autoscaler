@@ -15,4 +15,4 @@ spec:
     name: flask-metric
   config: 
     - name: interval
-      value: "5000"
+      value: "10000"
