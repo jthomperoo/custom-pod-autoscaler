@@ -1,0 +1,9 @@
+evaluate:
+  type: "shell"
+  timeout: 2500
+  shell: "python /evaluate.py"
+metric:
+  type: "shell"
+  timeout: 2500
+  shell: "python /metric.py"
+runMode: "per-resource"

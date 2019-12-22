@@ -14,15 +14,6 @@
 
 # Pull in Python build of CPA
 FROM custompodautoscaler/python:latest
-# Install dependencies for debugging
-RUN apt-get update
-RUN apt-get install jq curl -y
-# Set up aliases for easy debugging
-RUN echo 'alias metrics="curl http://localhost:5000/metrics | jq ."' >> ~/.bashrc
-RUN echo 'alias evaluation="curl http://localhost:5000/evaluation | jq ."' >> ~/.bashrc
-# Add in python requirements to install dependencies
-ADD requirements.txt /
-# Install dependencies, done before adding Py files to allow Docker to cache better
-RUN pip install -r /requirements.txt
+
 # Add config, evaluator and metric gathering Py scripts
 ADD config.yaml evaluate.py metric.py /
