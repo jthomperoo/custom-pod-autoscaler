@@ -2,6 +2,7 @@
 [![codecov](https://codecov.io/gh/jthomperoo/custom-pod-autoscaler/branch/master/graph/badge.svg)](https://codecov.io/gh/jthomperoo/custom-pod-autoscaler)
 [![GoDoc](https://godoc.org/github.com/jthomperoo/custom-pod-autoscaler?status.svg)](https://godoc.org/github.com/jthomperoo/custom-pod-autoscaler)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jthomperoo/custom-pod-autoscaler)](https://goreportcard.com/report/github.com/jthomperoo/custom-pod-autoscaler)
+[![Documentation Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=latest)](https://custom-pod-autoscaler.readthedocs.io/en/latest/?badge=latest)
 [![License](http://img.shields.io/:license-apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 # Custom Pod Autoscaler
 
@@ -11,42 +12,33 @@ The CPA is part of the [Custom Pod Autoscaler Framework](https://github.com/jtho
 
 ## What is it?
 
-A Custom Pod Autoscaler is a Kubernetes autoscaler that runs on custom logic. Custom Pod Autoscalers are designed to be similar to the Kubernetes Horizontal Pod Autoscaler. A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting your own logic; see the [examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).  
+A Custom Pod Autoscaler is a Kubernetes autoscaler that is customised and user created. Custom Pod Autoscalers are designed to be similar to the Kubernetes Horizontal Pod Autoscaler. The Custom Pod Autoscaler framework allows easier and faster development of Kubernetes autoscalers.  
+A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting your own logic; see the [examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).  
 
 ## How does it work?
-
-A Custom Pod Autoscaler has a base program that interacts with user-defined scaling logic through shell commands, piping relevant information into them. When developing a Custom Pod Autoscaler you define logic for two stages:
+A Custom Pod Autoscaler has a base program (defined in this repository) that handles interacting with user logic, for example by using shell commands and piping data into them.  
+When developing a Custom Pod Autoscaler you define logic for two stages:
 
 * Metric gathering - collecting or generating metrics; can be calling metrics APIs, running calculations locally, making HTTP requests.
 * Evaluating metrics - taking these gathered metrics and using them to decide how many replicas a resource should have.
 
 These two pieces of logic are all the custom logic required to build a Custom Pod Autoscaler, the base program will handle all Kubernetes API interactions for scaling/retrieving resources. This logic just needs to communicate back to the base program by writing the output of its results to standard out.
 
-## Developing your own Custom Pod Autoscaler
+## More information
 
-Custom Pod Autoscalers are Docker images that are designed to run in a Kubernetes cluster, you can build your own either by extending one of the Docker images provided, or by taking the CPA binary and inserting it into your own Docker image. Custom Pod Autoscaler logic can be implemented in any language, the only requirement is that the program must be able to read piped in values from standard in, and be able to communicate back through standard error/out.  
-
-Docker images provided:
-
-* `custompodautoscaler/python` - Image set up to run Python 3 scripts
-* `custompodautoscaler/alpine` - Minimal alpine image.
-
-CPA binaries are distributed in [GitHub Releases as an asset](https://github.com/jthomperoo/custom-pod-autoscaler/releases), inside `custom-pod-autoscaler.tar.gz`.
-
-See the [examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).
-
-## Installing a Custom Pod Autoscaler
-
-The easiest way to install a CPA is using the [Custom Pod Autoscaler Operator](https://github.com/jthomperoo/custom-pod-autoscaler-operator), follow the [installation guide for instructions for installing the operator](https://github.com/jthomperoo/custom-pod-autoscaler-operator/blob/master/INSTALL.md).
-
+See the [wiki for more information, such as guides, references and FAQs](https://custom-pod-autoscaler.readthedocs.io/en/latest/).
 
 ## Developing this project
 ### Environment
 Developing this project requires these dependencies:
 
-* Go >= `1.13`
-* Golint
-* Docker
+* [Go](https://golang.org/doc/install) >= `1.13`
+* [Golint](https://github.com/golang/lint)
+* [Docker](https://docs.docker.com/install/)
+
+To view docs locally, requires:
+
+* [mkdocs](https://www.mkdocs.org/)
 
 ### Commands
 
@@ -55,3 +47,4 @@ Developing this project requires these dependencies:
 * `make lint` - lints the code.
 * `make unittest` - runs the unit tests.
 * `make vendor` - generates a vendor folder.
+* `make doc` - hosts the documentation locally, at `127.0.0.1:5000`.
