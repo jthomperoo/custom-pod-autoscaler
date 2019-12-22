@@ -1,0 +1,10 @@
+site_name: Custom Pod Autoscaler
+theme: readthedocs
+nav:
+- Home: 'index.md'
+- 'User Guide':
+  - 'Installation': 'user-guide/installation.md'
+  - 'Getting started': 'user-guide/getting-started.md'
+- 'Reference':
+  - 'Configuration': 'reference/configuration.md'
+- FAQ: 'faq.md'

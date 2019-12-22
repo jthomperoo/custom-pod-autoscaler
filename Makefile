@@ -20,5 +20,9 @@ docker: default
 	docker build --target=python -t $(REGISTRY)/python:$(VERSION) .
 	docker build --target=alpine -t $(REGISTRY)/alpine:$(VERSION) .
 
+doc:
+	@echo "=============Serving docs============="
+	mkdocs serve
+
 vendor:
 	go mod vendor
