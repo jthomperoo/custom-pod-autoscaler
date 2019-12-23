@@ -2,7 +2,7 @@
 [![codecov](https://codecov.io/gh/jthomperoo/custom-pod-autoscaler/branch/master/graph/badge.svg)](https://codecov.io/gh/jthomperoo/custom-pod-autoscaler)
 [![GoDoc](https://godoc.org/github.com/jthomperoo/custom-pod-autoscaler?status.svg)](https://godoc.org/github.com/jthomperoo/custom-pod-autoscaler)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jthomperoo/custom-pod-autoscaler)](https://goreportcard.com/report/github.com/jthomperoo/custom-pod-autoscaler)
-[![Documentation Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=latest)](https://custom-pod-autoscaler.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=latest)](https://custom-pod-autoscaler.readthedocs.io/en/latest)
 [![License](http://img.shields.io/:license-apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 # Custom Pod Autoscaler
 
@@ -26,7 +26,7 @@ These two pieces of logic are all the custom logic required to build a Custom Po
 
 ## Getting started
 
-Check out [this getting started guide for a quick start for developers](https://custom-pod-autoscaler.readthedocs.io/en/latest/user-guide/developing/getting-started/#test-the-autoscaler).
+Check out [this getting started guide for a quick start for developers](https://custom-pod-autoscaler.readthedocs.io/en/latest/user-guide/developing/getting-started).
 
 ## More information
 
@@ -51,4 +51,4 @@ To view docs locally, requires:
 * `make lint` - lints the code.
 * `make unittest` - runs the unit tests.
 * `make vendor` - generates a vendor folder.
-* `make doc` - hosts the documentation locally, at `127.0.0.1:5000`.
+* `make doc` - hosts the documentation locally, at `127.0.0.1:8000`.
