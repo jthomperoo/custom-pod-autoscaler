@@ -4,7 +4,8 @@ nav:
 - Home: 'index.md'
 - 'User Guide':
   - 'Installation': 'user-guide/installation.md'
-  - 'Getting started': 'user-guide/getting-started.md'
+  - 'Developing':
+    - 'Getting started': 'user-guide/developing/getting-started.md'
 - 'Reference':
   - 'Configuration': 'reference/configuration.md'
 - FAQ: 'faq.md'
