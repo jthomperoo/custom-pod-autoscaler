@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: hello-kubernetes
   labels:
+    numPods: "3"
 spec:
   replicas: 1
   selector:

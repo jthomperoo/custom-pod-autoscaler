@@ -28,10 +28,12 @@ import math
 #   ]
 # }
 
+
 def main():
     # Parse metrics JSON into a dict
     metrics = json.loads(sys.stdin.read())
     evaluate(metrics)
+
 
 def evaluate(metrics):
     try:
@@ -47,6 +49,7 @@ def evaluate(metrics):
         # If not an integer, output error
         sys.stderr.write(f"Invalid metric value: {err}")
         exit(1)
+
 
 if __name__ == "__main__":
     main()
