@@ -29,12 +29,13 @@ Taking an example from [Google Cloud's tutorial for hosting game servers on Kube
 The crux of the issue here is that for game servers, it doesn't make sense to scale on CPU load or memory usage, and even if you implemented custom metrics the scaling algorithm wouldn't scale with these in a sensible way. The game servers should scale on number of players on the servers, or number of players looking to join a server - trying to ensure there are always positions available.
 
 ## How does it work?
-A Custom Pod Autoscaler has a base program (defined in this repository) that handles interacting with user logic, for example by using shell commands and piping data into them.  
+A Custom Pod Autoscaler has a base program that handles interacting with user logic, for example by using shell commands and piping data into them.  
 When developing a Custom Pod Autoscaler you define logic for two stages:
 
 * Metric gathering - collecting or generating metrics; can be calling metrics APIs, running calculations locally, making HTTP requests.
 * Evaluating metrics - taking these gathered metrics and using them to decide how many replicas a resource should have.
 
-These two pieces of logic are all the custom logic required to build a Custom Pod Autoscaler, the base program will handle all Kubernetes API interactions for scaling/retrieving resources. This logic just needs to communicate back to the base program by writing the output of its results to standard out.
+These two pieces of logic are all the custom logic required to build a Custom Pod Autoscaler, the base program will handle all Kubernetes API interactions for scaling/retrieving resources.  
 
-See the [examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).
+See the [examples](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example)
+or the [getting started guide](user-guide/getting-started) for more information.

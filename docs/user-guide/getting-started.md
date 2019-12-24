@@ -1,10 +1,9 @@
+# Getting started
 Developing a Custom Pod Autoscaler is designed to be an easy and flexible process, it can be done 
 in any language of your preference and can use a wide variety of Docker images. For this guide 
 we will build a simple Python based autoscaler, but you can take the principles outlined here 
 and implement your autoscaler in any language, 
 [see the examples for some other language implementations](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).
-
-# Overview of guide
 
 In this guide we will create a Python based Kubernetes autoscaler. The autoscaler will work by 
 scaling the resource based on a label on the resouce `numPods`, will scale to the value provided 
@@ -363,5 +362,5 @@ Removes the custom autoscaler operator.
 
 Congratulations! You have now successfully created a custom Kubernetes autoscaler, for further 
 information as to configuration options see the 
-[configuration reference](/reference/configuration.md), for more samples, check out the 
+[configuration reference](../../../reference/configuration), for more samples, check out the 
 [examples for some other language implementations](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).
