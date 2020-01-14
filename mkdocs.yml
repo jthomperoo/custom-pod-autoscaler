@@ -10,3 +10,4 @@ nav:
   - Methods: 'user-guide/methods.md'
 - Reference:
   - Configuration: 'reference/configuration.md'
+  - 'Scaling Targets': 'reference/scaling-targets.md'

@@ -41,9 +41,14 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute/shell"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
+	"github.com/jthomperoo/custom-pod-autoscaler/resourceclient"
 	"github.com/jthomperoo/custom-pod-autoscaler/scaler"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/scale"
 )
 
 const (
@@ -91,14 +96,42 @@ func main() {
 		log.Panic(err)
 	}
 
-	// Create the Kubernetes clientset
+	// Set up clientset
 	clientset, err := kubernetes.NewForConfig(clusterConfig)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	// Set up client for managing Kubernetes deployments
-	deploymentsClient := clientset.AppsV1().Deployments(config.Namespace)
+	// Set up dynamic client
+	dynamicClient, err := dynamic.NewForConfig(clusterConfig)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// Unstructured converter
+	unstructuredConverted := runtime.DefaultUnstructuredConverter
+
+	// Set up resource client
+	resourceClient := &resourceclient.UnstructuredClient{
+		Dynamic:               dynamicClient,
+		UnstructuredConverter: unstructuredConverted,
+	}
+
+	// Get group resources
+	groupResources, err := restmapper.GetAPIGroupResources(clientset.Discovery())
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// Set up scaling client
+	scaleClient := scale.New(
+		clientset.RESTClient(),
+		restmapper.NewDiscoveryRESTMapper(groupResources),
+		dynamic.LegacyAPIPathResolverFunc,
+		scale.NewDiscoveryScaleKindResolver(
+			clientset.Discovery(),
+		),
+	)
 
 	// Set up shell executer
 	shellExec := &shell.Execute{
@@ -130,7 +163,7 @@ func main() {
 	api := &api.API{
 		Router:          chi.NewRouter(),
 		Config:          config,
-		Clientset:       clientset,
+		Client:          resourceClient,
 		GetMetricer:     metricGatherer,
 		GetEvaluationer: evaluator,
 	}
@@ -157,11 +190,11 @@ func main() {
 
 		// Set up scaler
 		autoscaler := &scaler.Scaler{
-			Clientset:         clientset,
-			DeploymentsClient: deploymentsClient,
-			Config:            config,
-			GetMetricer:       metricGatherer,
-			GetEvaluationer:   evaluator,
+			Client:          resourceClient,
+			Scaler:          scaleClient,
+			Config:          config,
+			GetMetricer:     metricGatherer,
+			GetEvaluationer: evaluator,
 		}
 
 		// Run the scaler in a goroutine, triggered by the ticker

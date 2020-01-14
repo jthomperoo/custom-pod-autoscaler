@@ -30,7 +30,12 @@ import (
 
 const invalidEvaluationMessage = "Invalid evaluation returned by evaluator: %s"
 
-// Evaluation represents a decision on how to scale a deployment
+// GetEvaluationer provides methods for retrieving an evaluation
+type GetEvaluationer interface {
+	GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Evaluation, error)
+}
+
+// Evaluation represents a decision on how to scale a resource
 type Evaluation struct {
 	TargetReplicas int32 `json:"target_replicas"`
 }

@@ -29,14 +29,14 @@ You can exec into the example app pod and increase/decrease the value and see ho
 
 ### Example Custom Pod Autoscaler
 
-The CPA will try to ensure that there is always atleast `1` available across the deployment and each app in the deployment.  
-The CPA will also ensure there are no more than `5` available across the deployment.  
+The CPA will try to ensure that there is always atleast `1` available across the resource and each app in the resource.  
+The CPA will also ensure there are no more than `5` available across the resource.  
 The CPA exposes two endpoints:
 * `GET /metrics`
-    * Displays all gathered metric values from every app instance in the deployment.
+    * Displays all gathered metric values from every app instance in the resource.
     * Aliased with `metrics` in the example Dockerfile.
 * `GET /evaluation`
-    * Displays the evaluation decision made on how to scale, reporting the `target_replicas` - how many replicas the deployment should have.
+    * Displays the evaluation decision made on how to scale, reporting the `target_replicas` - how many replicas the resource should have.
     * Aliased with `evaluation` in the example Dockerfile.
 
 ## Usage

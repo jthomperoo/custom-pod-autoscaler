@@ -30,41 +30,33 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/api"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
+	"github.com/jthomperoo/custom-pod-autoscaler/resourceclient"
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 )
-
-type getMetricer interface {
-	GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error)
-}
-
-type getEvaluationer interface {
-	GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error)
-}
 
 type failGetMetrics struct{}
 
-func (f *failGetMetrics) GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error) {
+func (f *failGetMetrics) GetMetrics(resource metav1.Object) (*metric.ResourceMetrics, error) {
 	return nil, errors.New("FAIL GET METRICS")
 }
 
 type successGetMetrics struct{}
 
-func (s *successGetMetrics) GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error) {
+func (s *successGetMetrics) GetMetrics(resource metav1.Object) (*metric.ResourceMetrics, error) {
 	return &metric.ResourceMetrics{
-		DeploymentName: deployment.Name,
+		ResourceName: resource.GetName(),
 		Metrics: []*metric.Metric{
 			&metric.Metric{
 				Value:    "SUCCESS",
 				Resource: "SUCCESS_POD",
 			},
 		},
-		Deployment: deployment,
+		Resource: resource,
 	}, nil
 }
 
@@ -90,13 +82,13 @@ func TestAPI(t *testing.T) {
 		method           string
 		endpoint         string
 		config           *config.Config
-		clientset        kubernetes.Interface
-		getMetricer      getMetricer
-		getEvaluationer  getEvaluationer
+		client           resourceclient.Client
+		getMetricer      metric.GetMetricer
+		getEvaluationer  evaluate.GetEvaluationer
 	}{
 		{
-			"Get metrics no deployments",
-			"{\"message\":\"deployments.apps \\\"test\\\" not found\",\"code\":500}",
+			"Fail to get resource",
+			`{"message":"fail getting resource","code":500}`,
 			http.StatusInternalServerError,
 			"GET",
 			"/metrics",
@@ -108,13 +100,17 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			fake.NewSimpleClientset(),
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return nil, errors.New("fail getting resource")
+				},
+			},
 			nil,
 			nil,
 		},
 		{
 			"Get metrics fail metric gathering",
-			"{\"message\":\"FAIL GET METRICS\",\"code\":500}",
+			`{"message":"FAIL GET METRICS","code":500}`,
 			http.StatusInternalServerError,
 			"GET",
 			"/metrics",
@@ -126,21 +122,21 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			fake.NewSimpleClientset(
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test-namespace",
-						Labels:    nil,
-					},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: name,
+						},
+					}, nil
 				},
-			),
+			},
 			&failGetMetrics{},
 			nil,
 		},
 		{
 			"Get metrics success metric gathering",
-			`{"deployment":"test","run_type":"api","metrics":[{"resource":"SUCCESS_POD","value":"SUCCESS"}]}`,
+			`{"resource":"test","run_type":"api","metrics":[{"resource":"SUCCESS_POD","value":"SUCCESS"}]}`,
 			http.StatusOK,
 			"GET",
 			"/metrics",
@@ -152,87 +148,21 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			fake.NewSimpleClientset(
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test-namespace",
-						Labels:    nil,
-					},
-				},
-			),
-			&successGetMetrics{},
-			nil,
-		},
-		{
-			"Get metrics success metric gathering two deployment same namespace",
-			`{"deployment":"target","run_type":"api","metrics":[{"resource":"SUCCESS_POD","value":"SUCCESS"}]}`,
-			http.StatusOK,
-			"GET",
-			"/metrics",
-			&config.Config{
-				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
-					Kind:       "deployment",
-					Name:       "target",
-					APIVersion: "apps/v1",
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: name,
+						},
+					}, nil
 				},
 			},
-			fake.NewSimpleClientset(
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "target",
-						Namespace: "test-namespace",
-						Labels:    nil,
-					},
-				},
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "not target",
-						Namespace: "test-namespace",
-						Labels:    nil,
-					},
-				},
-			),
 			&successGetMetrics{},
 			nil,
 		},
 		{
-			"Get metrics success metric gathering two deployment different namespaces",
-			`{"deployment":"test","run_type":"api","metrics":[{"resource":"SUCCESS_POD","value":"SUCCESS"}]}`,
-			http.StatusOK,
-			"GET",
-			"/metrics",
-			&config.Config{
-				Namespace: "target-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
-					Kind:       "deployment",
-					Name:       "test",
-					APIVersion: "apps/v1",
-				},
-			},
-			fake.NewSimpleClientset(
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "target-namespace",
-						Labels:    nil,
-					},
-				},
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "not-target-namespace",
-						Labels:    nil,
-					},
-				},
-			),
-			&successGetMetrics{},
-			nil,
-		},
-		{
-			"Get evaluation no deployments",
-			"{\"message\":\"deployments.apps \\\"test\\\" not found\",\"code\":500}",
+			"Fail to get resource",
+			`{"message":"fail to get resource","code":500}`,
 			http.StatusInternalServerError,
 			"GET",
 			"/evaluation",
@@ -244,13 +174,17 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			fake.NewSimpleClientset(),
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return nil, errors.New("fail to get resource")
+				},
+			},
 			nil,
 			nil,
 		},
 		{
 			"Get evaluation fail evaluate",
-			"{\"message\":\"FAIL GET EVALUATION\",\"code\":500}",
+			`{"message":"FAIL GET EVALUATION","code":500}`,
 			http.StatusInternalServerError,
 			"GET",
 			"/evaluation",
@@ -262,21 +196,21 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			fake.NewSimpleClientset(
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test-namespace",
-						Labels:    nil,
-					},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: name,
+						},
+					}, nil
 				},
-			),
+			},
 			&successGetMetrics{},
 			&failGetEvaluation{},
 		},
 		{
 			"Get evaluation fail metric gathering",
-			"{\"message\":\"FAIL GET METRICS\",\"code\":500}",
+			`{"message":"FAIL GET METRICS","code":500}`,
 			http.StatusInternalServerError,
 			"GET",
 			"/evaluation",
@@ -288,21 +222,21 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			fake.NewSimpleClientset(
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test-namespace",
-						Labels:    nil,
-					},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: name,
+						},
+					}, nil
 				},
-			),
+			},
 			&failGetMetrics{},
 			&successGetEvaluation{},
 		},
 		{
 			"Get evaluation success evaluate",
-			"{\"target_replicas\":1}",
+			`{"target_replicas":1}`,
 			http.StatusOK,
 			"GET",
 			"/evaluation",
@@ -314,21 +248,21 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			fake.NewSimpleClientset(
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test-namespace",
-						Labels:    nil,
-					},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: name,
+						},
+					}, nil
 				},
-			),
+			},
 			&successGetMetrics{},
 			&successGetEvaluation{},
 		},
 		{
 			"Non existent endpoint",
-			"{\"message\":\"Resource '/non_existant' not found\",\"code\":404}",
+			`{"message":"Resource '/non_existant' not found","code":404}`,
 			http.StatusNotFound,
 			"GET",
 			"/non_existant",
@@ -340,13 +274,13 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			fake.NewSimpleClientset(),
+			&fake.ResourceClient{},
 			nil,
 			nil,
 		},
 		{
 			"Use incorrect method on get metrics endpoint",
-			"{\"message\":\"Method 'DELETE' not allowed on resource '/metrics'\",\"code\":405}",
+			`{"message":"Method 'DELETE' not allowed on resource '/metrics'","code":405}`,
 			http.StatusMethodNotAllowed,
 			"DELETE",
 			"/metrics",
@@ -358,13 +292,13 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			fake.NewSimpleClientset(),
+			&fake.ResourceClient{},
 			nil,
 			nil,
 		},
 		{
 			"Use incorrect method on evaluation endpoint",
-			"{\"message\":\"Method 'POST' not allowed on resource '/evaluation'\",\"code\":405}",
+			`{"message":"Method 'POST' not allowed on resource '/evaluation'","code":405}`,
 			http.StatusMethodNotAllowed,
 			"POST",
 			"/evaluation",
@@ -376,7 +310,7 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			fake.NewSimpleClientset(),
+			&fake.ResourceClient{},
 			nil,
 			nil,
 		},
@@ -386,7 +320,7 @@ func TestAPI(t *testing.T) {
 			api := &api.API{
 				Router:          chi.NewRouter(),
 				Config:          test.config,
-				Clientset:       test.clientset,
+				Client:          test.client,
 				GetMetricer:     test.getMetricer,
 				GetEvaluationer: test.getEvaluationer,
 			}

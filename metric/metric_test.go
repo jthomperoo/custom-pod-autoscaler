@@ -27,6 +27,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -48,7 +49,7 @@ func TestGetMetrics(t *testing.T) {
 		description string
 		expectedErr error
 		expected    []*metric.Metric
-		deployment  *appsv1.Deployment
+		resource    metav1.Object
 		config      *config.Config
 		clientset   kubernetes.Interface
 		execute     execute.Executer
@@ -61,7 +62,6 @@ func TestGetMetrics(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test deployment",
 					Namespace: "test namespace",
-					Labels:    map[string]string{"app": "test"},
 				},
 			},
 			&config.Config{
@@ -78,6 +78,101 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 		},
 		{
+			"Per pod unsupported resource selector",
+			errors.New("Unsupported resource of type *v1.DaemonSet"),
+			nil,
+			&appsv1.DaemonSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+			},
+			nil,
+			nil,
+		},
+		{
+			"Per pod fail to get deployment selector",
+			errors.New(`"invalid" is not a valid selector operator`),
+			nil,
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchExpressions: []metav1.LabelSelectorRequirement{
+							metav1.LabelSelectorRequirement{
+								Operator: "invalid",
+							},
+						},
+					},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+			},
+			nil,
+			nil,
+		},
+		{
+			"Per pod fail to get replicaset selector",
+			errors.New(`"invalid" is not a valid selector operator`),
+			nil,
+			&appsv1.ReplicaSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+				Spec: appsv1.ReplicaSetSpec{
+					Selector: &metav1.LabelSelector{
+						MatchExpressions: []metav1.LabelSelectorRequirement{
+							metav1.LabelSelectorRequirement{
+								Operator: "invalid",
+							},
+						},
+					},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+			},
+			nil,
+			nil,
+		},
+		{
+			"Per pod fail to get statefulset selector",
+			errors.New(`"invalid" is not a valid selector operator`),
+			nil,
+			&appsv1.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+				Spec: appsv1.StatefulSetSpec{
+					Selector: &metav1.LabelSelector{
+						MatchExpressions: []metav1.LabelSelectorRequirement{
+							metav1.LabelSelectorRequirement{
+								Operator: "invalid",
+							},
+						},
+					},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+			},
+			nil,
+			nil,
+		},
+		{
 			"Per pod error when listing pods",
 			errors.New("fail to list pods"),
 			nil,
@@ -85,7 +180,6 @@ func TestGetMetrics(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test deployment",
 					Namespace: "test namespace",
-					Labels:    map[string]string{"app": "test"},
 				},
 			},
 			&config.Config{
@@ -109,7 +203,13 @@ func TestGetMetrics(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test deployment",
 					Namespace: "test namespace",
-					Labels:    map[string]string{"app": "test"},
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test",
+						},
+					},
 				},
 			},
 			&config.Config{
@@ -159,7 +259,13 @@ func TestGetMetrics(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test managed deployment",
 					Namespace: "test managed namespace",
-					Labels:    map[string]string{"app": "test-managed"},
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test-managed",
+						},
+					},
 				},
 			},
 			&config.Config{
@@ -191,7 +297,13 @@ func TestGetMetrics(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test managed deployment",
 					Namespace: "test managed namespace",
-					Labels:    map[string]string{"app": "test-managed"},
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test-managed",
+						},
+					},
 				},
 			},
 			&config.Config{
@@ -228,7 +340,140 @@ func TestGetMetrics(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test deployment",
 					Namespace: "test namespace",
-					Labels:    map[string]string{"app": "test"},
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test",
+						},
+					},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+			},
+			k8sfake.NewSimpleClientset(
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test pod",
+						Namespace: "test namespace",
+						Labels:    map[string]string{"app": "test"},
+					},
+				},
+			),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Per pod single pod, single replicaset success",
+			nil,
+			[]*metric.Metric{
+				&metric.Metric{
+					Resource: "test pod",
+					Value:    "test value",
+				},
+			},
+			&appsv1.ReplicaSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+				Spec: appsv1.ReplicaSetSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test",
+						},
+					},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+			},
+			k8sfake.NewSimpleClientset(
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test pod",
+						Namespace: "test namespace",
+						Labels:    map[string]string{"app": "test"},
+					},
+				},
+			),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Per pod single pod, single statefulset success",
+			nil,
+			[]*metric.Metric{
+				&metric.Metric{
+					Resource: "test pod",
+					Value:    "test value",
+				},
+			},
+			&appsv1.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+				Spec: appsv1.StatefulSetSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test",
+						},
+					},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+			},
+			k8sfake.NewSimpleClientset(
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test pod",
+						Namespace: "test namespace",
+						Labels:    map[string]string{"app": "test"},
+					},
+				},
+			),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Per pod single pod, single replicationcontroller success",
+			nil,
+			[]*metric.Metric{
+				&metric.Metric{
+					Resource: "test pod",
+					Value:    "test value",
+				},
+			},
+			&corev1.ReplicationController{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+				Spec: corev1.ReplicationControllerSpec{
+					Selector: map[string]string{
+						"app": "test",
+					},
 				},
 			},
 			&config.Config{
@@ -269,7 +514,13 @@ func TestGetMetrics(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test deployment",
 					Namespace: "test namespace",
-					Labels:    map[string]string{"app": "test"},
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test",
+						},
+					},
 				},
 			},
 			&config.Config{
@@ -356,16 +607,16 @@ func TestGetMetrics(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			result := &metric.ResourceMetrics{
-				Metrics:        test.expected,
-				Deployment:     test.deployment,
-				DeploymentName: test.deployment.Name,
+				Metrics:      test.expected,
+				Resource:     test.resource,
+				ResourceName: test.resource.GetName(),
 			}
 			gatherer := &metric.Gatherer{
 				Clientset: test.clientset,
 				Config:    test.config,
 				Execute:   test.execute,
 			}
-			metrics, err := gatherer.GetMetrics(test.deployment)
+			metrics, err := gatherer.GetMetrics(test.resource)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return

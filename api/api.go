@@ -29,21 +29,11 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
-	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"github.com/jthomperoo/custom-pod-autoscaler/resourceclient"
 )
 
 // RunType api marks the metric gathering/evaluation as running during an API request
 const RunType = "api"
-
-type getMetricer interface {
-	GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error)
-}
-
-type getEvaluationer interface {
-	GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error)
-}
 
 // Error is an error response from the API, with the status code and an error message
 type Error struct {
@@ -55,9 +45,9 @@ type Error struct {
 type API struct {
 	Router          chi.Router
 	Config          *config.Config
-	Clientset       kubernetes.Interface
-	GetMetricer     getMetricer
-	GetEvaluationer getEvaluationer
+	Client          resourceclient.Client
+	GetMetricer     metric.GetMetricer
+	GetEvaluationer evaluate.GetEvaluationer
 }
 
 // Routes sets up routing for the API
@@ -70,8 +60,8 @@ func (api *API) Routes() {
 }
 
 func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
-	// Get deployments being managed
-	deployment, err := api.Clientset.AppsV1().Deployments(api.Config.Namespace).Get(api.Config.ScaleTargetRef.Name, metav1.GetOptions{})
+	// Get resource being managed
+	resource, err := api.Client.Get(api.Config.ScaleTargetRef.APIVersion, api.Config.ScaleTargetRef.Kind, api.Config.ScaleTargetRef.Name, api.Config.Namespace)
 	if err != nil {
 		apiError(w, &Error{
 			err.Error(),
@@ -79,8 +69,9 @@ func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
 	// Get metrics
-	metrics, err := api.GetMetricer.GetMetrics(deployment)
+	metrics, err := api.GetMetricer.GetMetrics(resource)
 	if err != nil {
 		apiError(w, &Error{
 			err.Error(),
@@ -101,8 +92,8 @@ func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
-	// Get deployments being managed
-	deployment, err := api.Clientset.AppsV1().Deployments(api.Config.Namespace).Get(api.Config.ScaleTargetRef.Name, metav1.GetOptions{})
+	// Get resource being managed
+	resource, err := api.Client.Get(api.Config.ScaleTargetRef.APIVersion, api.Config.ScaleTargetRef.Kind, api.Config.ScaleTargetRef.Name, api.Config.Namespace)
 	if err != nil {
 		apiError(w, &Error{
 			err.Error(),
@@ -110,8 +101,9 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
 	// Get metrics
-	metrics, err := api.GetMetricer.GetMetrics(deployment)
+	metrics, err := api.GetMetricer.GetMetrics(resource)
 	if err != nil {
 		apiError(w, &Error{
 			err.Error(),
