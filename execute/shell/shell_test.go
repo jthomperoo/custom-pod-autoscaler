@@ -100,7 +100,10 @@ func TestMain(m *testing.M) {
 			&config.Method{
 				Type:    shell.Type,
 				Timeout: 100,
-				Shell:   "command",
+				Shell: &config.Shell{
+					Command:    "command",
+					Entrypoint: "/bin/sh",
+				},
 			},
 			"pipe value",
 			fakeExecCommand("success", func(t *testing.T) {
@@ -140,7 +143,10 @@ func TestMain(m *testing.M) {
 			&config.Method{
 				Type:    shell.Type,
 				Timeout: 100,
-				Shell:   "command",
+				Shell: &config.Shell{
+					Command:    "command",
+					Entrypoint: "/bin/sh",
+				},
 			},
 			"pipe value",
 			fakeExecCommand("failed", func(t *testing.T) {
@@ -150,12 +156,15 @@ func TestMain(m *testing.M) {
 		},
 		{
 			"Failed shell command timeout",
-			errors.New("Command command timed out"),
+			errors.New("Entrypoint '/bin/sh', command 'command' timed out"),
 			"",
 			&config.Method{
 				Type:    shell.Type,
 				Timeout: 5,
-				Shell:   "command",
+				Shell: &config.Shell{
+					Command:    "command",
+					Entrypoint: "/bin/sh",
+				},
 			},
 			"pipe value",
 			fakeExecCommand("timeout", func(t *testing.T) {
@@ -171,7 +180,10 @@ func TestMain(m *testing.M) {
 			&config.Method{
 				Type:    shell.Type,
 				Timeout: 100,
-				Shell:   "command",
+				Shell: &config.Shell{
+					Command:    "command",
+					Entrypoint: "/bin/sh",
+				},
 			},
 			"pipe value",
 			fakeExecCommandAndStart("fail to start", func(t *testing.T) {

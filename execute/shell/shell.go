@@ -43,8 +43,8 @@ type Execute struct {
 // If the timeout is reached, an error is returned.
 func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string, error) {
 	// Build command string with value piped into it
-	commandString := fmt.Sprintf("echo '%s' | %s", value, method.Shell)
-	cmd := e.Command("/bin/sh", "-c", commandString)
+	commandString := fmt.Sprintf("echo '%s' | %s", value, method.Shell.Command)
+	cmd := e.Command(method.Shell.Entrypoint, "-c", commandString)
 
 	// Set up byte buffers to read stdout and stderr
 	var outb, errb bytes.Buffer
@@ -67,7 +67,7 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 	select {
 	case <-timeoutListener:
 		cmd.Process.Kill()
-		return "", fmt.Errorf("Command %s timed out", method.Shell)
+		return "", fmt.Errorf("Entrypoint '%s', command '%s' timed out", method.Shell.Entrypoint, method.Shell.Command)
 	case err = <-done:
 		if err != nil {
 			return errb.String(), err

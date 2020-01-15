@@ -63,7 +63,10 @@ func TestGetEvaluation(t *testing.T) {
 				Evaluate: &config.Method{
 					Type:    "fake",
 					Timeout: 10,
-					Shell:   "test evaluate command",
+					Shell: &config.Shell{
+						Command:    "test evaluate command",
+						Entrypoint: "testentry",
+					},
 				},
 			},
 			func() *fake.Execute {
@@ -92,7 +95,10 @@ func TestGetEvaluation(t *testing.T) {
 				Evaluate: &config.Method{
 					Type:    "fake",
 					Timeout: 10,
-					Shell:   "test evaluate command",
+					Shell: &config.Shell{
+						Command:    "test evaluate command",
+						Entrypoint: "testentry",
+					},
 				},
 			},
 			func() *fake.Execute {
@@ -126,7 +132,10 @@ func TestGetEvaluation(t *testing.T) {
 				Evaluate: &config.Method{
 					Type:    "fake",
 					Timeout: 10,
-					Shell:   "test evaluate command",
+					Shell: &config.Shell{
+						Command:    "test evaluate command",
+						Entrypoint: "testentry",
+					},
 				},
 			},
 			func() *fake.Execute {
