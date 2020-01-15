@@ -143,7 +143,7 @@ func TestMain(m *testing.M) {
 		{
 			"Failed shell command",
 			errors.New("exit status 1"),
-			"shell command failed",
+			"",
 			&config.Method{
 				Type:    shell.Type,
 				Timeout: 100,
@@ -219,7 +219,7 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 			}
 
 			if !cmp.Equal(result, test.expected) {
-				t.Errorf("stdout mismatch (-want +got):\n%s", cmp.Diff(result, test.expected))
+				t.Errorf("stdout mismatch (-want +got):\n%s", cmp.Diff(test.expected, result))
 			}
 		})
 	}
