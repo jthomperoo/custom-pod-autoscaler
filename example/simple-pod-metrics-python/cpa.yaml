@@ -8,7 +8,7 @@ spec:
       containers:
       - name: simple-pod-metrics-python
         image: simple-pod-metrics-python:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment

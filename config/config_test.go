@@ -108,7 +108,14 @@ func TestLoadConfig(t *testing.T) {
 			"No JSON or YAML override with env",
 			nil,
 			map[string]string{
-				"metric":         `{ "type" : "shell", "timeout": 10, "shell": "testcommand"}`,
+				"metric": `{ 
+					"type" : "shell", 
+					"timeout": 10, 
+					"shell": { 
+						"command" : "testcommand",
+						"entrypoint" : "testentry"
+					}
+				}`,
 				"interval":       "35",
 				"host":           "test env host",
 				"port":           "1234",
@@ -132,7 +139,10 @@ func TestLoadConfig(t *testing.T) {
 				Metric: &config.Method{
 					Type:    "shell",
 					Timeout: 10,
-					Shell:   "testcommand",
+					Shell: &config.Shell{
+						Command:    "testcommand",
+						Entrypoint: "testentry",
+					},
 				},
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
 					Name:       "test target name",
@@ -147,11 +157,15 @@ func TestLoadConfig(t *testing.T) {
 				evaluate: 
 				  type: shell
 				  timeout: 10
-				  shell: testcommand
+				  shell: 
+				    command: "testcommand"
+				    entrypoint: "testentry"
 				metric: 
 				  type: shell
 				  timeout: 10
-				  shell: testcommand
+				  shell: 
+				    command: "testcommand"
+				    entrypoint: "testentry"
 				interval: 30
 				host: "test yaml host"
 				port: 7890
@@ -175,12 +189,18 @@ func TestLoadConfig(t *testing.T) {
 				Evaluate: &config.Method{
 					Type:    "shell",
 					Timeout: 10,
-					Shell:   "testcommand",
+					Shell: &config.Shell{
+						Command:    "testcommand",
+						Entrypoint: "testentry",
+					},
 				},
 				Metric: &config.Method{
 					Type:    "shell",
 					Timeout: 10,
-					Shell:   "testcommand",
+					Shell: &config.Shell{
+						Command:    "testcommand",
+						Entrypoint: "testentry",
+					},
 				},
 			},
 		},
@@ -190,12 +210,18 @@ func TestLoadConfig(t *testing.T) {
 				"evaluate":{
 					"type":"shell",
 					"timeout":10,
-					"shell":"testcommand"
+					"shell": { 
+						"command": "testcommand", 
+						"entrypoint": "testentry"
+					}
 				},
 				"metric":{
 					"type":"shell",
 					"timeout":10,
-					"shell":"testcommand"
+					"shell": { 
+						"command": "testcommand", 
+						"entrypoint": "testentry"
+					}
 				},
 				"interval":30,
 				"host":"test yaml host",
@@ -220,12 +246,18 @@ func TestLoadConfig(t *testing.T) {
 				Evaluate: &config.Method{
 					Type:    "shell",
 					Timeout: 10,
-					Shell:   "testcommand",
+					Shell: &config.Shell{
+						Command:    "testcommand",
+						Entrypoint: "testentry",
+					},
 				},
 				Metric: &config.Method{
 					Type:    "shell",
 					Timeout: 10,
-					Shell:   "testcommand",
+					Shell: &config.Shell{
+						Command:    "testcommand",
+						Entrypoint: "testentry",
+					},
 				},
 			},
 		},
@@ -235,11 +267,15 @@ func TestLoadConfig(t *testing.T) {
 				evaluate: 
 				  type: shell
 				  timeout: 10
-				  shell: testcommand
+				  shell: 
+				    command: "testcommand"
+				    entrypoint: "testentry"
 				metric: 
 				  type: shell
 				  timeout: 10
-				  shell: testcommand
+				  shell: 
+				    command: "testcommand"
+				    entrypoint: "testentry"
 				host: "test yaml host"
 				port: 7890
 				runMode: "test run mode"
@@ -270,12 +306,17 @@ func TestLoadConfig(t *testing.T) {
 				Evaluate: &config.Method{
 					Type:    "shell",
 					Timeout: 10,
-					Shell:   "testcommand",
-				},
+					Shell: &config.Shell{
+						Command:    "testcommand",
+						Entrypoint: "testentry",
+					}},
 				Metric: &config.Method{
 					Type:    "shell",
 					Timeout: 10,
-					Shell:   "testcommand",
+					Shell: &config.Shell{
+						Command:    "testcommand",
+						Entrypoint: "testentry",
+					},
 				},
 			},
 		},
@@ -285,12 +326,18 @@ func TestLoadConfig(t *testing.T) {
 				"evaluate": {
 					"type": "shell",
 					"timeout": 10,
-					"shell": "testcommand"
+					"shell": { 
+						"command": "testcommand", 
+						"entrypoint": "testentry"
+					}
 				},
 				"metric": {
 					"type": "shell",
 					"timeout": 10,
-					"shell": "testcommand"
+					"shell": { 
+						"command": "testcommand", 
+						"entrypoint": "testentry"
+					}
 				},
 				"host": "test yaml host",
 				"port": 7890,
@@ -322,12 +369,18 @@ func TestLoadConfig(t *testing.T) {
 				Evaluate: &config.Method{
 					Type:    "shell",
 					Timeout: 10,
-					Shell:   "testcommand",
+					Shell: &config.Shell{
+						Command:    "testcommand",
+						Entrypoint: "testentry",
+					},
 				},
 				Metric: &config.Method{
 					Type:    "shell",
 					Timeout: 10,
-					Shell:   "testcommand",
+					Shell: &config.Shell{
+						Command:    "testcommand",
+						Entrypoint: "testentry",
+					},
 				},
 			},
 		},

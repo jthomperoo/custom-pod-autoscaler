@@ -71,7 +71,13 @@ type Config struct {
 type Method struct {
 	Type    string `json:"type"`
 	Timeout int    `json:"timeout"`
-	Shell   string `json:"shell"`
+	Shell   *Shell `json:"shell"`
+}
+
+// Shell describes configuration options for a shell command method
+type Shell struct {
+	Command    string `json:"command"`
+	Entrypoint string `json:"entrypoint"`
 }
 
 // LoadConfig loads in the default configuration, then overrides it from the config file,

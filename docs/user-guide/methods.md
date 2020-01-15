@@ -3,8 +3,6 @@
 Methods specify how user logic should be called by the Custom Pod Autoscaler base program. Methods 
 can be specified for metric gathering and evaluating.
 
-> Note: as of `v0.8.0` only the `shell` method is supported.
-
 # shell
 
 The shell method allows specifying a shell command, run through `/bin/sh`. Any relevant 
@@ -17,20 +15,26 @@ This is an example configuration of the shell method for the metric gatherer:
 metric: 
   type: "shell"
   timeout: 2500
-  shell: "python /metric.py"
+  shell: 
+    entrypoint: "python"
+    command: "/metric.py"
 ```
 Breaking this example down:
 
 - `type` = the type of the method, for this example it is a `shell` method.
 - `timeout` = the maximum time the method can take in milliseconds, for this example it is `2500` (2.5 seconds), if it takes longer than this it will count the method as failing.
-- `shell` = the shell command to execute for this method.
+- `shell` = the shell method to execute.
+  - `entrypoint` = the entrypoint of the shell command, e.g. `/bin/bash`, defaults to `/bin/sh`.
+  - `command` = the command to execute.
 
 This is a metric configuration that will always fail:
 ```yaml
 metric: 
   type: "shell"
   timeout: 2500
-  shell: "exit 1"
+  shell: 
+    entrypoint: "/bin/sh"
+    command: "exit 1"
 ```
 
 This is a metric configuration that will return `5` as a metric.
@@ -38,5 +42,7 @@ This is a metric configuration that will return `5` as a metric.
 metric: 
   type: "shell"
   timeout: 2500
-  shell: "echo '5'"
+  shell: 
+    entrypoint: "/bin/sh"
+    command: "echo '5'"
 ```

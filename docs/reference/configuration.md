@@ -10,11 +10,15 @@ Example:
 evaluate: 
   type: "shell"
   timeout: 2500
-  shell: "python /evaluate.py"
+  shell: 
+    entrypoint: "python"
+    command: "/evaluate.py"
 metric: 
   type: "shell"
   timeout: 2500
-  shell: "python /metric.py"
+  shell: 
+    entrypoint: "python"
+    command: "/metric.py"
 runMode: "per-resource"
 ```
 
@@ -40,11 +44,11 @@ Example:
 metric: 
   type: "shell"
   timeout: 2500
-  shell: "python /metric.py"
+  shell: 
+    entrypoint: "python"
+    command: "/metric.py"
 ```
 A method defines a hook for calling user logic, with a timeout to handle user logic that hangs.  
-
-> Note: as of `v0.8.0` only the shell command user logic is supported.
 
 ### type
 - `shell` = call the user logic through a shell command, with the relevant information piped through to the command. The user logic communicates back with the autoscaler through exit codes and standard error and out. A non zero exit code tells the autoscaler that the user logic has failed; and the autoscaler will read in standard error and log it for debug purposes. If no error occurs, the autoscaler may read in the standard out and use it, e.g. for metric gathering.
@@ -79,7 +83,9 @@ Example:
 evaluate: 
   type: "shell"
   timeout: 2500
-  shell: "python /evaluate.py"
+  shell: 
+    entrypoint: "python"
+    command: "/evaluate.py"
 ```
 No default value, required to be set.  
 This defines the evaluation logic that should be run, and how it should be triggered.  
@@ -90,7 +96,9 @@ Example:
 metric: 
   type: "shell"
   timeout: 2500
-  shell: "python /metric.py"
+  shell: 
+    entrypoint: "python"
+    command: "/metric.py"
 ```
 No default value, required to be set.  
 This defines the metric logic that should be run, and how it should be triggered.  
@@ -149,4 +157,4 @@ startTime: 1
 Default value: `1`  
 This defines in milliseconds a starting point for the scaler, with the scaler running as if it started at the time provided. Allows specifying that the autoscaler must start on a multiple of the interval from the start time. For example, a startTime of `60000` would result in the autoscaler starting at the next full minute. The default value will start the autoscaler after a single millisecond, close to instantly.
 
-> Note: As of `v0.8.0` the scaling will not actually start until after one interval has passed.
+> Note: The scaling will not actually start until after one interval has passed.

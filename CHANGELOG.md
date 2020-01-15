@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Support for other entrypoints other than `/bin/sh`, can specify an entrypoint for the shell command method.
 
 ## [v0.8.0] - 2019-12-17
 ### Added

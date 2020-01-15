@@ -38,11 +38,15 @@ Create a new file `config.yaml`:
 evaluate:
   type: "shell"
   timeout: 2500
-  shell: "python /evaluate.py"
+  shell: 
+    entrypoint: "python"
+    command: "/evaluate.py"
 metric:
   type: "shell"
   timeout: 2500
-  shell: "python /metric.py"
+  shell: 
+    entrypoint: "python"
+    command: "/metric.py"
 runMode: "per-resource"
 ```
 This configuration file specifies the two scripts we are adding, the metric gatherer and the evaluator

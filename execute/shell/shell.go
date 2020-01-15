@@ -43,8 +43,15 @@ type Execute struct {
 // If the timeout is reached, an error is returned.
 func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string, error) {
 	// Build command string with value piped into it
-	commandString := fmt.Sprintf("echo '%s' | %s", value, method.Shell)
-	cmd := e.Command("/bin/sh", "-c", commandString)
+	cmd := e.Command(method.Shell.Entrypoint, method.Shell.Command)
+
+	// Set up byte buffer to write values to stdin
+	inb := bytes.Buffer{}
+	_, err := inb.WriteString(value)
+	if err != nil {
+		return "", err
+	}
+	cmd.Stdin = &inb
 
 	// Set up byte buffers to read stdout and stderr
 	var outb, errb bytes.Buffer
@@ -52,7 +59,7 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 	cmd.Stderr = &errb
 
 	// Start command
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
 		return "", err
 	}
@@ -67,10 +74,11 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 	select {
 	case <-timeoutListener:
 		cmd.Process.Kill()
-		return "", fmt.Errorf("Command %s timed out", method.Shell)
+		return "", fmt.Errorf("Entrypoint '%s', command '%s' timed out", method.Shell.Entrypoint, method.Shell.Command)
 	case err = <-done:
 		if err != nil {
-			return errb.String(), err
+			fmt.Println(fmt.Sprintf("stderr: %s", errb.String()))
+			return "", err
 		}
 	}
 	return outb.String(), nil
