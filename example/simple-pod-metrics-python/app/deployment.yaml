@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: flask-metric
-        image: flask-metric:latest
+        image: eu.gcr.io/custom-pod-autoscaler-demo/flask-metric:latest
         ports:
         - containerPort: 5000
-        imagePullPolicy: Never
+        imagePullPolicy: Always

@@ -74,8 +74,6 @@ An example of deployment JSON passed to the metric gatherer:
 ```
 See the [Kubernetes Deployment definition for full description](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#deployment-v1-apps).
 
-> As of `v0.8.0` only `Deployments` are supported to be managed, however this is likely to change in the future to include `ReplicaSets` and `StatefulSets`.
-
 # Information output by the metric gatherer
 
 The metric gatherer should gather/calculate the metrics it needs, and simply needs to return these 
