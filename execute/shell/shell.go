@@ -47,10 +47,8 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 
 	// Set up byte buffer to write values to stdin
 	inb := bytes.Buffer{}
-	_, err := inb.WriteString(value)
-	if err != nil {
-		return "", err
-	}
+	// No need to catch error, doesn't produce error, instead it panics if buffer too large
+	inb.WriteString(value)
 	cmd.Stdin = &inb
 
 	// Set up byte buffers to read stdout and stderr
@@ -59,7 +57,7 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 	cmd.Stderr = &errb
 
 	// Start command
-	err = cmd.Start()
+	err := cmd.Start()
 	if err != nil {
 		return "", err
 	}
