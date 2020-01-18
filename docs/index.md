@@ -11,7 +11,7 @@
 The Custom Pod Autoscaler Framework is a way to allow people to create and use custom scalers, similar to the [Horizontal Pod Autoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/), in Kubernetes.
 
 ## Why would I use it?
-Kubernetes provides the Horizontal Pod Autoscaler, which allows automatic scaling of the number of replicas in a deployment based on metrics that you feed it. Mostly the metrics used are CPU/memory load, which is sufficient for most applications. You can specify custom metrics to feed into it through the metrics API also.  
+Kubernetes provides the Horizontal Pod Autoscaler, which allows automatic scaling of the number of replicas in a resource (Deployment, ReplicationController, ReplicaSet, StatefulSet) based on metrics that you feed it. Mostly the metrics used are CPU/memory load, which is sufficient for most applications. You can specify custom metrics to feed into it through the metrics API also.  
 
 The limitation in the Horizontal Pod Autoscaler is that it has a [hard-coded algorithm for assessing these metrics](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details):
 ```

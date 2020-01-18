@@ -33,7 +33,7 @@ const (
 	// PerPodRunMode runs metric gathering per Pod, individually running the script for each Pod being managed
 	// with the Pod information piped into the metric gathering script
 	PerPodRunMode = "per-pod"
-	// PerResourceRunMode runs metric gathering per Deployment, running the script only once for the resource
+	// PerResourceRunMode runs metric gathering per Resource, running the script only once for the resource
 	// being managed, with the resource information piped into the metric gathering script
 	PerResourceRunMode = "per-resource"
 )

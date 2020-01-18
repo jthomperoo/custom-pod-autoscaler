@@ -204,15 +204,15 @@ creating our autoscaler, lets see how it works.
 
 # Test the autoscaler
 First we should enable custom autoscalers on our cluster by installing the Custom Pod Autoscaler 
-Operator, for this guide we are using `0.4.0`, but check out the latest version from the 
+Operator, for this guide we are using `v0.5.0`, but check out the latest version from the 
 [Custom Pod Autoscaler Operator releases](https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases).
 
 ```
-VERSION=0.4.0
+VERSION=v0.5.0
 curl -L "https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases/download/${VERSION}/cluster.tar.gz" | tar xvz --to-command 'kubectl apply -f -'
 ```
 
-This will do a cluster-wide install of `0.4.0` of the Custom Pod Autoscaler Operator.  
+This will do a cluster-wide install of `v0.5.0` of the Custom Pod Autoscaler Operator.  
 
 Now we should create a deployment for the autoscaler to manage, create a deployment YAML file 
 called `deployment.yaml`:
@@ -357,7 +357,7 @@ kubectl delete -f cpa.yaml
 ```
 Removes our custom autoscaler.
 ```
-VERSION=0.4.0
+VERSION=v0.5.0
 curl -L "https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases/download/${VERSION}/cluster.tar.gz" | tar xvz --to-command 'kubectl delete -f -'
 ```
 Removes the custom autoscaler operator.

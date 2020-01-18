@@ -16,7 +16,7 @@ and the resource the metric was gathered from.
 An example of the JSON passed into the evaluation stage:
 ```json
 {
-  "deployment": "hello-kubernetes",
+  "resource": "hello-kubernetes",
   "run_type": "scaler",
   "metrics": [
     {

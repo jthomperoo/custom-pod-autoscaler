@@ -18,7 +18,7 @@ import math
 
 # JSON piped into this script example:
 # {
-#   "deployment": "flask-metric",
+#   "resource": "flask-metric",
 #   "run_type": "api",
 #   "metrics": [
 #     {

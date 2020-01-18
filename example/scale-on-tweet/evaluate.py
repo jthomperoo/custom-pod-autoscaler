@@ -17,7 +17,7 @@ import sys
 
 # JSON piped into this script example:
 # {
-#   "deployment": "hello-kubernetes",
+#   "resource": "hello-kubernetes",
 #   "run_type": "api",
 #   "metrics": [
 #     {

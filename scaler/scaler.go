@@ -20,60 +20,60 @@ limitations under the License.
 package scaler
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
+	"github.com/jthomperoo/custom-pod-autoscaler/resourceclient"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/kubernetes/typed/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/scale"
 )
 
 // RunType scaler marks the metric gathering/evaluation as running during a scale
 const RunType = "scaler"
 
-type getMetricer interface {
-	GetMetrics(deployment *appsv1.Deployment) (*metric.ResourceMetrics, error)
-}
-
-type getEvaluationer interface {
-	GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error)
-}
-
 // Scaler handles scaling up/down the resource being managed; triggering metric gathering and
 // feeding an evaluator these metrics, before taking the results and using them to interact with Kubernetes
 // to scale up/down
 type Scaler struct {
-	Clientset         kubernetes.Interface
-	DeploymentsClient v1.DeploymentInterface
-	Config            *config.Config
-	GetMetricer       getMetricer
-	GetEvaluationer   getEvaluationer
+	Scaler          scale.ScalesGetter
+	Client          resourceclient.Client
+	Config          *config.Config
+	GetMetricer     metric.GetMetricer
+	GetEvaluationer evaluate.GetEvaluationer
 }
 
 // Scale gets the managed resource, gathers metrics, evaluates these metrics and finally if a change is required
 // then it scales the resource
 func (s *Scaler) Scale() error {
-	// Get deployment being managed
-	deployment, err := s.Clientset.AppsV1().Deployments(s.Config.Namespace).Get(s.Config.ScaleTargetRef.Name, metav1.GetOptions{})
+	// Get resource being managed
+	resource, err := s.Client.Get(s.Config.ScaleTargetRef.APIVersion, s.Config.ScaleTargetRef.Kind, s.Config.ScaleTargetRef.Name, s.Config.Namespace)
 	if err != nil {
 		return err
 	}
 
+	// Get replica count
 	currentReplicas := int32(1)
-	if deployment.Spec.Replicas != nil {
-		currentReplicas = *deployment.Spec.Replicas
+	resourceReplicas, err := s.getReplicaCount(resource)
+	if err != nil {
+		return err
+	}
+	if resourceReplicas != nil {
+		currentReplicas = *resourceReplicas
 	}
 
 	if currentReplicas == 0 {
-		log.Printf("No scaling, autoscaling disabled on resource %s", deployment.Name)
+		log.Printf("No scaling, autoscaling disabled on resource %s", resource.GetName())
 		return nil
 	}
 
 	// Gather metrics
-	metrics, err := s.GetMetricer.GetMetrics(deployment)
+	metrics, err := s.GetMetricer.GetMetrics(resource)
 	if err != nil {
 		return err
 	}
@@ -100,12 +100,29 @@ func (s *Scaler) Scale() error {
 	}
 
 	// Check if evaluation requires an action
-	// If the deployment needs scaled up/down
+	// If the resource needs scaled up/down
 	if targetReplicas != currentReplicas {
 		log.Printf("Rescaling to %d replicas", targetReplicas)
-		// Scale deployment
-		deployment.Spec.Replicas = &targetReplicas
-		_, err = s.DeploymentsClient.Update(deployment)
+		// Parse group version
+		resourceGV, err := schema.ParseGroupVersion(s.Config.ScaleTargetRef.APIVersion)
+		if err != nil {
+			return err
+		}
+
+		targetGR := schema.GroupResource{
+			Group:    resourceGV.Group,
+			Resource: s.Config.ScaleTargetRef.Kind,
+		}
+
+		// Get scale for resource
+		scale, err := s.Scaler.Scales(s.Config.Namespace).Get(targetGR, s.Config.ScaleTargetRef.Name)
+		if err != nil {
+			return err
+		}
+
+		// Scale resource
+		scale.Spec.Replicas = targetReplicas
+		_, err = s.Scaler.Scales(s.Config.Namespace).Update(targetGR, scale)
 		if err != nil {
 			return err
 		}
@@ -113,4 +130,19 @@ func (s *Scaler) Scale() error {
 	}
 	log.Printf("No change in target replicas, maintaining %d replicas", currentReplicas)
 	return nil
+}
+
+func (s *Scaler) getReplicaCount(resource metav1.Object) (*int32, error) {
+	switch v := resource.(type) {
+	case *appsv1.Deployment:
+		return v.Spec.Replicas, nil
+	case *appsv1.ReplicaSet:
+		return v.Spec.Replicas, nil
+	case *appsv1.StatefulSet:
+		return v.Spec.Replicas, nil
+	case *corev1.ReplicationController:
+		return v.Spec.Replicas, nil
+	default:
+		return nil, fmt.Errorf("Unsupported resource of type %T", v)
+	}
 }

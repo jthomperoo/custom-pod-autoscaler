@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Support for other entrypoints other than `/bin/sh`, can specify an entrypoint for the shell command method.
+### Changed
+- Can scale ReplicaSets, ReplicationControllers and StatefulSets alongside Deployments.
+- ResourceMetrics fields have `resourceName` and `resource` rather than `deploymentName` and `deployment`. In JSON this means that only the resource name will be exposed via field `resource`.
+- Uses scaling API rather than manually adjusting replica count on resource.
+- Matches using match selector rather than incorrectly using resource labels and building a different selector.
 
 ## [v0.8.0] - 2019-12-17
 ### Added
