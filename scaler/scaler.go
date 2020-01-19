@@ -21,8 +21,8 @@ package scaler
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
@@ -51,13 +51,14 @@ type Scaler struct {
 // Scale gets the managed resource, gathers metrics, evaluates these metrics and finally if a change is required
 // then it scales the resource
 func (s *Scaler) Scale() error {
-	// Get resource being managed
+	glog.V(2).Infoln("Attempting to get managed resource")
 	resource, err := s.Client.Get(s.Config.ScaleTargetRef.APIVersion, s.Config.ScaleTargetRef.Kind, s.Config.ScaleTargetRef.Name, s.Config.Namespace)
 	if err != nil {
 		return err
 	}
+	glog.V(2).Infof("Managed resource retrieved: %+v", resource)
 
-	// Get replica count
+	glog.V(2).Infoln("Determining replica count for resource")
 	currentReplicas := int32(1)
 	resourceReplicas, err := s.getReplicaCount(resource)
 	if err != nil {
@@ -66,69 +67,76 @@ func (s *Scaler) Scale() error {
 	if resourceReplicas != nil {
 		currentReplicas = *resourceReplicas
 	}
+	glog.V(2).Infof("Replica count determined: %d", currentReplicas)
 
 	if currentReplicas == 0 {
-		log.Printf("No scaling, autoscaling disabled on resource %s", resource.GetName())
+		glog.V(0).Infof("No scaling, autoscaling disabled on resource %s", resource.GetName())
 		return nil
 	}
 
-	// Gather metrics
+	glog.V(2).Infoln("Attempting to get resource metrics")
 	metrics, err := s.GetMetricer.GetMetrics(resource)
 	if err != nil {
 		return err
 	}
+	glog.V(2).Infof("Retrieved metrics: %+v", metrics)
 
 	// Mark the runtype as scaler
 	metrics.RunType = RunType
 
-	// Evaluate based on metrics
+	glog.V(2).Infoln("Attempting to evaluate metrics")
 	evaluation, err := s.GetEvaluationer.GetEvaluation(metrics)
 	if err != nil {
 		return err
 	}
+	glog.V(2).Infof("Metrics evaluated: %+v", evaluation)
 
 	targetReplicas := currentReplicas
 	if evaluation.TargetReplicas < s.Config.MinReplicas {
-		log.Printf("Scale target less than min at %d replicas, setting target to min %d replicas", evaluation.TargetReplicas, s.Config.MinReplicas)
+		glog.V(1).Infof("Scale target less than min at %d replicas, setting target to min %d replicas", evaluation.TargetReplicas, s.Config.MinReplicas)
 		targetReplicas = s.Config.MinReplicas
 	} else if evaluation.TargetReplicas > s.Config.MaxReplicas {
-		log.Printf("Scale target greater than max at %d replicas, setting target to max %d replicas", evaluation.TargetReplicas, s.Config.MaxReplicas)
+		glog.V(1).Infof("Scale target greater than max at %d replicas, setting target to max %d replicas", evaluation.TargetReplicas, s.Config.MaxReplicas)
 		targetReplicas = s.Config.MaxReplicas
 	} else {
-		log.Printf("Scale target set to %d replicas", evaluation.TargetReplicas)
+		glog.V(1).Infof("Scale target set to %d replicas", evaluation.TargetReplicas)
 		targetReplicas = evaluation.TargetReplicas
 	}
 
 	// Check if evaluation requires an action
 	// If the resource needs scaled up/down
 	if targetReplicas != currentReplicas {
-		log.Printf("Rescaling to %d replicas", targetReplicas)
+		glog.V(0).Infof("Rescaling from %d to %d replicas", currentReplicas, targetReplicas)
+		glog.V(2).Infoln("Attempting to parse group version")
 		// Parse group version
 		resourceGV, err := schema.ParseGroupVersion(s.Config.ScaleTargetRef.APIVersion)
 		if err != nil {
 			return err
 		}
+		glog.V(2).Infof("Group version parsed: %+v", resourceGV)
 
 		targetGR := schema.GroupResource{
 			Group:    resourceGV.Group,
 			Resource: s.Config.ScaleTargetRef.Kind,
 		}
 
-		// Get scale for resource
+		glog.V(2).Infoln("Attempting to get scale subresource for managed resource")
 		scale, err := s.Scaler.Scales(s.Config.Namespace).Get(targetGR, s.Config.ScaleTargetRef.Name)
 		if err != nil {
 			return err
 		}
+		glog.V(2).Infof("Scale subresource retrieved: %+v", scale)
 
-		// Scale resource
+		glog.V(2).Infoln("Attempting to apply scaling changes to resource")
 		scale.Spec.Replicas = targetReplicas
 		_, err = s.Scaler.Scales(s.Config.Namespace).Update(targetGR, scale)
 		if err != nil {
 			return err
 		}
+		glog.V(2).Infoln("Application of scale successful")
 		return nil
 	}
-	log.Printf("No change in target replicas, maintaining %d replicas", currentReplicas)
+	glog.V(0).Infof("No change in target replicas, maintaining %d replicas", currentReplicas)
 	return nil
 }
 

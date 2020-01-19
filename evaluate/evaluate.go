@@ -21,8 +21,8 @@ package evaluate
 
 import (
 	"encoding/json"
-	"log"
 
+	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
@@ -48,23 +48,27 @@ type Evaluator struct {
 
 // GetEvaluation uses the metrics provided to determine a set of evaluations
 func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Evaluation, error) {
+	glog.V(3).Infoln("Evaluating gathered metrics")
 	// Convert metrics into JSON
 	metricJSON, err := json.Marshal(resourceMetrics)
 	if err != nil {
 		// Should not occur, panic
-		log.Panic(err)
+		panic(err)
 	}
 
-	// Execute with the value
+	glog.V(3).Infoln("Attempting to run evaluation logic")
 	gathered, err := e.Execute.ExecuteWithValue(e.Config.Evaluate, string(metricJSON))
 	if err != nil {
 		return nil, err
 	}
+	glog.V(3).Infof("Evaluation determined: %s", gathered)
 
+	glog.V(3).Infoln("Attempting to parse evaluation")
 	evaluation := &Evaluation{}
 	err = json.Unmarshal([]byte(gathered), evaluation)
 	if err != nil {
 		return nil, err
 	}
+	glog.V(3).Infof("Evaluation parsed: %+v", evaluation)
 	return evaluation, nil
 }

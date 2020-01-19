@@ -24,6 +24,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -31,10 +32,12 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/api"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
@@ -66,9 +69,22 @@ const (
 	startTimeEnvName       = "startTime"
 	minReplicasEnvName     = "minReplicas"
 	maxReplicasEnvName     = "maxReplicas"
+	logVerbosityEnvName    = "logVerbosity"
 )
 
 const defaultConfig = "/config.yaml"
+
+func init() {
+	err := flag.Set("logtostderr", "true")
+	if err != nil {
+		log.Fatalf("Fail to set log to standard error flag: %s", err)
+	}
+	err = flag.Set("v", "0")
+	if err != nil {
+		log.Fatalf("Fail to set default log verbosity flag: %s", err)
+	}
+	flag.Parse()
+}
 
 func main() {
 	// Read in environment variables
@@ -81,32 +97,46 @@ func main() {
 	// Read in config file
 	configFileData, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		log.Panic(err)
+		glog.Fatalf("Fail to read configuration file: %s", err)
 	}
 
 	// Load Custom Pod Autoscaler config
 	config, err := config.LoadConfig(configFileData, configEnvs)
 	if err != nil {
-		log.Panic(err)
+		glog.Fatalf("Fail to parse configuration: %s", err)
 	}
 
 	// Create the in-cluster Kubernetes config
 	clusterConfig, err := rest.InClusterConfig()
 	if err != nil {
-		log.Panic(err)
+		glog.Fatalf("Fail to create in-cluster Kubernetes config: %s", err)
 	}
 
 	// Set up clientset
 	clientset, err := kubernetes.NewForConfig(clusterConfig)
 	if err != nil {
-		log.Panic(err)
+		glog.Fatalf("Fail to set up Kubernetes clientset: %s", err)
 	}
 
 	// Set up dynamic client
 	dynamicClient, err := dynamic.NewForConfig(clusterConfig)
 	if err != nil {
-		log.Panic(err)
+		glog.Fatalf("Fail to set up Kubernetes dynamic client: %s", err)
 	}
+
+	// Get group resources
+	groupResources, err := restmapper.GetAPIGroupResources(clientset.Discovery())
+	if err != nil {
+		glog.Fatalf("Fail get group resources: %s", err)
+	}
+
+	// Set logging level
+	err = flag.Lookup("v").Value.Set(strconv.Itoa(int(config.LogVerbosity)))
+	if err != nil {
+		glog.Fatalf("Fail to set log verbosity: %s", err)
+	}
+
+	glog.V(1).Infoln("Setting up resources and clients")
 
 	// Unstructured converter
 	unstructuredConverted := runtime.DefaultUnstructuredConverter
@@ -117,13 +147,6 @@ func main() {
 		UnstructuredConverter: unstructuredConverted,
 	}
 
-	// Get group resources
-	groupResources, err := restmapper.GetAPIGroupResources(clientset.Discovery())
-	if err != nil {
-		log.Panic(err)
-	}
-
-	// Set up scaling client
 	scaleClient := scale.New(
 		clientset.RESTClient(),
 		restmapper.NewDiscoveryRESTMapper(groupResources),
@@ -159,6 +182,8 @@ func main() {
 		},
 	}
 
+	glog.V(1).Infoln("Setting up REST API")
+
 	// Set up API
 	api := &api.API{
 		Router:          chi.NewRouter(),
@@ -173,15 +198,17 @@ func main() {
 		Handler: api.Router,
 	}
 
+	glog.V(1).Infoln("Setting up autoscaler")
+
 	delayTime := config.StartTime - (time.Now().UTC().UnixNano() / int64(time.Millisecond) % config.StartTime)
 	delayStartTimer := time.NewTimer(time.Duration(delayTime) * time.Millisecond)
 
-	log.Printf("Waiting %d milliseconds before starting autoscaler\n", delayTime)
+	glog.V(0).Infof("Waiting %d milliseconds before starting autoscaler\n", delayTime)
 
 	go func() {
 		// Wait for delay to start at expected time
 		<-delayStartTimer.C
-		log.Println("Starting autoscaler")
+		glog.V(0).Infoln("Starting autoscaler")
 		// Set up time ticker with configured interval
 		ticker := time.NewTicker(time.Duration(config.Interval) * time.Millisecond)
 		// Set up shutdown channel, which will listen for UNIX shutdown commands
@@ -204,7 +231,7 @@ func main() {
 			for {
 				select {
 				case <-shutdown:
-					log.Println("Shutting down...")
+					glog.V(0).Infoln("Shutting down...")
 					// Stop API
 					ctx, cancel := context.WithCancel(context.Background())
 					defer cancel()
@@ -213,16 +240,17 @@ func main() {
 					ticker.Stop()
 					return
 				case <-ticker.C:
+					glog.V(2).Infoln("Running autoscaler")
 					err := autoscaler.Scale()
 					if err != nil {
-						log.Println(err)
+						glog.Errorln(err)
 					}
 				}
 			}
 		}()
 	}()
 
-	log.Println("Starting API")
+	glog.V(0).Infoln("Starting API")
 	// Start API
 	srv.ListenAndServe()
 }
@@ -245,6 +273,7 @@ func readEnvVars() map[string]string {
 		minReplicasEnvName,
 		maxReplicasEnvName,
 		startTimeEnvName,
+		logVerbosityEnvName,
 	}
 	configEnvs := map[string]string{}
 	for _, envName := range configEnvsNames {

@@ -9,11 +9,11 @@ coverage:
   status:
     project:
       default:
-        target: auto
+        target: 80
         threshold: 1%
     patch:
       default:
-        target: auto
+        target: 80
         threshold: 1%
     changes: no
 

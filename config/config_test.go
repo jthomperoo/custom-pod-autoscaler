@@ -38,6 +38,7 @@ const (
 	defaultMaxReplicas     = 10
 	defaultStartTime       = 1
 	defaultRunMode         = "per-pod"
+	defaultLogVerbosity    = 0
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -101,6 +102,7 @@ func TestLoadConfig(t *testing.T) {
 				MinReplicas:    defaultMinReplicas,
 				MaxReplicas:    defaultMaxReplicas,
 				StartTime:      defaultStartTime,
+				LogVerbosity:   defaultLogVerbosity,
 				ScaleTargetRef: nil,
 			},
 		},
@@ -125,6 +127,7 @@ func TestLoadConfig(t *testing.T) {
 				"maxReplicas":    "6",
 				"startTime":      "0",
 				"scaleTargetRef": `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
+				"logVerbosity":   "3",
 			},
 			nil,
 			&config.Config{
@@ -149,6 +152,7 @@ func TestLoadConfig(t *testing.T) {
 					Kind:       "test target kind",
 					APIVersion: "test target api version",
 				},
+				LogVerbosity: 3,
 			},
 		},
 		{
@@ -174,6 +178,7 @@ func TestLoadConfig(t *testing.T) {
 				maxReplicas: 7
 				startTime: 0
 				namespace: "test yaml namespace"
+				logVerbosity: 2
 			`, "\t", "", -1)),
 			nil,
 			nil,
@@ -202,6 +207,7 @@ func TestLoadConfig(t *testing.T) {
 						Entrypoint: "testentry",
 					},
 				},
+				LogVerbosity: 2,
 			},
 		},
 		{
@@ -230,7 +236,8 @@ func TestLoadConfig(t *testing.T) {
 				"minReplicas":2,
 				"maxReplicas":7,
 				"startTime":0,
-				"namespace":"test yaml namespace"
+				"namespace":"test yaml namespace",
+				"logVerbosity":1
 			}`),
 			nil,
 			nil,
@@ -259,6 +266,7 @@ func TestLoadConfig(t *testing.T) {
 						Entrypoint: "testentry",
 					},
 				},
+				LogVerbosity: 1,
 			},
 		},
 		{
@@ -286,6 +294,7 @@ func TestLoadConfig(t *testing.T) {
 				"minReplicas":    "3",
 				"maxReplicas":    "6",
 				"startTime":      "0",
+				"logVerbosity":   "5",
 				"scaleTargetRef": `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
 			},
 			nil,
@@ -318,6 +327,7 @@ func TestLoadConfig(t *testing.T) {
 						Entrypoint: "testentry",
 					},
 				},
+				LogVerbosity: 5,
 			},
 		},
 		{
@@ -350,6 +360,7 @@ func TestLoadConfig(t *testing.T) {
 				"maxReplicas":    "6",
 				"startTime":      "0",
 				"scaleTargetRef": `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
+				"logVerbosity":   "3",
 			},
 			nil,
 			&config.Config{
@@ -382,6 +393,7 @@ func TestLoadConfig(t *testing.T) {
 						Entrypoint: "testentry",
 					},
 				},
+				LogVerbosity: 3,
 			},
 		},
 	}
