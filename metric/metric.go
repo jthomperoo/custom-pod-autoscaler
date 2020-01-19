@@ -22,8 +22,8 @@ package metric
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
+	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	appsv1 "k8s.io/api/apps/v1"
@@ -73,18 +73,21 @@ func (m *Gatherer) GetMetrics(resource metav1.Object) (*ResourceMetrics, error) 
 }
 
 func (m *Gatherer) getMetricsForResource(resource metav1.Object) (*ResourceMetrics, error) {
+	glog.V(3).Infoln("Gathering metrics in per-resource mode")
+
 	// Convert the Resource description to JSON
 	resourceJSON, err := json.Marshal(resource)
 	if err != nil {
 		// Should not occur, panic
-		log.Panic(err)
+		panic(err)
 	}
 
-	// Execute with the value
+	glog.V(3).Infoln("Attempting to run metric gathering logic")
 	gathered, err := m.Execute.ExecuteWithValue(m.Config.Metric, string(resourceJSON))
 	if err != nil {
 		return nil, err
 	}
+	glog.V(3).Infof("Metrics gathered: %+v", gathered)
 
 	return &ResourceMetrics{
 		ResourceName: resource.GetName(),
@@ -99,33 +102,38 @@ func (m *Gatherer) getMetricsForResource(resource metav1.Object) (*ResourceMetri
 }
 
 func (m *Gatherer) getMetricsForPods(resource metav1.Object) (*ResourceMetrics, error) {
-	// Get Resource pod selector
+	glog.V(3).Infoln("Gathering metrics in per-pod mode")
+
+	glog.V(3).Infoln("Attempting to get pod selector from managed resource")
 	labels, err := m.getPodSelectorForResource(resource)
 	if err != nil {
 		return nil, err
 	}
+	glog.V(3).Infof("Label selector retrieved: %+v", labels)
 
-	// Get Resource pods
+	glog.V(3).Infoln("Attempting to get pods being managed")
 	pods, err := m.Clientset.CoreV1().Pods(m.Config.Namespace).List(metav1.ListOptions{LabelSelector: labels})
 	if err != nil {
 		return nil, err
 	}
+	glog.V(3).Infof("Pods retrieved: %+v", pods)
 
-	// Gather metrics for each pod
+	glog.V(3).Infoln("Attempting to gather metrics for each pod")
 	var metrics []*Metric
 	for _, pod := range pods.Items {
 		// Convert the Pod description to JSON
 		podJSON, err := json.Marshal(pod)
 		if err != nil {
 			// Should not occur, panic
-			log.Panic(err)
+			panic(err)
 		}
 
-		// Execute with the value
+		glog.V(3).Infof("Running metric gathering for pod: %s", pod.Name)
 		gathered, err := m.Execute.ExecuteWithValue(m.Config.Metric, string(podJSON))
 		if err != nil {
 			return nil, err
 		}
+		glog.V(3).Infof("Metric gathered: %+v", gathered)
 
 		// Add metric to metrics array
 		metrics = append(metrics, &Metric{
@@ -133,6 +141,7 @@ func (m *Gatherer) getMetricsForPods(resource metav1.Object) (*ResourceMetrics, 
 			Value:    gathered,
 		})
 	}
+	glog.V(3).Infoln("All metrics gathered for each pod successfully")
 	return &ResourceMetrics{
 		ResourceName: resource.GetName(),
 		Resource:     resource,

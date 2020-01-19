@@ -22,7 +22,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -84,8 +83,7 @@ func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 	response, err := json.Marshal(metrics)
 	if err != nil {
 		// Should not occur, panic
-		log.Panic(err)
-		return
+		panic(err)
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(response)
@@ -125,8 +123,7 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 	response, err := json.Marshal(evaluations)
 	if err != nil {
 		// Should not occur, panic
-		log.Panic(err)
-		return
+		panic(err)
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(response)
@@ -153,7 +150,7 @@ func apiError(w http.ResponseWriter, apiErr *Error) {
 	response, err := json.Marshal(apiErr)
 	if err != nil {
 		// Should not occur, panic
-		log.Panic(err)
+		panic(err)
 	}
 	w.WriteHeader(apiErr.Code)
 	w.Write(response)

@@ -158,3 +158,16 @@ Default value: `1`
 This defines in milliseconds a starting point for the scaler, with the scaler running as if it started at the time provided. Allows specifying that the autoscaler must start on a multiple of the interval from the start time. For example, a startTime of `60000` would result in the autoscaler starting at the next full minute. The default value will start the autoscaler after a single millisecond, close to instantly.
 
 > Note: The scaling will not actually start until after one interval has passed.
+## logVerbosity
+Example:
+```yaml
+logVerbosity: 0
+```
+Default value: `0`  
+This defines the verbosity of the logging, allowing for debugging errors/issues. Logging will occur for all values ABOVE and including the verbosity level set.  
+Log levels:
+
+* `0` - normal.
+* `1` - verbose.
+* `2` - more verbose around high level logic such as autoscaling/rest api.
+* `3` - more verbose around lower level logic such as metric gathering and evaluation.

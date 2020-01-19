@@ -39,14 +39,15 @@ const (
 )
 
 const (
-	defaultInterval    = 15000
-	defaultHost        = "0.0.0.0"
-	defaultPort        = 5000
-	defaultNamespace   = "default"
-	defaultMinReplicas = 1
-	defaultMaxReplicas = 10
-	defaultStartTime   = 1
-	defaultRunMode     = PerPodRunMode
+	defaultInterval     = 15000
+	defaultHost         = "0.0.0.0"
+	defaultPort         = 5000
+	defaultNamespace    = "default"
+	defaultMinReplicas  = 1
+	defaultMaxReplicas  = 10
+	defaultStartTime    = 1
+	defaultRunMode      = PerPodRunMode
+	defaultLogVerbosity = 0
 )
 
 const jsonStructTag = "json"
@@ -64,6 +65,7 @@ type Config struct {
 	MaxReplicas    int32                                    `json:"maxReplicas"`
 	RunMode        string                                   `json:"runMode"`
 	StartTime      int64                                    `json:"startTime"`
+	LogVerbosity   int32                                    `json:"logVerbosity"`
 }
 
 // Method describes a method for passing data/triggerering logic, such as through a shell
