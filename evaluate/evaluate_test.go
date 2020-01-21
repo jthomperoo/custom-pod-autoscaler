@@ -64,7 +64,7 @@ func TestGetEvaluation(t *testing.T) {
 					Type:    "fake",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "test evaluate command",
+						Command:    []string{"test evaluate command"},
 						Entrypoint: "testentry",
 					},
 				},
@@ -96,7 +96,7 @@ func TestGetEvaluation(t *testing.T) {
 					Type:    "fake",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "test evaluate command",
+						Command:    []string{"test evaluate command"},
 						Entrypoint: "testentry",
 					},
 				},
@@ -133,7 +133,7 @@ func TestGetEvaluation(t *testing.T) {
 					Type:    "fake",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "test evaluate command",
+						Command:    []string{"test evaluate command"},
 						Entrypoint: "testentry",
 					},
 				},

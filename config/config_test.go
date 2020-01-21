@@ -114,7 +114,7 @@ func TestLoadConfig(t *testing.T) {
 					"type" : "shell", 
 					"timeout": 10, 
 					"shell": { 
-						"command" : "testcommand",
+						"command" : ["testcommand"],
 						"entrypoint" : "testentry"
 					}
 				}`,
@@ -143,7 +143,7 @@ func TestLoadConfig(t *testing.T) {
 					Type:    "shell",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "testcommand",
+						Command:    []string{"testcommand"},
 						Entrypoint: "testentry",
 					},
 				},
@@ -162,13 +162,17 @@ func TestLoadConfig(t *testing.T) {
 				  type: shell
 				  timeout: 10
 				  shell: 
-				    command: "testcommand"
+				    command: 
+				      - "testcommand"
+				      - "arg1"
 				    entrypoint: "testentry"
 				metric: 
 				  type: shell
 				  timeout: 10
 				  shell: 
-				    command: "testcommand"
+				    command: 
+				      - "testcommand"
+				      - "arg1"
 				    entrypoint: "testentry"
 				interval: 30
 				host: "test yaml host"
@@ -195,7 +199,7 @@ func TestLoadConfig(t *testing.T) {
 					Type:    "shell",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "testcommand",
+						Command:    []string{"testcommand", "arg1"},
 						Entrypoint: "testentry",
 					},
 				},
@@ -203,7 +207,7 @@ func TestLoadConfig(t *testing.T) {
 					Type:    "shell",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "testcommand",
+						Command:    []string{"testcommand", "arg1"},
 						Entrypoint: "testentry",
 					},
 				},
@@ -217,7 +221,7 @@ func TestLoadConfig(t *testing.T) {
 					"type":"shell",
 					"timeout":10,
 					"shell": { 
-						"command": "testcommand", 
+						"command": ["testcommand", "arg1"], 
 						"entrypoint": "testentry"
 					}
 				},
@@ -225,7 +229,7 @@ func TestLoadConfig(t *testing.T) {
 					"type":"shell",
 					"timeout":10,
 					"shell": { 
-						"command": "testcommand", 
+						"command": ["testcommand"], 
 						"entrypoint": "testentry"
 					}
 				},
@@ -254,7 +258,7 @@ func TestLoadConfig(t *testing.T) {
 					Type:    "shell",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "testcommand",
+						Command:    []string{"testcommand", "arg1"},
 						Entrypoint: "testentry",
 					},
 				},
@@ -262,7 +266,7 @@ func TestLoadConfig(t *testing.T) {
 					Type:    "shell",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "testcommand",
+						Command:    []string{"testcommand"},
 						Entrypoint: "testentry",
 					},
 				},
@@ -276,13 +280,16 @@ func TestLoadConfig(t *testing.T) {
 				  type: shell
 				  timeout: 10
 				  shell: 
-				    command: "testcommand"
+				    command: 
+				      - "testcommand"
+				      - "arg1"
 				    entrypoint: "testentry"
 				metric: 
 				  type: shell
 				  timeout: 10
 				  shell: 
-				    command: "testcommand"
+				    command:
+				      - "testcommand"
 				    entrypoint: "testentry"
 				host: "test yaml host"
 				port: 7890
@@ -316,14 +323,14 @@ func TestLoadConfig(t *testing.T) {
 					Type:    "shell",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "testcommand",
+						Command:    []string{"testcommand", "arg1"},
 						Entrypoint: "testentry",
 					}},
 				Metric: &config.Method{
 					Type:    "shell",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "testcommand",
+						Command:    []string{"testcommand"},
 						Entrypoint: "testentry",
 					},
 				},
@@ -337,7 +344,7 @@ func TestLoadConfig(t *testing.T) {
 					"type": "shell",
 					"timeout": 10,
 					"shell": { 
-						"command": "testcommand", 
+						"command": ["testcommand", "arg1"], 
 						"entrypoint": "testentry"
 					}
 				},
@@ -345,7 +352,7 @@ func TestLoadConfig(t *testing.T) {
 					"type": "shell",
 					"timeout": 10,
 					"shell": { 
-						"command": "testcommand", 
+						"command": ["testcommand"], 
 						"entrypoint": "testentry"
 					}
 				},
@@ -381,7 +388,7 @@ func TestLoadConfig(t *testing.T) {
 					Type:    "shell",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "testcommand",
+						Command:    []string{"testcommand", "arg1"},
 						Entrypoint: "testentry",
 					},
 				},
@@ -389,7 +396,7 @@ func TestLoadConfig(t *testing.T) {
 					Type:    "shell",
 					Timeout: 10,
 					Shell: &config.Shell{
-						Command:    "testcommand",
+						Command:    []string{"testcommand"},
 						Entrypoint: "testentry",
 					},
 				},

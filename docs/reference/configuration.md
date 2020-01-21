@@ -12,13 +12,15 @@ evaluate:
   timeout: 2500
   shell: 
     entrypoint: "python"
-    command: "/evaluate.py"
+    command: 
+      - "/evaluate.py"
 metric: 
   type: "shell"
   timeout: 2500
   shell: 
     entrypoint: "python"
-    command: "/metric.py"
+    command: 
+      - "/metric.py"
 runMode: "per-resource"
 ```
 
@@ -46,7 +48,8 @@ metric:
   timeout: 2500
   shell: 
     entrypoint: "python"
-    command: "/metric.py"
+    command: 
+      - "/metric.py"
 ```
 A method defines a hook for calling user logic, with a timeout to handle user logic that hangs.  
 
@@ -85,7 +88,8 @@ evaluate:
   timeout: 2500
   shell: 
     entrypoint: "python"
-    command: "/evaluate.py"
+    command: 
+      - "/evaluate.py"
 ```
 No default value, required to be set.  
 This defines the evaluation logic that should be run, and how it should be triggered.  
@@ -98,7 +102,8 @@ metric:
   timeout: 2500
   shell: 
     entrypoint: "python"
-    command: "/metric.py"
+    command: 
+      - "/metric.py"
 ```
 No default value, required to be set.  
 This defines the metric logic that should be run, and how it should be triggered.  

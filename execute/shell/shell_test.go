@@ -102,7 +102,7 @@ func TestMain(m *testing.M) {
 				Type:    shell.Type,
 				Timeout: 100,
 				Shell: &config.Shell{
-					Command:    "command",
+					Command:    []string{"command"},
 					Entrypoint: "/bin/sh",
 				},
 			},
@@ -120,13 +120,59 @@ func TestMain(m *testing.M) {
 
 				// Check entrypoint is correct
 				if !cmp.Equal(entrypoint, "/bin/sh") {
-					fmt.Fprintf(os.Stderr, "stdin mismatch (-want +got):\n%s", cmp.Diff("/bin/sh", entrypoint))
+					fmt.Fprintf(os.Stderr, "entrypoint mismatch (-want +got):\n%s", cmp.Diff("/bin/sh", entrypoint))
 					os.Exit(1)
 				}
 
 				// Check command is correct
 				if !cmp.Equal(command, "command") {
-					fmt.Fprintf(os.Stderr, "stdin mismatch (-want +got):\n%s", cmp.Diff("command", command))
+					fmt.Fprintf(os.Stderr, "command mismatch (-want +got):\n%s", cmp.Diff("command", command))
+					os.Exit(1)
+				}
+
+				// Check piped value in is correct
+				if !cmp.Equal(stdin, "pipe value") {
+					fmt.Fprintf(os.Stderr, "stdin mismatch (-want +got):\n%s", cmp.Diff("pipe value", stdin))
+					os.Exit(1)
+				}
+
+				fmt.Fprint(os.Stdout, "test std out")
+				os.Exit(0)
+			}),
+		},
+		{
+			"Successful shell command, multiple args",
+			nil,
+			"test std out",
+			&config.Method{
+				Type:    shell.Type,
+				Timeout: 100,
+				Shell: &config.Shell{
+					Command:    []string{"command", "arg1"},
+					Entrypoint: "/bin/sh",
+				},
+			},
+			"pipe value",
+			fakeExecCommand("multiple-success", func(t *testing.T) {
+				stdinb, err := ioutil.ReadAll(os.Stdin)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, err.Error())
+					os.Exit(1)
+				}
+
+				stdin := string(stdinb)
+				entrypoint := strings.TrimSpace(os.Args[4])
+				command := strings.TrimSpace(strings.Join(os.Args[5:len(os.Args)], " "))
+
+				// Check entrypoint is correct
+				if !cmp.Equal(entrypoint, "/bin/sh") {
+					fmt.Fprintf(os.Stderr, "entrypoint mismatch (-want +got):\n%s", cmp.Diff("/bin/sh", entrypoint))
+					os.Exit(1)
+				}
+
+				// Check command is correct
+				if !cmp.Equal(command, "command arg1") {
+					fmt.Fprintf(os.Stderr, "command mismatch (-want +got):\n%s", cmp.Diff("command arg1", command))
 					os.Exit(1)
 				}
 
@@ -148,7 +194,7 @@ func TestMain(m *testing.M) {
 				Type:    shell.Type,
 				Timeout: 100,
 				Shell: &config.Shell{
-					Command:    "command",
+					Command:    []string{"command"},
 					Entrypoint: "/bin/sh",
 				},
 			},
@@ -160,13 +206,32 @@ func TestMain(m *testing.M) {
 		},
 		{
 			"Failed shell command timeout",
-			errors.New("Entrypoint '/bin/sh', command 'command' timed out"),
+			errors.New("Entrypoint '/bin/sh', command '[command]' timed out"),
 			"",
 			&config.Method{
 				Type:    shell.Type,
 				Timeout: 5,
 				Shell: &config.Shell{
-					Command:    "command",
+					Command:    []string{"command"},
+					Entrypoint: "/bin/sh",
+				},
+			},
+			"pipe value",
+			fakeExecCommand("timeout", func(t *testing.T) {
+				fmt.Fprint(os.Stdout, "test std out")
+				time.Sleep(10 * time.Millisecond)
+				os.Exit(0)
+			}),
+		},
+		{
+			"Failed shell command timeout, multiple args",
+			errors.New("Entrypoint '/bin/sh', command '[command arg1]' timed out"),
+			"",
+			&config.Method{
+				Type:    shell.Type,
+				Timeout: 5,
+				Shell: &config.Shell{
+					Command:    []string{"command", "arg1"},
 					Entrypoint: "/bin/sh",
 				},
 			},
@@ -185,7 +250,7 @@ func TestMain(m *testing.M) {
 				Type:    shell.Type,
 				Timeout: 100,
 				Shell: &config.Shell{
-					Command:    "command",
+					Command:    []string{"command"},
 					Entrypoint: "/bin/sh",
 				},
 			},

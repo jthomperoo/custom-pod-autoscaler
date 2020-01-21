@@ -1,0 +1,17 @@
+evaluate:
+  type: "shell"
+  timeout: 2500
+  shell: 
+    entrypoint: "/bin/sh"
+    command: 
+      - "-c"
+      - "/simple-pod-metrics-golang -mode=evaluate"
+metric:
+  type: "shell"
+  timeout: 2500
+  shell: 
+    entrypoint: "/bin/sh"
+    command: 
+      - "-c"
+      - "/simple-pod-metrics-golang -mode=metric"
+runMode: "per-pod"

@@ -17,7 +17,8 @@ metric:
   timeout: 2500
   shell: 
     entrypoint: "python"
-    command: "/metric.py"
+    command: 
+      - "/metric.py"
 ```
 Breaking this example down:
 
@@ -34,7 +35,9 @@ metric:
   timeout: 2500
   shell: 
     entrypoint: "/bin/sh"
-    command: "exit 1"
+    command: 
+      - "-c"
+      - "exit 1"
 ```
 
 This is a metric configuration that will return `5` as a metric.
@@ -44,5 +47,7 @@ metric:
   timeout: 2500
   shell: 
     entrypoint: "/bin/sh"
-    command: "echo '5'"
+    command: 
+      - "-c"
+      - "echo '5'"
 ```

@@ -78,8 +78,8 @@ type Method struct {
 
 // Shell describes configuration options for a shell command method
 type Shell struct {
-	Command    string `json:"command"`
-	Entrypoint string `json:"entrypoint"`
+	Command    []string `json:"command"`
+	Entrypoint string   `json:"entrypoint"`
 }
 
 // LoadConfig loads in the default configuration, then overrides it from the config file,
