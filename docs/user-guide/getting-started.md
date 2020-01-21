@@ -40,13 +40,15 @@ evaluate:
   timeout: 2500
   shell: 
     entrypoint: "python"
-    command: "/evaluate.py"
+    command: 
+      - "/evaluate.py"
 metric:
   type: "shell"
   timeout: 2500
   shell: 
     entrypoint: "python"
-    command: "/metric.py"
+    command: 
+      - "/metric.py"
 runMode: "per-resource"
 ```
 This configuration file specifies the two scripts we are adding, the metric gatherer and the evaluator

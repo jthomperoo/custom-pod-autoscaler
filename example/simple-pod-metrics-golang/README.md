@@ -1,10 +1,10 @@
-# Python Simple Pod Metrics Example
-This example shows how to make a Custom Pod Autoscaler (CPA) using Python.  
-The example extends the Python CPA base image (custompodautoscaler/python) and sets up an environment to allow python scripts to be used to determine metrics and evaluate how to scale.  
+# Golang Simple Pod Metrics Example
+This example shows how to make a Custom Pod Autoscaler (CPA) using Golang.  
+The example extends the Alpine CPA base image (custompodautoscaler/alpine) and adds in a Golang binary to execute for gathering metrics/making evaluations.  
 The code is verbosely commented and designed to be read and understood for building your own CPAs.
 
 ## Overview
-This example contains a docker image of the example Python Custom Pod Autoscaler, alongside using the `flask-metric` sample application ([../flask-metric/README.md](../flask-metric/README.md)) as a target to scale up and down.
+This example contains a docker image of the example Golang Custom Pod Autoscaler, alongside using the `flask-metric` sample application as a target to scale up and down.
 
 ### Example Custom Pod Autoscaler
 
@@ -38,8 +38,10 @@ Now you have an app running to manage scaling for.
 
 ### Build CPA image
 Once CPAs have been enabled on your cluster, you need to build this example, run these commands to build the example:  
+* Vendor the Golang dependencies.  
+`go mod vendor`
 * Build the example image.  
-`docker build -t simple-pod-metrics-python .`  
+`docker build -t simple-pod-metrics-golang .`  
 * Deploy the CPA using the image just built.  
 `kubectl apply -f cpa.yaml`  
 Now the CPA should be running on your cluster, managing the app we previously deployed.

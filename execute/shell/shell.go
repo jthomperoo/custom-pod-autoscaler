@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 )
 
@@ -42,8 +43,9 @@ type Execute struct {
 // If it exits with code 1, an error is returned and the stderr is captured and returned.
 // If the timeout is reached, an error is returned.
 func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string, error) {
+	glog.V(4).Infof("Running shell command, entrypoint: '%s', command '%s'", method.Shell.Entrypoint, method.Shell.Command)
 	// Build command string with value piped into it
-	cmd := e.Command(method.Shell.Entrypoint, method.Shell.Command)
+	cmd := e.Command(method.Shell.Entrypoint, method.Shell.Command...)
 
 	// Set up byte buffer to write values to stdin
 	inb := bytes.Buffer{}
@@ -75,7 +77,7 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 		return "", fmt.Errorf("Entrypoint '%s', command '%s' timed out", method.Shell.Entrypoint, method.Shell.Command)
 	case err = <-done:
 		if err != nil {
-			fmt.Println(fmt.Sprintf("stderr: %s", errb.String()))
+			glog.V(0).Infof("Shell command failed, stderr: %s", errb.String())
 			return "", err
 		}
 	}
