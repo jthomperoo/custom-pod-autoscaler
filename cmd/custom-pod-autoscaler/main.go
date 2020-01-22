@@ -33,6 +33,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -55,23 +56,7 @@ import (
 	k8sscale "k8s.io/client-go/scale"
 )
 
-const (
-	configEnvName          = "configPath"
-	evaluateEnvName        = "evaluate"
-	metricEnvName          = "metric"
-	intervalEnvName        = "interval"
-	hostEnvName            = "host"
-	portEnvName            = "port"
-	metricTimeoutEnvName   = "metricTimeout"
-	evaluateTimeoutEnvName = "evaluateTimeout"
-	namespaceEnvName       = "namespace"
-	scaleTargetRefEnvName  = "scaleTargetRef"
-	runModeEnvName         = "runMode"
-	startTimeEnvName       = "startTime"
-	minReplicasEnvName     = "minReplicas"
-	maxReplicasEnvName     = "maxReplicas"
-	logVerbosityEnvName    = "logVerbosity"
-)
+const configEnvName = "configPath"
 
 const defaultConfig = "/config.yaml"
 
@@ -93,7 +78,15 @@ func main() {
 	if !exists {
 		configPath = defaultConfig
 	}
-	configEnvs := readEnvVars()
+
+	// Convert all environment variables to a map
+	configEnvs := map[string]string{}
+	for _, envVar := range os.Environ() {
+		i := strings.Index(envVar, "=")
+		if i >= 0 {
+			configEnvs[envVar[:i]] = envVar[i+1:]
+		}
+	}
 
 	// Read in config file
 	configFileData, err := ioutil.ReadFile(configPath)
@@ -200,7 +193,7 @@ func main() {
 	}
 	api.Routes()
 	srv := http.Server{
-		Addr:    fmt.Sprintf("%s:%d", api.Config.Host, api.Config.Port),
+		Addr:    fmt.Sprintf("%s:%d", config.APIConfig.Host, config.APIConfig.Port),
 		Handler: api.Router,
 	}
 
@@ -211,15 +204,16 @@ func main() {
 
 	glog.V(0).Infof("Waiting %d milliseconds before starting autoscaler\n", delayTime)
 
+	// Set up shutdown channel, which will listen for UNIX shutdown commands
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
 	go func() {
 		// Wait for delay to start at expected time
 		<-delayStartTimer.C
 		glog.V(0).Infoln("Starting autoscaler")
 		// Set up time ticker with configured interval
 		ticker := time.NewTicker(time.Duration(config.Interval) * time.Millisecond)
-		// Set up shutdown channel, which will listen for UNIX shutdown commands
-		shutdown := make(chan os.Signal, 1)
-		signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 		// Set up scaler
 		autoscaler := &autoscaler.Scaler{
@@ -256,37 +250,25 @@ func main() {
 		}()
 	}()
 
-	glog.V(0).Infoln("Starting API")
-	// Start API
-	srv.ListenAndServe()
-}
+	if config.APIConfig.Enabled {
+		if config.APIConfig.UseHTTPS {
+			glog.V(0).Infoln("Starting API using HTTPS")
+			// Start API
+			err := srv.ListenAndServeTLS(config.APIConfig.CertFile, config.APIConfig.KeyFile)
+			if err != http.ErrServerClosed {
+				glog.Fatalf("HTTPS API Error: %s", err)
+			}
 
-// readEnvVars loads in all relevant environment variables if they exist,
-// putting them in a key-value map
-func readEnvVars() map[string]string {
-	configEnvsNames := []string{
-		evaluateEnvName,
-		metricEnvName,
-		intervalEnvName,
-		hostEnvName,
-		hostEnvName,
-		portEnvName,
-		namespaceEnvName,
-		metricTimeoutEnvName,
-		evaluateTimeoutEnvName,
-		scaleTargetRefEnvName,
-		runModeEnvName,
-		minReplicasEnvName,
-		maxReplicasEnvName,
-		startTimeEnvName,
-		logVerbosityEnvName,
-	}
-	configEnvs := map[string]string{}
-	for _, envName := range configEnvsNames {
-		value, exists := os.LookupEnv(envName)
-		if exists {
-			configEnvs[envName] = value
+		} else {
+			glog.V(0).Infoln("Starting API using HTTP")
+			// Start API
+			err := srv.ListenAndServe()
+			if err != http.ErrServerClosed {
+				glog.Fatalf("HTTP API Error: %s", err)
+			}
 		}
+	} else {
+		glog.V(0).Infoln("API disabled, skipping starting the API")
+		<-shutdown
 	}
-	return configEnvs
 }

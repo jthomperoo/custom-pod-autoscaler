@@ -19,13 +19,13 @@ WORKDIR /build
 COPY . /build
 RUN CGO_ENABLED=0 GOOS=linux go build -mod vendor -o simple-pod-metrics-golang
 
-# Pull in Python build of CPA
+# Pull in Alpine build of CPA
 FROM custompodautoscaler/alpine:latest
 # Install dependencies for debugging
 RUN apk add jq curl
 # Set up aliases for easy debugging
-RUN echo 'alias metrics="curl http://localhost:5000/api/v1/metrics | jq ."' >> ~/.profile
-RUN echo 'alias evaluation="curl http://localhost:5000/api/v1/evaluation | jq ."' >> ~/.profile
+RUN echo 'alias metrics="curl -X GET http://localhost:5000/api/v1/metrics | jq ."' >> ~/.profile
+RUN echo 'alias evaluation="curl -X POST http://localhost:5000/api/v1/evaluation | jq ."' >> ~/.profile
 # Add config
 ADD config.yaml /
 # Add built binary

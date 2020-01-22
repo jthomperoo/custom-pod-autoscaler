@@ -29,8 +29,6 @@ import (
 
 const (
 	defaultInterval        = 15000
-	defaultHost            = "0.0.0.0"
-	defaultPort            = 5000
 	defaultMetricTimeout   = 5000
 	defaultEvaluateTimeout = 5000
 	defaultNamespace       = "default"
@@ -39,6 +37,15 @@ const (
 	defaultStartTime       = 1
 	defaultRunMode         = "per-pod"
 	defaultLogVerbosity    = 0
+)
+
+const (
+	defaultAPIEnabled = true
+	defaultHost       = "0.0.0.0"
+	defaultPort       = 5000
+	defaultUseHTTPS   = false
+	defaultCertFile   = ""
+	defaultKeyFile    = ""
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -94,15 +101,21 @@ func TestLoadConfig(t *testing.T) {
 			nil,
 			nil,
 			&config.Config{
-				Interval:       defaultInterval,
-				Host:           defaultHost,
-				Port:           defaultPort,
-				Namespace:      defaultNamespace,
-				RunMode:        defaultRunMode,
-				MinReplicas:    defaultMinReplicas,
-				MaxReplicas:    defaultMaxReplicas,
-				StartTime:      defaultStartTime,
-				LogVerbosity:   defaultLogVerbosity,
+				Interval:     defaultInterval,
+				Namespace:    defaultNamespace,
+				RunMode:      defaultRunMode,
+				MinReplicas:  defaultMinReplicas,
+				MaxReplicas:  defaultMaxReplicas,
+				StartTime:    defaultStartTime,
+				LogVerbosity: defaultLogVerbosity,
+				APIConfig: &config.APIConfig{
+					Enabled:  defaultAPIEnabled,
+					UseHTTPS: defaultUseHTTPS,
+					Port:     defaultPort,
+					Host:     defaultHost,
+					CertFile: defaultCertFile,
+					KeyFile:  defaultKeyFile,
+				},
 				ScaleTargetRef: nil,
 			},
 		},
@@ -119,8 +132,6 @@ func TestLoadConfig(t *testing.T) {
 					}
 				}`,
 				"interval":       "35",
-				"host":           "test env host",
-				"port":           "1234",
 				"namespace":      "test env namespace",
 				"runMode":        "test run mode",
 				"minReplicas":    "3",
@@ -128,12 +139,17 @@ func TestLoadConfig(t *testing.T) {
 				"startTime":      "0",
 				"scaleTargetRef": `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
 				"logVerbosity":   "3",
+				"apiConfig": `{
+					"port": 3000,
+					"enabled": true,
+					"useHTTPS": true,
+					"certFile": "testcert",
+					"keyFile": "testkey"
+				}`,
 			},
 			nil,
 			&config.Config{
 				Interval:    35,
-				Host:        "test env host",
-				Port:        1234,
 				Namespace:   "test env namespace",
 				RunMode:     "test run mode",
 				MinReplicas: 3,
@@ -153,6 +169,13 @@ func TestLoadConfig(t *testing.T) {
 					APIVersion: "test target api version",
 				},
 				LogVerbosity: 3,
+				APIConfig: &config.APIConfig{
+					Enabled:  true,
+					UseHTTPS: true,
+					Port:     3000,
+					CertFile: "testcert",
+					KeyFile:  "testkey",
+				},
 			},
 		},
 		{
@@ -175,21 +198,22 @@ func TestLoadConfig(t *testing.T) {
 				      - "arg1"
 				    entrypoint: "testentry"
 				interval: 30
-				host: "test yaml host"
-				port: 7890
 				runMode: "test run mode"
 				minReplicas: 2
 				maxReplicas: 7
 				startTime: 0
 				namespace: "test yaml namespace"
 				logVerbosity: 2
+				apiConfig:
+				  enabled: true
+				  useHTTPS: false
+				  host: "test yaml host"
+				  port: 7890
 			`, "\t", "", -1)),
 			nil,
 			nil,
 			&config.Config{
 				Interval:    30,
-				Host:        "test yaml host",
-				Port:        7890,
 				RunMode:     "test run mode",
 				MinReplicas: 2,
 				MaxReplicas: 7,
@@ -212,6 +236,12 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				LogVerbosity: 2,
+				APIConfig: &config.APIConfig{
+					Enabled:  true,
+					UseHTTPS: false,
+					Port:     7890,
+					Host:     "test yaml host",
+				},
 			},
 		},
 		{
@@ -234,21 +264,24 @@ func TestLoadConfig(t *testing.T) {
 					}
 				},
 				"interval":30,
-				"host":"test yaml host",
-				"port":7890,
 				"runMode":"test run mode",
 				"minReplicas":2,
 				"maxReplicas":7,
 				"startTime":0,
 				"namespace":"test yaml namespace",
-				"logVerbosity":1
+				"logVerbosity":1,
+				"apiConfig": {
+					"port": 7890,
+					"enabled": false,
+					"useHTTPS": true,
+					"certFile": "test cert file",
+					"keyFile": "test key file"
+				}
 			}`),
 			nil,
 			nil,
 			&config.Config{
 				Interval:    30,
-				Host:        "test yaml host",
-				Port:        7890,
 				RunMode:     "test run mode",
 				MinReplicas: 2,
 				MaxReplicas: 7,
@@ -271,6 +304,14 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				LogVerbosity: 1,
+				APIConfig: &config.APIConfig{
+					Enabled:  false,
+					UseHTTPS: true,
+					Port:     7890,
+					Host:     "0.0.0.0",
+					CertFile: "test cert file",
+					KeyFile:  "test key file",
+				},
 			},
 		},
 		{
@@ -291,8 +332,11 @@ func TestLoadConfig(t *testing.T) {
 				    command:
 				      - "testcommand"
 				    entrypoint: "testentry"
-				host: "test yaml host"
-				port: 7890
+				apiConfig:
+				  enabled: true
+				  useHTTPS: false
+				  host: "test host"
+				  port: 7890
 				runMode: "test run mode"
 				namespace: "test yaml namespace"
 			`, "\t", "", -1)),
@@ -307,8 +351,6 @@ func TestLoadConfig(t *testing.T) {
 			nil,
 			&config.Config{
 				Interval:    35,
-				Host:        "test yaml host",
-				Port:        7890,
 				RunMode:     "test run mode",
 				MinReplicas: 3,
 				MaxReplicas: 6,
@@ -335,6 +377,12 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				LogVerbosity: 5,
+				APIConfig: &config.APIConfig{
+					Enabled:  true,
+					UseHTTPS: false,
+					Port:     7890,
+					Host:     "test host",
+				},
 			},
 		},
 		{
@@ -368,12 +416,16 @@ func TestLoadConfig(t *testing.T) {
 				"startTime":      "0",
 				"scaleTargetRef": `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
 				"logVerbosity":   "3",
+				"apiConfig": strings.Replace(`
+				host: "test host"
+				port: 7890
+				enabled: true
+				useHTTPS: false
+				`, "\t", "", -1),
 			},
 			nil,
 			&config.Config{
 				Interval:    35,
-				Host:        "test yaml host",
-				Port:        7890,
 				RunMode:     "test run mode",
 				MinReplicas: 3,
 				MaxReplicas: 6,
@@ -401,6 +453,12 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				LogVerbosity: 3,
+				APIConfig: &config.APIConfig{
+					Enabled:  true,
+					UseHTTPS: false,
+					Port:     7890,
+					Host:     "test host",
+				},
 			},
 		},
 	}

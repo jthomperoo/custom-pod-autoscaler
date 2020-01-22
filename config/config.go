@@ -40,14 +40,21 @@ const (
 
 const (
 	defaultInterval     = 15000
-	defaultHost         = "0.0.0.0"
-	defaultPort         = 5000
 	defaultNamespace    = "default"
 	defaultMinReplicas  = 1
 	defaultMaxReplicas  = 10
 	defaultStartTime    = 1
 	defaultRunMode      = PerPodRunMode
 	defaultLogVerbosity = 0
+)
+
+const (
+	defaultAPIEnabled = true
+	defaultUseHTTPS   = false
+	defaultHost       = "0.0.0.0"
+	defaultPort       = 5000
+	defaultCertFile   = ""
+	defaultKeyFile    = ""
 )
 
 const jsonStructTag = "json"
@@ -58,14 +65,23 @@ type Config struct {
 	Evaluate       *Method                                  `json:"evaluate"`
 	Metric         *Method                                  `json:"metric"`
 	Interval       int                                      `json:"interval"`
-	Host           string                                   `json:"host"`
-	Port           int                                      `json:"port"`
 	Namespace      string                                   `json:"namespace"`
 	MinReplicas    int32                                    `json:"minReplicas"`
 	MaxReplicas    int32                                    `json:"maxReplicas"`
 	RunMode        string                                   `json:"runMode"`
 	StartTime      int64                                    `json:"startTime"`
 	LogVerbosity   int32                                    `json:"logVerbosity"`
+	APIConfig      *APIConfig                               `json:"apiConfig"`
+}
+
+// APIConfig is configuration options specifically for the API exposed by the CPA
+type APIConfig struct {
+	Enabled  bool   `json:"enabled"`
+	UseHTTPS bool   `json:"useHTTPS"`
+	Port     int    `json:"port"`
+	Host     string `json:"host"`
+	CertFile string `json:"certFile"`
+	KeyFile  string `json:"keyFile"`
 }
 
 // Method describes a method for passing data/triggerering logic, such as through a shell
@@ -94,6 +110,8 @@ func LoadConfig(configFileData []byte, envVars map[string]string) (*Config, erro
 	if err != nil {
 		return nil, err
 	}
+	// Check API defaults
+
 	return config, nil
 }
 
@@ -160,12 +178,18 @@ func loadFromEnv(config *Config, envVars map[string]string) error {
 func newDefaultConfig() *Config {
 	return &Config{
 		Interval:    defaultInterval,
-		Host:        defaultHost,
-		Port:        defaultPort,
 		Namespace:   defaultNamespace,
 		MinReplicas: defaultMinReplicas,
 		MaxReplicas: defaultMaxReplicas,
 		StartTime:   defaultStartTime,
 		RunMode:     defaultRunMode,
+		APIConfig: &APIConfig{
+			Enabled:  defaultAPIEnabled,
+			UseHTTPS: defaultUseHTTPS,
+			Port:     defaultPort,
+			Host:     defaultHost,
+			CertFile: defaultCertFile,
+			KeyFile:  defaultKeyFile,
+		},
 	}
 }
