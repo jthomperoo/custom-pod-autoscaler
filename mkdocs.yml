@@ -8,6 +8,9 @@ nav:
   - 'Metric gathering': 'user-guide/metric-gathering.md'
   - Evaluating: 'user-guide/evaluating.md'
   - Methods: 'user-guide/methods.md'
+  - 'Rest API': 'user-guide/rest-api.md'
 - Reference:
   - Configuration: 'reference/configuration.md'
   - 'Scaling Targets': 'reference/scaling-targets.md'
+  - 'Rest API':
+    - v1: 'reference/rest-api/v1.md'

@@ -5,8 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Set up API to be versioned, starting with `v1`.
+- Can now manually trigger scaling through the API.
+- Added extra `run_type` flag, `api_dry_run`, for evaluations through the API in `dry_run` mode.
+
 ### Changed
 - The `command` for `shell` methods is now an array of arguments, rather than a string.
+- The `/api/v1/evaluation` endpoint now requires `POST` rather than `GET`.
+- The `/api/v1/evaluation` endpoint now accepts an optional parameter, `dry_run`. If `dry_run` is true the evaluation will be retrieved in a read-only manner, the scaling will not occur. If it is false, or not provided, the evaluation will be retrieved and then used to apply scaling to the target.
 
 ## [v0.9.0] - 2020-01-19
 ### Added

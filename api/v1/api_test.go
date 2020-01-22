@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ limitations under the License.
 */
 // +build unit
 
-package api_test
+package v1_test
 
 import (
 	"errors"
@@ -27,12 +27,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/jthomperoo/custom-pod-autoscaler/api"
+	apiv1 "github.com/jthomperoo/custom-pod-autoscaler/api/v1"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/resourceclient"
+	"github.com/jthomperoo/custom-pod-autoscaler/scale"
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/autoscaling/v1"
@@ -85,13 +86,14 @@ func TestAPI(t *testing.T) {
 		client           resourceclient.Client
 		getMetricer      metric.GetMetricer
 		getEvaluationer  evaluate.GetEvaluationer
+		scaler           scale.Scaler
 	}{
 		{
-			"Fail to get resource",
+			"Fail to get resource metric gathering",
 			`{"message":"fail getting resource","code":500}`,
 			http.StatusInternalServerError,
 			"GET",
-			"/metrics",
+			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
@@ -107,13 +109,14 @@ func TestAPI(t *testing.T) {
 			},
 			nil,
 			nil,
+			nil,
 		},
 		{
 			"Get metrics fail metric gathering",
 			`{"message":"FAIL GET METRICS","code":500}`,
 			http.StatusInternalServerError,
 			"GET",
-			"/metrics",
+			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
@@ -133,13 +136,14 @@ func TestAPI(t *testing.T) {
 			},
 			&failGetMetrics{},
 			nil,
+			nil,
 		},
 		{
 			"Get metrics success metric gathering",
 			`{"resource":"test","run_type":"api","metrics":[{"resource":"SUCCESS_POD","value":"SUCCESS"}]}`,
 			http.StatusOK,
 			"GET",
-			"/metrics",
+			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
@@ -159,13 +163,26 @@ func TestAPI(t *testing.T) {
 			},
 			&successGetMetrics{},
 			nil,
+			nil,
 		},
 		{
-			"Fail to get resource",
+			"Evaluate fail invalid dry_run parameter",
+			`{"message":"Invalid format for 'dry_run' query parameter; 'invalid' is not a valid boolean value","code":400}`,
+			http.StatusBadRequest,
+			"POST",
+			"/api/v1/evaluation?dry_run=invalid",
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		},
+		{
+			"Evaluate fail to get resource",
 			`{"message":"fail to get resource","code":500}`,
 			http.StatusInternalServerError,
-			"GET",
-			"/evaluation",
+			"POST",
+			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
@@ -181,13 +198,41 @@ func TestAPI(t *testing.T) {
 			},
 			nil,
 			nil,
+			nil,
 		},
 		{
-			"Get evaluation fail evaluate",
+			"Evaluate fail to get metrics",
+			`{"message":"FAIL GET METRICS","code":500}`,
+			http.StatusInternalServerError,
+			"POST",
+			"/api/v1/evaluation",
+			&config.Config{
+				Namespace: "test-namespace",
+				ScaleTargetRef: &v1.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+			},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: name,
+						},
+					}, nil
+				},
+			},
+			&failGetMetrics{},
+			&successGetEvaluation{},
+			nil,
+		},
+		{
+			"Evaluate fail to get evaluation",
 			`{"message":"FAIL GET EVALUATION","code":500}`,
 			http.StatusInternalServerError,
-			"GET",
-			"/evaluation",
+			"POST",
+			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
@@ -207,13 +252,14 @@ func TestAPI(t *testing.T) {
 			},
 			&successGetMetrics{},
 			&failGetEvaluation{},
+			nil,
 		},
 		{
-			"Get evaluation fail metric gathering",
-			`{"message":"FAIL GET METRICS","code":500}`,
+			"Evaluate fail failure scaling",
+			`{"message":"FAILURE SCALING","code":500}`,
 			http.StatusInternalServerError,
-			"GET",
-			"/evaluation",
+			"POST",
+			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
@@ -225,21 +271,30 @@ func TestAPI(t *testing.T) {
 			&fake.ResourceClient{
 				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
 					return &appsv1.Deployment{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "deployment",
+							APIVersion: "apps/v1",
+						},
 						ObjectMeta: metav1.ObjectMeta{
-							Name: name,
+							Name: "test",
 						},
 					}, nil
 				},
 			},
-			&failGetMetrics{},
+			&successGetMetrics{},
 			&successGetEvaluation{},
+			&fake.Scaler{
+				ScaleReactor: func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas, maxReplicas int32, scaleTargetRef *v1.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
+					return nil, errors.New("FAILURE SCALING")
+				},
+			},
 		},
 		{
-			"Get evaluation success evaluate",
+			"Evaluate success, not dry run, no parameter provided",
 			`{"target_replicas":1}`,
 			http.StatusOK,
-			"GET",
-			"/evaluation",
+			"POST",
+			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
@@ -259,13 +314,80 @@ func TestAPI(t *testing.T) {
 			},
 			&successGetMetrics{},
 			&successGetEvaluation{},
+			&fake.Scaler{
+				ScaleReactor: func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas, maxReplicas int32, scaleTargetRef *v1.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
+					return &evaluate.Evaluation{
+						TargetReplicas: 1,
+					}, nil
+				},
+			},
+		},
+		{
+			"Evaluate success, not dry run, parameter provided",
+			`{"target_replicas":1}`,
+			http.StatusOK,
+			"POST",
+			"/api/v1/evaluation?dry_run=false",
+			&config.Config{
+				Namespace: "test-namespace",
+				ScaleTargetRef: &v1.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+			},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: name,
+						},
+					}, nil
+				},
+			},
+			&successGetMetrics{},
+			&successGetEvaluation{},
+			&fake.Scaler{
+				ScaleReactor: func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas, maxReplicas int32, scaleTargetRef *v1.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
+					return &evaluate.Evaluation{
+						TargetReplicas: 1,
+					}, nil
+				},
+			},
+		},
+		{
+			"Evaluate success, dry run",
+			`{"target_replicas":1}`,
+			http.StatusOK,
+			"POST",
+			"/api/v1/evaluation?dry_run=true",
+			&config.Config{
+				Namespace: "test-namespace",
+				ScaleTargetRef: &v1.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+			},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: name,
+						},
+					}, nil
+				},
+			},
+			&successGetMetrics{},
+			&successGetEvaluation{},
+			nil,
 		},
 		{
 			"Non existent endpoint",
-			`{"message":"Resource '/non_existant' not found","code":404}`,
+			`{"message":"Resource '/api/v1/non_existant' not found","code":404}`,
 			http.StatusNotFound,
 			"GET",
-			"/non_existant",
+			"/api/v1/non_existant",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
@@ -275,15 +397,16 @@ func TestAPI(t *testing.T) {
 				},
 			},
 			&fake.ResourceClient{},
+			nil,
 			nil,
 			nil,
 		},
 		{
-			"Use incorrect method on get metrics endpoint",
-			`{"message":"Method 'DELETE' not allowed on resource '/metrics'","code":405}`,
+			"Use incorrect method on metrics endpoint",
+			`{"message":"Method 'DELETE' not allowed on resource '/api/v1/metrics'","code":405}`,
 			http.StatusMethodNotAllowed,
 			"DELETE",
-			"/metrics",
+			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
@@ -292,16 +415,17 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			&fake.ResourceClient{},
+			nil,
+			nil,
 			nil,
 			nil,
 		},
 		{
 			"Use incorrect method on evaluation endpoint",
-			`{"message":"Method 'POST' not allowed on resource '/evaluation'","code":405}`,
+			`{"message":"Method 'DELETE' not allowed on resource '/api/v1/evaluation'","code":405}`,
 			http.StatusMethodNotAllowed,
-			"POST",
-			"/evaluation",
+			"DELETE",
+			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
@@ -310,19 +434,21 @@ func TestAPI(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 			},
-			&fake.ResourceClient{},
+			nil,
+			nil,
 			nil,
 			nil,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			api := &api.API{
+			api := &apiv1.API{
 				Router:          chi.NewRouter(),
 				Config:          test.config,
 				Client:          test.client,
 				GetMetricer:     test.getMetricer,
 				GetEvaluationer: test.getEvaluationer,
+				Scaler:          test.scaler,
 			}
 			api.Routes()
 			req, err := http.NewRequest(test.method, test.endpoint, nil)
