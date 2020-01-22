@@ -108,20 +108,6 @@ metric:
 No default value, required to be set.  
 This defines the metric logic that should be run, and how it should be triggered.  
 [This is a `method`, see methods section for full configuration options of a method](#methods).
-## host
-Example:  
-```yaml
-host: "0.0.0.0"
-```
-Default value: `0.0.0.0`  
-Defines the host to use for hosting the Custom Pod Autoscaler API.
-## port
-Example:  
-```yaml
-port: "5000"
-```
-Default value: `5000`  
-Defines the port to use for hosting the Custom Pod Autoscaler API.
 ## namespace
 Example:  
 ```yaml
@@ -176,3 +162,38 @@ Log levels:
 * `1` - verbose.
 * `2` - more verbose around high level logic such as autoscaling/rest api.
 * `3` - more verbose around lower level logic such as metric gathering and evaluation.
+## apiConfig
+Example:  
+```yaml
+apiConfig:
+  enabled: true
+  useHTTPS: true
+  port: 80
+  host: "0.0.0.0"
+  certFile: "cert.crt"
+  keyFile: "key.key"
+```
+Default value:  
+```yaml
+apiConfig:
+  enabled: true
+  useHTTPS: false
+  port: 5000
+  host: "0.0.0.0"
+  certFile: ""
+  keyFile: ""
+```
+This sets configuration options for the Custom Pod Autoscaler API, allowing enabling and disabling the API and specifying how the API should be exposed. 
+
+### enabled
+Boolean value to enable (`true`) or disable (`false`) the API
+### useHTTPS
+Boolean value to enable (`true`) or disable (`false`) HTTPS.
+### port
+Integer value defining the port to expose the API on.
+### host
+String value defining the host to expose the API on.
+### certFile
+String value defining the path to the [certificate](https://golang.org/pkg/net/http/#ListenAndServeTLS) to use for HTTPS.
+### keyFile
+String value defining the path to the [private key](https://golang.org/pkg/net/http/#ListenAndServeTLS) to use for HTTPS.

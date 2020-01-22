@@ -4,9 +4,13 @@ Custom Pod Autoscalers expose a REST API that allows for interaction with the Cu
 
 ## Accessing the API
 
-The API exposes the API at the [port specified in your configuration file (default `5000`)](../reference/configuration.md#port), and with the URL prefix `/api/<API_VERSION>`.  
+The API exposes the API at the [port specified in your configuration file (default `5000`)](../reference/configuration.md#apiconfig), and with the URL prefix `/api/<API_VERSION>`.  
 
 Within a container the API can be accessed at `http://localhost:<PORT>/api/<API_VERSION>`.
+
+## Configuring the API
+
+See [the `apiConfig` section of the configuration reference](../reference/configuration.md#apiconfig).
 
 ## API Versions
 
