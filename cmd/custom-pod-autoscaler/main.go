@@ -38,20 +38,21 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/golang/glog"
-	"github.com/jthomperoo/custom-pod-autoscaler/api"
+	v1 "github.com/jthomperoo/custom-pod-autoscaler/api/v1"
+	"github.com/jthomperoo/custom-pod-autoscaler/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute/shell"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/resourceclient"
-	"github.com/jthomperoo/custom-pod-autoscaler/scaler"
+	"github.com/jthomperoo/custom-pod-autoscaler/scale"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
-	"k8s.io/client-go/scale"
+	k8sscale "k8s.io/client-go/scale"
 )
 
 const (
@@ -147,14 +148,18 @@ func main() {
 		UnstructuredConverter: unstructuredConverted,
 	}
 
-	scaleClient := scale.New(
+	scaleClient := k8sscale.New(
 		clientset.RESTClient(),
 		restmapper.NewDiscoveryRESTMapper(groupResources),
 		dynamic.LegacyAPIPathResolverFunc,
-		scale.NewDiscoveryScaleKindResolver(
+		k8sscale.NewDiscoveryScaleKindResolver(
 			clientset.Discovery(),
 		),
 	)
+
+	scaler := &scale.Scale{
+		Scaler: scaleClient,
+	}
 
 	// Set up shell executer
 	shellExec := &shell.Execute{
@@ -185,12 +190,13 @@ func main() {
 	glog.V(1).Infoln("Setting up REST API")
 
 	// Set up API
-	api := &api.API{
+	api := &v1.API{
 		Router:          chi.NewRouter(),
 		Config:          config,
 		Client:          resourceClient,
 		GetMetricer:     metricGatherer,
 		GetEvaluationer: evaluator,
+		Scaler:          scaler,
 	}
 	api.Routes()
 	srv := http.Server{
@@ -216,12 +222,12 @@ func main() {
 		signal.Notify(shutdown, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 		// Set up scaler
-		autoscaler := &scaler.Scaler{
+		autoscaler := &autoscaler.Scaler{
 			Client:          resourceClient,
-			Scaler:          scaleClient,
 			Config:          config,
 			GetMetricer:     metricGatherer,
 			GetEvaluationer: evaluator,
+			Scaler:          scaler,
 		}
 
 		// Run the scaler in a goroutine, triggered by the ticker

@@ -24,8 +24,8 @@ FROM custompodautoscaler/alpine:latest
 # Install dependencies for debugging
 RUN apk add jq curl
 # Set up aliases for easy debugging
-RUN echo 'alias metrics="curl http://localhost:5000/metrics | jq ."' >> ~/.profile
-RUN echo 'alias evaluation="curl http://localhost:5000/evaluation | jq ."' >> ~/.profile
+RUN echo 'alias metrics="curl http://localhost:5000/api/v1/metrics | jq ."' >> ~/.profile
+RUN echo 'alias evaluation="curl http://localhost:5000/api/v1/evaluation | jq ."' >> ~/.profile
 # Add config
 ADD config.yaml /
 # Add built binary
