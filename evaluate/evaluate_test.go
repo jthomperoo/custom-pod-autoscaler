@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -48,6 +48,31 @@ func TestGetEvaluation(t *testing.T) {
 		execute     execute.Executer
 	}{
 		{
+			"Pre-evaluate hook fail",
+			errors.New("pre-evaluate hook fail"),
+			nil,
+			&metric.ResourceMetrics{
+				Metrics: []*metric.Metric{
+					&metric.Metric{
+						Resource: "test pod",
+						Value:    "test value",
+					},
+				},
+			},
+			&config.Config{
+				PreEvaluate: &config.Method{
+					Type: "fake",
+				},
+			},
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "", errors.New("pre-evaluate hook fail")
+				}
+				return &execute
+			}(),
+		},
+		{
 			"Execute fail",
 			errors.New("fail to evaluate"),
 			nil,
@@ -73,6 +98,126 @@ func TestGetEvaluation(t *testing.T) {
 				execute := fake.Execute{}
 				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
 					return "", errors.New("fail to evaluate")
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Post-evaluate hook fail",
+			errors.New("post-evaluate hook fail"),
+			nil,
+			&metric.ResourceMetrics{
+				Metrics: []*metric.Metric{
+					&metric.Metric{
+						Resource: "test pod",
+						Value:    "test value",
+					},
+				},
+			},
+			&config.Config{
+				Evaluate: &config.Method{
+					Type:    "execute",
+					Timeout: 10,
+					Shell: &config.Shell{
+						Command:    []string{"test evaluate command"},
+						Entrypoint: "testentry",
+					},
+				},
+				PostEvaluate: &config.Method{
+					Type: "postEvaluate",
+				},
+			},
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					if method.Type == "postEvaluate" {
+						return "", errors.New("post-evaluate hook fail")
+					}
+					return `{ "target_replicas" : 3 }`, nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Execute success with valid JSON, run pre-evaluate hook",
+			nil,
+			&evaluate.Evaluation{
+				TargetReplicas: int32(3),
+			},
+			&metric.ResourceMetrics{
+				Metrics: []*metric.Metric{
+					&metric.Metric{
+						Resource: "test pod",
+						Value:    "test value",
+					},
+				},
+			},
+			&config.Config{
+				Evaluate: &config.Method{
+					Type:    "fake",
+					Timeout: 10,
+					Shell: &config.Shell{
+						Command:    []string{"test evaluate command"},
+						Entrypoint: "testentry",
+					},
+				},
+				PreEvaluate: &config.Method{
+					Type: "fake",
+				},
+			},
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					// Convert into JSON
+					jsonEvaluation, err := json.Marshal(&evaluate.Evaluation{
+						TargetReplicas: int32(3),
+					})
+					if err != nil {
+						return "", err
+					}
+					return string(jsonEvaluation), nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Execute success with valid JSON, run post-evaluate hook",
+			nil,
+			&evaluate.Evaluation{
+				TargetReplicas: int32(3),
+			},
+			&metric.ResourceMetrics{
+				Metrics: []*metric.Metric{
+					&metric.Metric{
+						Resource: "test pod",
+						Value:    "test value",
+					},
+				},
+			},
+			&config.Config{
+				Evaluate: &config.Method{
+					Type:    "fake",
+					Timeout: 10,
+					Shell: &config.Shell{
+						Command:    []string{"test evaluate command"},
+						Entrypoint: "testentry",
+					},
+				},
+				PostEvaluate: &config.Method{
+					Type: "fake",
+				},
+			},
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					// Convert into JSON
+					jsonEvaluation, err := json.Marshal(&evaluate.Evaluation{
+						TargetReplicas: int32(3),
+					})
+					if err != nil {
+						return "", err
+					}
+					return string(jsonEvaluation), nil
 				}
 				return &execute
 			}(),

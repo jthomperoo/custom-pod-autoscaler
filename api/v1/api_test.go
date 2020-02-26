@@ -21,6 +21,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/go-chi/chi"
@@ -50,7 +51,6 @@ type successGetMetrics struct{}
 
 func (s *successGetMetrics) GetMetrics(resource metav1.Object) (*metric.ResourceMetrics, error) {
 	return &metric.ResourceMetrics{
-		ResourceName: resource.GetName(),
 		Metrics: []*metric.Metric{
 			&metric.Metric{
 				Value:    "SUCCESS",
@@ -140,7 +140,35 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			"Get metrics success metric gathering",
-			`{"resource":"test","run_type":"api","metrics":[{"resource":"SUCCESS_POD","value":"SUCCESS"}]}`,
+			strings.ReplaceAll(strings.ReplaceAll(`
+			{
+				"run_type":"api",
+				"metrics":[
+					{
+						"resource":"SUCCESS_POD",
+						"value":"SUCCESS"
+					}
+				],
+				"resource":{
+					"metadata":{
+						"name":"test",
+						"creationTimestamp":null
+					},
+					"spec":{
+						"selector":null,
+						"template":{
+							"metadata":{
+								"creationTimestamp":null
+							},
+							"spec":{
+								"containers":null
+							}
+						},
+						"strategy":{}
+					},
+					"status":{}
+				}
+			}`, "\n", ""), "\t", ""),
 			http.StatusOK,
 			"GET",
 			"/api/v1/metrics",

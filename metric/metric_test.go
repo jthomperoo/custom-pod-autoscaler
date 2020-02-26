@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -196,6 +196,47 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 		},
 		{
+			"Per pod pre-metric hook fail",
+			errors.New("pre-metric hook fail"),
+			nil,
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test",
+						},
+					},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+				PreMetric: &config.Method{
+					Type: "fake",
+				},
+			},
+			k8sfake.NewSimpleClientset(
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test pod",
+						Namespace: "test namespace",
+						Labels:    map[string]string{"app": "test"},
+					},
+				},
+			),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "", errors.New("pre-metric hook fail")
+				}
+				return &execute
+			}(),
+		},
+		{
 			"Per pod single pod single deployment shell execute fail",
 			errors.New("fail to get metric"),
 			nil,
@@ -246,6 +287,53 @@ func TestGetMetrics(t *testing.T) {
 			func() *fake.Execute {
 				execute := fake.Execute{}
 				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Per pod post-metric hook fail",
+			errors.New("post-metric hook fail"),
+			nil,
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test",
+						},
+					},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+				Metric: &config.Method{
+					Type: "metric",
+				},
+				PostMetric: &config.Method{
+					Type: "post-metric",
+				},
+			},
+			k8sfake.NewSimpleClientset(
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test pod",
+						Namespace: "test namespace",
+						Labels:    map[string]string{"app": "test"},
+					},
+				},
+			),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					if method.Type == "post-metric" {
+						return "", errors.New("post-metric hook fail")
+					}
 					return "test value", nil
 				}
 				return &execute
@@ -352,6 +440,104 @@ func TestGetMetrics(t *testing.T) {
 			&config.Config{
 				Namespace: "test namespace",
 				RunMode:   config.PerPodRunMode,
+			},
+			k8sfake.NewSimpleClientset(
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test pod",
+						Namespace: "test namespace",
+						Labels:    map[string]string{"app": "test"},
+					},
+				},
+			),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Per pod single pod single deployment shell execute success with pre-metric hook",
+			nil,
+			[]*metric.Metric{
+				&metric.Metric{
+					Resource: "test pod",
+					Value:    "test value",
+				},
+			},
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test",
+						},
+					},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+				Metric: &config.Method{
+					Type: "metric",
+				},
+				PreMetric: &config.Method{
+					Type: "pre-metric",
+				},
+			},
+			k8sfake.NewSimpleClientset(
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test pod",
+						Namespace: "test namespace",
+						Labels:    map[string]string{"app": "test"},
+					},
+				},
+			),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Per pod single pod single deployment shell execute success with post-metric hook",
+			nil,
+			[]*metric.Metric{
+				&metric.Metric{
+					Resource: "test pod",
+					Value:    "test value",
+				},
+			},
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test",
+						},
+					},
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerPodRunMode,
+				Metric: &config.Method{
+					Type: "metric",
+				},
+				PostMetric: &config.Method{
+					Type: "post-metric",
+				},
 			},
 			k8sfake.NewSimpleClientset(
 				&v1.Pod{
@@ -575,6 +761,64 @@ func TestGetMetrics(t *testing.T) {
 			}(),
 		},
 		{
+			"Per resource pre-metric hook fail",
+			errors.New("pre-metric hook fail"),
+			nil,
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerResourceRunMode,
+				PreMetric: &config.Method{
+					Type: "pre-metric",
+				},
+			},
+			k8sfake.NewSimpleClientset(),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "", errors.New("pre-metric hook fail")
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Per resource post-metric hook fail",
+			errors.New("post-metric hook fail"),
+			nil,
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerResourceRunMode,
+				Metric: &config.Method{
+					Type: "metric",
+				},
+				PostMetric: &config.Method{
+					Type: "post-metric",
+				},
+			},
+			k8sfake.NewSimpleClientset(),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					if method.Type == "post-metric" {
+						return "", errors.New("post-metric hook fail")
+					}
+					return "test value", nil
+				}
+				return &execute
+			}(),
+		},
+		{
 			"Per resource shell execute success",
 			nil,
 			[]*metric.Metric{
@@ -602,14 +846,75 @@ func TestGetMetrics(t *testing.T) {
 				return &execute
 			}(),
 		},
+		{
+			"Per resource shell execute success with pre-metric hook",
+			nil,
+			[]*metric.Metric{
+				&metric.Metric{
+					Resource: "test deployment",
+					Value:    "test value",
+				},
+			},
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerResourceRunMode,
+				PreMetric: &config.Method{
+					Type: "pre-metric",
+				},
+			},
+			k8sfake.NewSimpleClientset(),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
+				}
+				return &execute
+			}(),
+		},
+		{
+			"Per resource shell execute success with post-metric hook",
+			nil,
+			[]*metric.Metric{
+				&metric.Metric{
+					Resource: "test deployment",
+					Value:    "test value",
+				},
+			},
+			&appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test deployment",
+					Namespace: "test namespace",
+				},
+			},
+			&config.Config{
+				Namespace: "test namespace",
+				RunMode:   config.PerResourceRunMode,
+				PostMetric: &config.Method{
+					Type: "pre-metric",
+				},
+			},
+			k8sfake.NewSimpleClientset(),
+			func() *fake.Execute {
+				execute := fake.Execute{}
+				execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+					return "test value", nil
+				}
+				return &execute
+			}(),
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			result := &metric.ResourceMetrics{
-				Metrics:      test.expected,
-				Resource:     test.resource,
-				ResourceName: test.resource.GetName(),
+				Metrics:  test.expected,
+				Resource: test.resource,
 			}
 			gatherer := &metric.Gatherer{
 				Clientset: test.clientset,
