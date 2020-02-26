@@ -16,6 +16,6 @@ See [the `apiConfig` section of the configuration reference](../reference/config
 
 The API is versioned with major versions, starting with `v1`. The API version does not neccessarily align with the major versions of the Custom Pod Autoscaler, which is versioned with Semantic Versioning.
 
-### Current Versions
+### Versions
 
 * [`v1`- Current, latest version](../reference/rest-api/v1.md).

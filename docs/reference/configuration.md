@@ -197,3 +197,216 @@ String value defining the host to expose the API on.
 String value defining the path to the [certificate](https://golang.org/pkg/net/http/#ListenAndServeTLS) to use for HTTPS.
 ### keyFile
 String value defining the path to the [private key](https://golang.org/pkg/net/http/#ListenAndServeTLS) to use for HTTPS.
+
+## preMetric
+Example:
+```yaml
+preMetric: 
+  type: "shell"
+  timeout: 2500
+  shell: 
+    entrypoint: "python"
+    command: 
+      - "/pre-metric.py"
+```
+No default value, if not set it is not executed.  
+This defines a pre-metric hook, and how it should be triggered.  
+The pre-metric hook is run before metric gathering occurs, it is provided with either the resource being managed or the pods being managed (depending on the run mode) as JSON.  
+Example of JSON provided to this hook:
+```json
+{
+  "kind": "Deployment",
+  "apiVersion": "apps/v1",
+  "metadata": {
+    "name": "hello-kubernetes",
+    "namespace": "default",
+  },
+  ...
+}
+```
+[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
+
+## postMetric
+Example:
+```yaml
+postMetric: 
+  type: "shell"
+  timeout: 2500
+  shell: 
+    entrypoint: "python"
+    command: 
+      - "/post-metric.py"
+```
+No default value, if not set it is not executed.  
+This defines a post-metric hook, and how it should be triggered.  
+The post-metric hook is run after metric gathering occurs, it is provided with either the resource being managed or the pods being managed (depending on the run mode) alongside the metric gathering results as JSON.  
+Example of JSON provided to this hook:
+```json
+{
+  "resource": {
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "hello-kubernetes",
+      "namespace": "default",
+    },
+    ...
+  },
+  "metrics": [
+    {
+      "resource": "hello-kubernetes",
+      "value": "3"
+    }
+  ]
+}
+```
+[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
+
+## preEvaluate
+Example:
+```yaml
+preEvaluate: 
+  type: "shell"
+  timeout: 2500
+  shell: 
+    entrypoint: "python"
+    command: 
+      - "/pre-evaluate.py"
+```
+No default value, if not set it is not executed.  
+This defines a pre-evaluate hook, and how it should be triggered.  
+The pre-evaluate hook is run before evaluation occurs, it is provided with the full resource metrics as JSON.  
+Example of JSON provided to this hook:
+```json
+{
+  "run_type": "scaler",
+  "metrics": [
+    {
+      "resource": "hello-kubernetes",
+      "value": "3"
+    }
+  ],
+  "resource": {
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "hello-kubernetes",
+      "namespace": "default",
+    },
+    ...
+  }
+}
+```
+[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
+
+## postEvaluate
+Example:
+```yaml
+postEvaluate: 
+  type: "shell"
+  timeout: 2500
+  shell: 
+    entrypoint: "python"
+    command: 
+      - "/post-evaluate.py"
+```
+No default value, if not set it is not executed.  
+This defines a post-evaluate hook, and how it should be triggered.  
+The post-evaluate hook is run after evaluation occurs, it is provided with the full resource metrics alongside the evaluation that has been calculated as JSON.  
+Example of JSON provided to this hook:
+```json
+{
+  "resource_metrics": {
+    "run_type": "scaler",
+    "metrics": [
+      {
+        "resource": "hello-kubernetes",
+        "value": "3"
+      }
+    ],
+    "resource": {
+      "kind": "Deployment",
+      "apiVersion": "apps/v1",
+      "metadata": {
+        "name": "hello-kubernetes",
+        "namespace": "default",
+      },
+      ...
+    }
+  },
+  "evaluation": {
+    "target_replicas": 3
+  }
+}
+```
+[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
+
+## preScale
+Example:
+```yaml
+preScale: 
+  type: "shell"
+  timeout: 2500
+  shell: 
+    entrypoint: "python"
+    command: 
+      - "/pre-scale.py"
+```
+No default value, if not set it is not executed.  
+This defines a pre-scaling hook, and how it should be triggered.  
+This hook is run even if autoscaling is disabled for the resource (replicas set to `0`).  
+The pre-scale hook is run before a scaling decision is made, it is provided with min and max replicas, current replicas, target replicas, and resource being scaled as JSON.  
+Example of JSON provided to this hook:
+```json
+{
+  "min_replicas": 1,
+  "max_replicas": 10,
+  "current_replicas": 3,
+  "target_replicas": 3,
+  "resource": {
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "hello-kubernetes",
+      "namespace": "default",
+    },
+    ...
+  }
+}
+```
+[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
+
+## postScale
+Example:
+```yaml
+postScale: 
+  type: "shell"
+  timeout: 2500
+  shell: 
+    entrypoint: "python"
+    command: 
+      - "/post-scale.py"
+```
+No default value, if not set it is not executed.  
+This defines a post-scaling hook, and how it should be triggered.  
+This hook is only run if scaling is successful, and is not run if autoscaling is disabled for the resource (replicas set to `0`).
+The post-scale hook is run after a scaling decision is made and effected, it is provided with min and max replicas, current replicas, target replicas, and resource being scaled as JSON.  
+Example of JSON provided to this hook:
+```json
+{
+  "min_replicas": 1,
+  "max_replicas": 10,
+  "current_replicas": 3,
+  "target_replicas": 3,
+  "resource": {
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "hello-kubernetes",
+      "namespace": "default",
+    },
+    ...
+  }
+}
+```
+[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).

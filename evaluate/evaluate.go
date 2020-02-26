@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -56,6 +56,15 @@ func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Eva
 		panic(err)
 	}
 
+	if e.Config.PreEvaluate != nil {
+		glog.V(3).Infoln("Attempting to run pre-evaluate hook")
+		hookResult, err := e.Execute.ExecuteWithValue(e.Config.PreEvaluate, string(metricJSON))
+		if err != nil {
+			return nil, err
+		}
+		glog.V(3).Infof("Pre-evaluate hook response: %+v", hookResult)
+	}
+
 	glog.V(3).Infoln("Attempting to run evaluation logic")
 	gathered, err := e.Execute.ExecuteWithValue(e.Config.Evaluate, string(metricJSON))
 	if err != nil {
@@ -70,5 +79,27 @@ func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Eva
 		return nil, err
 	}
 	glog.V(3).Infof("Evaluation parsed: %+v", evaluation)
+
+	if e.Config.PostEvaluate != nil {
+		glog.V(3).Infoln("Attempting to run post-evaluate hook")
+		postEvaluate := struct {
+			Metrics    *metric.ResourceMetrics `json:"resource_metrics"`
+			Evaluation *Evaluation             `json:"evaluation"`
+		}{
+			Metrics:    resourceMetrics,
+			Evaluation: evaluation,
+		}
+		// Convert post evaluation into JSON
+		postEvaluateJSON, err := json.Marshal(postEvaluate)
+		if err != nil {
+			// Should not occur, panic
+			panic(err)
+		}
+		hookResult, err := e.Execute.ExecuteWithValue(e.Config.PostEvaluate, string(postEvaluateJSON))
+		if err != nil {
+			return nil, err
+		}
+		glog.V(3).Infof("Post-evaluate hook response: %+v", hookResult)
+	}
 	return evaluation, nil
 }

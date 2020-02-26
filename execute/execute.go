@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package execute abstracts methods, providing a standardised way to trigger methods
+// and provide values
 package execute
 
 import (

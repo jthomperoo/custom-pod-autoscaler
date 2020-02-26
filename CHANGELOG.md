@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Series of hooks for injecting user logic throughout the execution process.
+  * `preMetric` - Runs before metric gathering, given metric gathering input.
+  * `postMetric` - Runs after metric gathering, given metric gathering input and result.
+  * `preEvaluate` - Runs before evaluation, given evaluation input.
+  * `postEvaluate` - Runs after evaluation, given evaluation input and result.
+  * `preScale` - Runs before scaling decision, given min and max replicas, current replicas, target replicas, and resource being scaled.
+  * `postScale` - Runs before scaling decision, given min and max replicas, current replicas, target replicas, and resource being scaled.
+### Changed
+- Metrics from API now returns the entire resource definition as JSON rather than just the resource name.
 
 ## [v0.10.0] - 2020-01-22
 ### Added

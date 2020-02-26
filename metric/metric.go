@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -40,10 +40,9 @@ type GetMetricer interface {
 
 // ResourceMetrics represents a resource's metrics, including each resource's metrics
 type ResourceMetrics struct {
-	ResourceName string        `json:"resource"`
-	RunType      string        `json:"run_type"`
-	Metrics      []*Metric     `json:"metrics"`
-	Resource     metav1.Object `json:"-"` // hide
+	RunType  string        `json:"run_type"`
+	Metrics  []*Metric     `json:"metrics"`
+	Resource metav1.Object `json:"resource"`
 }
 
 // Metric is the result of the custom metric calculation, containing information on the
@@ -82,22 +81,53 @@ func (m *Gatherer) getMetricsForResource(resource metav1.Object) (*ResourceMetri
 		panic(err)
 	}
 
+	if m.Config.PreMetric != nil {
+		glog.V(3).Infoln("Attempting to run pre-metric hook")
+		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PreMetric, string(resourceJSON))
+		if err != nil {
+			return nil, err
+		}
+		glog.V(3).Infof("Pre-metric hook response: %+v", hookResult)
+	}
+
 	glog.V(3).Infoln("Attempting to run metric gathering logic")
 	gathered, err := m.Execute.ExecuteWithValue(m.Config.Metric, string(resourceJSON))
 	if err != nil {
 		return nil, err
 	}
+	metrics := []*Metric{
+		&Metric{
+			Resource: resource.GetName(),
+			Value:    gathered,
+		},
+	}
 	glog.V(3).Infof("Metrics gathered: %+v", gathered)
 
+	if m.Config.PostMetric != nil {
+		glog.V(3).Infoln("Attempting to run post-metric hook")
+		postMetric := struct {
+			Resource metav1.Object `json:"resource"`
+			Metrics  []*Metric     `json:"metrics"`
+		}{
+			Resource: resource,
+			Metrics:  metrics,
+		}
+		// Convert post metrics into JSON
+		postMetricJSON, err := json.Marshal(postMetric)
+		if err != nil {
+			// Should not occur, panic
+			panic(err)
+		}
+		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PostMetric, string(postMetricJSON))
+		if err != nil {
+			return nil, err
+		}
+		glog.V(3).Infof("Post-metric hook response: %+v", hookResult)
+	}
+
 	return &ResourceMetrics{
-		ResourceName: resource.GetName(),
-		Resource:     resource,
-		Metrics: []*Metric{
-			&Metric{
-				Resource: resource.GetName(),
-				Value:    gathered,
-			},
-		},
+		Resource: resource,
+		Metrics:  metrics,
 	}, nil
 }
 
@@ -117,6 +147,22 @@ func (m *Gatherer) getMetricsForPods(resource metav1.Object) (*ResourceMetrics, 
 		return nil, err
 	}
 	glog.V(3).Infof("Pods retrieved: %+v", pods)
+
+	// Convert the Pods descriptions to JSON
+	podsJSON, err := json.Marshal(pods.Items)
+	if err != nil {
+		// Should not occur, panic
+		panic(err)
+	}
+
+	if m.Config.PreMetric != nil {
+		glog.V(3).Infoln("Attempting to run pre-metric hook")
+		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PreMetric, string(podsJSON))
+		if err != nil {
+			return nil, err
+		}
+		glog.V(3).Infof("Pre-metric hook response: %+v", hookResult)
+	}
 
 	glog.V(3).Infoln("Attempting to gather metrics for each pod")
 	var metrics []*Metric
@@ -142,10 +188,32 @@ func (m *Gatherer) getMetricsForPods(resource metav1.Object) (*ResourceMetrics, 
 		})
 	}
 	glog.V(3).Infoln("All metrics gathered for each pod successfully")
+
+	if m.Config.PostMetric != nil {
+		glog.V(3).Infoln("Attempting to run post-metric hook")
+		postMetric := struct {
+			Resource metav1.Object `json:"resource"`
+			Metrics  []*Metric     `json:"metrics"`
+		}{
+			Resource: resource,
+			Metrics:  metrics,
+		}
+		// Convert post metrics into JSON
+		postMetricJSON, err := json.Marshal(postMetric)
+		if err != nil {
+			// Should not occur, panic
+			panic(err)
+		}
+		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PostMetric, string(postMetricJSON))
+		if err != nil {
+			return nil, err
+		}
+		glog.V(3).Infof("Post-metric hook response: %+v", hookResult)
+	}
+
 	return &ResourceMetrics{
-		ResourceName: resource.GetName(),
-		Resource:     resource,
-		Metrics:      metrics,
+		Resource: resource,
+		Metrics:  metrics,
 	}, nil
 }
 
