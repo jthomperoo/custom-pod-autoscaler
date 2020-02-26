@@ -1,3 +1,19 @@
+/*
+Copyright 2020 The Custom Pod Autoscaler Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package scale_test
 
 import (
@@ -5,7 +21,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/execute"
+	"github.com/jthomperoo/custom-pod-autoscaler/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/scale"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v1"
@@ -30,6 +49,8 @@ func TestScale_Scale(t *testing.T) {
 		expected       *evaluate.Evaluation
 		expectedErr    error
 		scaler         k8sscale.ScalesGetter
+		config         *config.Config
+		executer       execute.Executer
 		evaluation     evaluate.Evaluation
 		resource       metav1.Object
 		minReplicas    int32
@@ -41,6 +62,8 @@ func TestScale_Scale(t *testing.T) {
 			"Unsupported resource",
 			nil,
 			errors.New(`Unsupported resource of type *v1.DaemonSet`),
+			nil,
+			&config.Config{},
 			nil,
 			evaluate.Evaluation{},
 			&appsv1.DaemonSet{},
@@ -57,6 +80,8 @@ func TestScale_Scale(t *testing.T) {
 			"Fail to parse group version",
 			nil,
 			errors.New("unexpected GroupVersion string: /invalid/"),
+			nil,
+			&config.Config{},
 			nil,
 			evaluate.Evaluation{
 				TargetReplicas: int32(3),
@@ -96,6 +121,8 @@ func TestScale_Scale(t *testing.T) {
 					},
 				},
 			},
+			&config.Config{},
+			nil,
 			evaluate.Evaluation{
 				TargetReplicas: int32(3),
 			},
@@ -145,8 +172,88 @@ func TestScale_Scale(t *testing.T) {
 					},
 				},
 			},
+			&config.Config{},
+			nil,
 			evaluate.Evaluation{
 				TargetReplicas: int32(1),
+			},
+			func() *appsv1.Deployment {
+				replicas := int32(3)
+				return &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Replicas: &replicas,
+					},
+				}
+			}(),
+			1,
+			10,
+			&autoscaling.CrossVersionObjectReference{
+				Kind:       "deployment",
+				Name:       "test",
+				APIVersion: "apps/v1",
+			},
+			"test",
+		},
+		{
+			"Fail to run pre-scaling hook",
+			nil,
+			errors.New("fail to run pre-scaling hook"),
+			nil,
+			&config.Config{
+				PreScale: &config.Method{
+					Type: "test",
+				},
+			},
+			&fake.Execute{
+				ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
+					return "", errors.New("fail to run pre-scaling hook")
+				},
+			},
+			evaluate.Evaluation{
+				TargetReplicas: 3,
+			},
+			func() *appsv1.Deployment {
+				replicas := int32(0)
+				return &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Replicas: &replicas,
+					},
+				}
+			}(),
+			1,
+			10,
+			&autoscaling.CrossVersionObjectReference{
+				Kind:       "deployment",
+				Name:       "test",
+				APIVersion: "apps/v1",
+			},
+			"test",
+		},
+		{
+			"Fail to run post-scaling hook",
+			nil,
+			errors.New("fail to run post-scaling hook"),
+			nil,
+			&config.Config{
+				PostScale: &config.Method{
+					Type: "test",
+				},
+			},
+			&fake.Execute{
+				ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
+					return "", errors.New("fail to run post-scaling hook")
+				},
+			},
+			evaluate.Evaluation{
+				TargetReplicas: 3,
 			},
 			func() *appsv1.Deployment {
 				replicas := int32(3)
@@ -176,6 +283,49 @@ func TestScale_Scale(t *testing.T) {
 			},
 			nil,
 			nil,
+			&config.Config{},
+			nil,
+			evaluate.Evaluation{
+				TargetReplicas: 3,
+			},
+			func() *appsv1.Deployment {
+				replicas := int32(0)
+				return &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Replicas: &replicas,
+					},
+				}
+			}(),
+			1,
+			10,
+			&autoscaling.CrossVersionObjectReference{
+				Kind:       "deployment",
+				Name:       "test",
+				APIVersion: "apps/v1",
+			},
+			"test",
+		},
+		{
+			"Success, deployment, autoscaling disabled, run pre-scaling hook",
+			&evaluate.Evaluation{
+				TargetReplicas: 0,
+			},
+			nil,
+			nil,
+			&config.Config{
+				PreScale: &config.Method{
+					Type: "test",
+				},
+			},
+			&fake.Execute{
+				ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
+					return "success", nil
+				},
+			},
 			evaluate.Evaluation{
 				TargetReplicas: 3,
 			},
@@ -206,6 +356,8 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: 3,
 			},
 			nil,
+			nil,
+			&config.Config{},
 			nil,
 			evaluate.Evaluation{
 				TargetReplicas: 3,
@@ -261,6 +413,8 @@ func TestScale_Scale(t *testing.T) {
 					},
 				},
 			},
+			&config.Config{},
+			nil,
 			evaluate.Evaluation{
 				TargetReplicas: 10,
 			},
@@ -315,6 +469,8 @@ func TestScale_Scale(t *testing.T) {
 					},
 				},
 			},
+			&config.Config{},
+			nil,
 			evaluate.Evaluation{
 				TargetReplicas: 1,
 			},
@@ -367,6 +523,139 @@ func TestScale_Scale(t *testing.T) {
 							},
 						},
 					},
+				},
+			},
+			&config.Config{},
+			nil,
+			evaluate.Evaluation{
+				TargetReplicas: 7,
+			},
+			func() *appsv1.Deployment {
+				replicas := int32(5)
+				return &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Replicas: &replicas,
+					},
+				}
+			}(),
+			1,
+			10,
+			&autoscaling.CrossVersionObjectReference{
+				Kind:       "deployment",
+				Name:       "test",
+				APIVersion: "apps/v1",
+			},
+			"test",
+		},
+		{
+			"Success, deployment, evaluation within min-max bounds, scale to evaluation, run post-scale hook",
+			&evaluate.Evaluation{
+				TargetReplicas: int32(7),
+			},
+			nil,
+			&scaleFake.FakeScaleClient{
+				Fake: k8stesting.Fake{
+					ReactionChain: []k8stesting.Reactor{
+						&k8stesting.SimpleReactor{
+							Resource: "deployment",
+							Verb:     "get",
+							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+								return true, &autoscaling.Scale{
+									Spec: autoscaling.ScaleSpec{
+										Replicas: 7,
+									},
+								}, nil
+							},
+						},
+						&k8stesting.SimpleReactor{
+							Resource: "deployment",
+							Verb:     "update",
+							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+								return true, &autoscaling.Scale{}, nil
+							},
+						},
+					},
+				},
+			},
+			&config.Config{
+				PostScale: &config.Method{
+					Type: "test",
+				},
+			},
+			&fake.Execute{
+				ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
+					return "success", nil
+				},
+			},
+			evaluate.Evaluation{
+				TargetReplicas: 7,
+			},
+			func() *appsv1.Deployment {
+				replicas := int32(5)
+				return &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Replicas: &replicas,
+					},
+				}
+			}(),
+			1,
+			10,
+			&autoscaling.CrossVersionObjectReference{
+				Kind:       "deployment",
+				Name:       "test",
+				APIVersion: "apps/v1",
+			},
+			"test",
+		},
+		{
+			"Success, deployment, evaluation within min-max bounds, scale to evaluation, run pre and post-scale hooks",
+			&evaluate.Evaluation{
+				TargetReplicas: int32(7),
+			},
+			nil,
+			&scaleFake.FakeScaleClient{
+				Fake: k8stesting.Fake{
+					ReactionChain: []k8stesting.Reactor{
+						&k8stesting.SimpleReactor{
+							Resource: "deployment",
+							Verb:     "get",
+							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+								return true, &autoscaling.Scale{
+									Spec: autoscaling.ScaleSpec{
+										Replicas: 7,
+									},
+								}, nil
+							},
+						},
+						&k8stesting.SimpleReactor{
+							Resource: "deployment",
+							Verb:     "update",
+							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+								return true, &autoscaling.Scale{}, nil
+							},
+						},
+					},
+				},
+			},
+			&config.Config{
+				PostScale: &config.Method{
+					Type: "test",
+				},
+				PreScale: &config.Method{
+					Type: "test",
+				},
+			},
+			&fake.Execute{
+				ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
+					return "success", nil
 				},
 			},
 			evaluate.Evaluation{
@@ -423,6 +712,8 @@ func TestScale_Scale(t *testing.T) {
 					},
 				},
 			},
+			&config.Config{},
+			nil,
 			evaluate.Evaluation{
 				TargetReplicas: 7,
 			},
@@ -477,6 +768,8 @@ func TestScale_Scale(t *testing.T) {
 					},
 				},
 			},
+			&config.Config{},
+			nil,
 			evaluate.Evaluation{
 				TargetReplicas: 7,
 			},
@@ -531,6 +824,8 @@ func TestScale_Scale(t *testing.T) {
 					},
 				},
 			},
+			&config.Config{},
+			nil,
 			evaluate.Evaluation{
 				TargetReplicas: 7,
 			},
@@ -560,7 +855,9 @@ func TestScale_Scale(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			scaler := &scale.Scale{
-				Scaler: test.scaler,
+				Scaler:  test.scaler,
+				Config:  test.config,
+				Execute: test.executer,
 			}
 			result, err := scaler.Scale(test.evaluation, test.resource, test.minReplicas, test.maxReplicas, test.scaleTargetRef, test.namespace)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {

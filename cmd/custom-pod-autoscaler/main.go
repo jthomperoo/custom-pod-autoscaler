@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -150,34 +150,36 @@ func main() {
 		),
 	)
 
-	scaler := &scale.Scale{
-		Scaler: scaleClient,
-	}
-
 	// Set up shell executer
 	shellExec := &shell.Execute{
 		Command: exec.Command,
+	}
+
+	// Combine executers
+	combinedExecute := &execute.CombinedExecute{
+		Executers: []execute.Executer{
+			shellExec,
+		},
+	}
+
+	// Set up scaling client
+	scaler := &scale.Scale{
+		Scaler:  scaleClient,
+		Config:  config,
+		Execute: combinedExecute,
 	}
 
 	// Set up metric gathering
 	metricGatherer := &metric.Gatherer{
 		Clientset: clientset,
 		Config:    config,
-		Execute: &execute.CombinedExecute{
-			Executers: []execute.Executer{
-				shellExec,
-			},
-		},
+		Execute:   combinedExecute,
 	}
 
 	// Set up evaluator
 	evaluator := &evaluate.Evaluator{
-		Config: config,
-		Execute: &execute.CombinedExecute{
-			Executers: []execute.Executer{
-				shellExec,
-			},
-		},
+		Config:  config,
+		Execute: combinedExecute,
 	}
 
 	glog.V(1).Infoln("Setting up REST API")
@@ -225,7 +227,7 @@ func main() {
 		}
 
 		// Run the scaler in a goroutine, triggered by the ticker
-		// listen for shutdown requests, once recieved shut down the autoscaler
+		// listen for shutdown requests, once received shut down the autoscaler
 		// and the API
 		go func() {
 			for {

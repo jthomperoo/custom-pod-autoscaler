@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,6 +62,12 @@ const jsonStructTag = "json"
 // Config is the configuration options for the CPA
 type Config struct {
 	ScaleTargetRef *autoscaling.CrossVersionObjectReference `json:"scaleTargetRef"`
+	PreMetric      *Method                                  `json:"preMetric"`
+	PostMetric     *Method                                  `json:"postMetric"`
+	PreEvaluate    *Method                                  `json:"preEvaluate"`
+	PostEvaluate   *Method                                  `json:"postEvaluate"`
+	PreScale       *Method                                  `json:"preScale"`
+	PostScale      *Method                                  `json:"postScale"`
 	Evaluate       *Method                                  `json:"evaluate"`
 	Metric         *Method                                  `json:"metric"`
 	Interval       int                                      `json:"interval"`

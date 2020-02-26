@@ -1,0 +1,28 @@
+apiVersion: custompodautoscaler.com/v1alpha1
+kind: CustomPodAutoscaler
+metadata:
+  name: post-scale-hook
+spec:
+  template:
+    spec:
+      containers:
+      - name: post-scale-hook
+        image: post-scale-hook:latest
+        imagePullPolicy: Always
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hello-kubernetes
+  config: 
+    - name: interval
+      value: "10000"
+    - name: logVerbosity
+      value: "3"
+    - name: postMetric
+      value: |
+        type: "shell"
+        timeout: 2500
+        shell: 
+          entrypoint: "python"
+          command: 
+            - "/post_scale.py"

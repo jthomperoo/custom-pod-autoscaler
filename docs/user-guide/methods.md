@@ -1,7 +1,6 @@
 # Methods
 
-Methods specify how user logic should be called by the Custom Pod Autoscaler base program. Methods 
-can be specified for metric gathering and evaluating.
+Methods specify how user logic should be called by the Custom Pod Autoscaler base program.
 
 # shell
 

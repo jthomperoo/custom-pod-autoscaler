@@ -8,6 +8,7 @@ nav:
   - 'Metric gathering': 'user-guide/metric-gathering.md'
   - Evaluating: 'user-guide/evaluating.md'
   - Methods: 'user-guide/methods.md'
+  - Hooks: 'user-guide/hooks.md'
   - 'Rest API': 'user-guide/rest-api.md'
 - Reference:
   - Configuration: 'reference/configuration.md'

@@ -384,10 +384,10 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			"Non existent endpoint",
-			`{"message":"Resource '/api/v1/non_existant' not found","code":404}`,
+			`{"message":"Resource '/api/v1/non_existent' not found","code":404}`,
 			http.StatusNotFound,
 			"GET",
-			"/api/v1/non_existant",
+			"/api/v1/non_existent",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{

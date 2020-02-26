@@ -19,10 +19,13 @@ limitations under the License.
 package scale
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/golang/glog"
+	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -38,7 +41,9 @@ type Scaler interface {
 
 // Scale interacts with the Kubernetes API to allow scaling on evaluations
 type Scale struct {
-	Scaler scale.ScalesGetter
+	Scaler  scale.ScalesGetter
+	Config  *config.Config
+	Execute execute.Executer
 }
 
 // Scale takes an evaluation and uses it to interact with the Kubernetes scaling API,
@@ -55,12 +60,6 @@ func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, mi
 	}
 	glog.V(3).Infof("Replica count determined: %d", currentReplicas)
 
-	if currentReplicas == 0 {
-		glog.V(0).Infof("No scaling, autoscaling disabled on resource %s", resource.GetName())
-		evaluation.TargetReplicas = 0
-		return &evaluation, nil
-	}
-
 	targetReplicas := currentReplicas
 	if evaluation.TargetReplicas < minReplicas {
 		glog.V(1).Infof("Scale target less than min at %d replicas, setting target to min %d replicas", targetReplicas, minReplicas)
@@ -71,6 +70,42 @@ func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, mi
 	} else {
 		glog.V(1).Infof("Scale target set to %d replicas", targetReplicas)
 		targetReplicas = evaluation.TargetReplicas
+	}
+
+	scalingHookInput := struct {
+		MinReplicas     int32         `json:"min_replicas"`
+		MaxReplicas     int32         `json:"max_replicas"`
+		CurrentReplicas int32         `json:"current_replicas"`
+		TargetReplicas  int32         `json:"target_replicas"`
+		Resource        metav1.Object `json:"resource"`
+	}{
+		MinReplicas:     minReplicas,
+		MaxReplicas:     maxReplicas,
+		CurrentReplicas: currentReplicas,
+		TargetReplicas:  targetReplicas,
+		Resource:        resource,
+	}
+
+	// Convert scaling hook input to JSON
+	scalingHookJSON, err := json.Marshal(scalingHookInput)
+	if err != nil {
+		// Should not occur, panic
+		panic(err)
+	}
+
+	if s.Config.PreScale != nil {
+		glog.V(3).Infoln("Attempting to run pre-scaling hook")
+		hookResult, err := s.Execute.ExecuteWithValue(s.Config.PreScale, string(scalingHookJSON))
+		if err != nil {
+			return nil, err
+		}
+		glog.V(3).Infof("Pre-scaling hook response: %+v", hookResult)
+	}
+
+	if currentReplicas == 0 {
+		glog.V(0).Infof("No scaling, autoscaling disabled on resource %s", resource.GetName())
+		evaluation.TargetReplicas = 0
+		return &evaluation, nil
 	}
 
 	evaluation.TargetReplicas = targetReplicas
@@ -106,9 +141,19 @@ func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, mi
 			return nil, err
 		}
 		glog.V(3).Infoln("Application of scale successful")
-		return &evaluation, nil
+	} else {
+		glog.V(0).Infof("No change in target replicas, maintaining %d replicas", currentReplicas)
 	}
-	glog.V(0).Infof("No change in target replicas, maintaining %d replicas", currentReplicas)
+
+	if s.Config.PostScale != nil {
+		glog.V(3).Infoln("Attempting to run post-scaling hook")
+		hookResult, err := s.Execute.ExecuteWithValue(s.Config.PostScale, string(scalingHookJSON))
+		if err != nil {
+			return nil, err
+		}
+		glog.V(3).Infof("Post-scaling hook response: %+v", hookResult)
+	}
+
 	return &evaluation, nil
 }
 
