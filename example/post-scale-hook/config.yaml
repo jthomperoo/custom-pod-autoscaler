@@ -12,4 +12,11 @@ metric:
     entrypoint: "python"
     command: 
       - "/metric.py"
+postScale:
+  type: "shell"
+  timeout: 2500
+  shell: 
+    entrypoint: "python"
+    command: 
+      - "/post_scale.py"
 runMode: "per-resource"

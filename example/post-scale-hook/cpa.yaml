@@ -18,11 +18,3 @@ spec:
       value: "10000"
     - name: logVerbosity
       value: "3"
-    - name: postMetric
-      value: |
-        type: "shell"
-        timeout: 2500
-        shell: 
-          entrypoint: "python"
-          command: 
-            - "/post_scale.py"
