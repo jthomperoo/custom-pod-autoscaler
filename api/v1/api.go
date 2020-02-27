@@ -73,6 +73,23 @@ func (api *API) Routes() {
 }
 
 func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
+	// Determine if it is a dry run
+	dryRun := true
+	dryRunParam := r.URL.Query().Get(dryRunQueryParam)
+	if dryRunParam == "" {
+		dryRun = false
+	} else {
+		b, err := strconv.ParseBool(dryRunParam)
+		if err != nil {
+			apiError(w, &Error{
+				fmt.Sprintf("Invalid format for 'dry_run' query parameter; '%s' is not a valid boolean value", dryRunParam),
+				http.StatusBadRequest,
+			})
+			return
+		}
+		dryRun = b
+	}
+
 	// Get resource being managed
 	resource, err := api.Client.Get(api.Config.ScaleTargetRef.APIVersion, api.Config.ScaleTargetRef.Kind, api.Config.ScaleTargetRef.Name, api.Config.Namespace)
 	if err != nil {
@@ -83,8 +100,17 @@ func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set run type
+	runType := RunType
+	if dryRun {
+		runType = RunTypeDryRun
+	}
+
 	// Get metrics
-	metrics, err := api.GetMetricer.GetMetrics(resource)
+	metrics, err := api.GetMetricer.GetMetrics(metric.Spec{
+		Resource: resource,
+		RunType:  runType,
+	})
 	if err != nil {
 		apiError(w, &Error{
 			err.Error(),
@@ -92,7 +118,7 @@ func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	metrics.RunType = RunType
+
 	// Convert metrics into JSON
 	response, err := json.Marshal(metrics)
 	if err != nil {
@@ -131,8 +157,17 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set run type
+	runType := RunType
+	if dryRun {
+		runType = RunTypeDryRun
+	}
+
 	// Get metrics
-	metrics, err := api.GetMetricer.GetMetrics(resource)
+	metrics, err := api.GetMetricer.GetMetrics(metric.Spec{
+		Resource: resource,
+		RunType:  runType,
+	})
 	if err != nil {
 		apiError(w, &Error{
 			err.Error(),
@@ -141,14 +176,11 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set run type
-	metrics.RunType = RunType
-	if dryRun {
-		metrics.RunType = RunTypeDryRun
-	}
-
 	// Get evaluations for metrics
-	evaluation, err := api.GetEvaluationer.GetEvaluation(metrics)
+	evaluation, err := api.GetEvaluationer.GetEvaluation(evaluate.Spec{
+		ResourceMetrics: metrics,
+		RunType:         runType,
+	})
 	if err != nil {
 		apiError(w, &Error{
 			err.Error(),
@@ -159,7 +191,15 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 
 	// Scale if not a dry run
 	if !dryRun {
-		evaluation, err = api.Scaler.Scale(*evaluation, resource, api.Config.MinReplicas, api.Config.MaxReplicas, api.Config.ScaleTargetRef, api.Config.Namespace)
+		evaluation, err = api.Scaler.Scale(scale.Spec{
+			Evaluation:     *evaluation,
+			Resource:       resource,
+			MinReplicas:    api.Config.MinReplicas,
+			MaxReplicas:    api.Config.MaxReplicas,
+			Namespace:      api.Config.Namespace,
+			ScaleTargetRef: api.Config.ScaleTargetRef,
+			RunType:        runType,
+		})
 		if err != nil {
 			apiError(w, &Error{
 				err.Error(),

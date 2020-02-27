@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/jthomperoo/custom-pod-autoscaler/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
@@ -45,18 +46,13 @@ func TestScale_Scale(t *testing.T) {
 	})
 
 	var tests = []struct {
-		description    string
-		expected       *evaluate.Evaluation
-		expectedErr    error
-		scaler         k8sscale.ScalesGetter
-		config         *config.Config
-		executer       execute.Executer
-		evaluation     evaluate.Evaluation
-		resource       metav1.Object
-		minReplicas    int32
-		maxReplicas    int32
-		scaleTargetRef *autoscaling.CrossVersionObjectReference
-		namespace      string
+		description string
+		expected    *evaluate.Evaluation
+		expectedErr error
+		scaler      k8sscale.ScalesGetter
+		config      *config.Config
+		executer    execute.Executer
+		spec        scale.Spec
 	}{
 		{
 			"Unsupported resource",
@@ -65,16 +61,19 @@ func TestScale_Scale(t *testing.T) {
 			nil,
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{},
-			&appsv1.DaemonSet{},
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "daemonset",
-				Name:       "test",
-				APIVersion: "apps/v1",
+			scale.Spec{
+				Evaluation:  evaluate.Evaluation{},
+				Resource:    &appsv1.DaemonSet{},
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "daemonset",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			"test",
 		},
 		{
 			"Fail to parse group version",
@@ -83,26 +82,29 @@ func TestScale_Scale(t *testing.T) {
 			nil,
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: int32(3),
-			},
-			&appsv1.Deployment{
-				TypeMeta: metav1.TypeMeta{
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(3),
+				},
+				Resource: &appsv1.Deployment{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "deployment",
+						APIVersion: "/invalid/",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test",
+					},
+				},
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
+					Name:       "test",
 					APIVersion: "/invalid/",
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "/invalid/",
-			},
-			"test",
 		},
 		{
 			"Fail to get scale for resource",
@@ -123,26 +125,29 @@ func TestScale_Scale(t *testing.T) {
 			},
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: int32(3),
-			},
-			&appsv1.Deployment{
-				TypeMeta: metav1.TypeMeta{
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(3),
+				},
+				Resource: &appsv1.Deployment{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "deployment",
+						APIVersion: "apps/v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test",
+					},
+				},
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
+					Name:       "test",
 					APIVersion: "apps/v1",
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Fail to update scale for resource",
@@ -174,29 +179,32 @@ func TestScale_Scale(t *testing.T) {
 			},
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: int32(1),
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(1),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(3)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.Deployment {
-				replicas := int32(3)
-				return &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Fail to run pre-scaling hook",
@@ -213,29 +221,32 @@ func TestScale_Scale(t *testing.T) {
 					return "", errors.New("fail to run pre-scaling hook")
 				},
 			},
-			evaluate.Evaluation{
-				TargetReplicas: 3,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(3),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(0)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.Deployment {
-				replicas := int32(0)
-				return &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Fail to run post-scaling hook",
@@ -252,29 +263,32 @@ func TestScale_Scale(t *testing.T) {
 					return "", errors.New("fail to run post-scaling hook")
 				},
 			},
-			evaluate.Evaluation{
-				TargetReplicas: 3,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(3),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(3)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.Deployment {
-				replicas := int32(3)
-				return &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Success, deployment, autoscaling disabled",
@@ -285,29 +299,32 @@ func TestScale_Scale(t *testing.T) {
 			nil,
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: 3,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(3),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(0)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.Deployment {
-				replicas := int32(0)
-				return &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Success, deployment, autoscaling disabled, run pre-scaling hook",
@@ -326,29 +343,32 @@ func TestScale_Scale(t *testing.T) {
 					return "success", nil
 				},
 			},
-			evaluate.Evaluation{
-				TargetReplicas: 3,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(3),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(0)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.Deployment {
-				replicas := int32(0)
-				return &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Success, deployment, no change in scale",
@@ -359,29 +379,32 @@ func TestScale_Scale(t *testing.T) {
 			nil,
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: 3,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(3),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(3)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.Deployment {
-				replicas := int32(3)
-				return &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Success, deployment, evaluation above max replicas, scale to max replicas",
@@ -415,29 +438,32 @@ func TestScale_Scale(t *testing.T) {
 			},
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: 10,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(10),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(2)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 5,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.Deployment {
-				replicas := int32(2)
-				return &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			5,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Success, deployment, evaluation below min replicas, scale to min replicas",
@@ -471,29 +497,32 @@ func TestScale_Scale(t *testing.T) {
 			},
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: 1,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(1),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(5)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 2,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.Deployment {
-				replicas := int32(5)
-				return &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			2,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Success, deployment, evaluation within min-max bounds, scale to evaluation",
@@ -527,29 +556,32 @@ func TestScale_Scale(t *testing.T) {
 			},
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: 7,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(7),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(5)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.Deployment {
-				replicas := int32(5)
-				return &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Success, deployment, evaluation within min-max bounds, scale to evaluation, run post-scale hook",
@@ -591,29 +623,32 @@ func TestScale_Scale(t *testing.T) {
 					return "success", nil
 				},
 			},
-			evaluate.Evaluation{
-				TargetReplicas: 7,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(7),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(5)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.Deployment {
-				replicas := int32(5)
-				return &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Success, deployment, evaluation within min-max bounds, scale to evaluation, run pre and post-scale hooks",
@@ -658,29 +693,32 @@ func TestScale_Scale(t *testing.T) {
 					return "success", nil
 				},
 			},
-			evaluate.Evaluation{
-				TargetReplicas: 7,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(7),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(5)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.Deployment {
-				replicas := int32(5)
-				return &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "deployment",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Success, replicaset, evaluation within min-max bounds, scale to evaluation",
@@ -714,29 +752,32 @@ func TestScale_Scale(t *testing.T) {
 			},
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: 7,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(7),
+				},
+				Resource: func() *appsv1.ReplicaSet {
+					replicas := int32(3)
+					return &appsv1.ReplicaSet{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.ReplicaSetSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "replicaset",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.ReplicaSet {
-				replicas := int32(3)
-				return &appsv1.ReplicaSet{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.ReplicaSetSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "replicaset",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 		{
 			"Success, replicationcontroller, evaluation within min-max bounds, scale to evaluation",
@@ -770,29 +811,32 @@ func TestScale_Scale(t *testing.T) {
 			},
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: 7,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(7),
+				},
+				Resource: func() *corev1.ReplicationController {
+					replicas := int32(8)
+					return &corev1.ReplicationController{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: corev1.ReplicationControllerSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "replicationcontroller",
+					Name:       "test",
+					APIVersion: "v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *corev1.ReplicationController {
-				replicas := int32(8)
-				return &corev1.ReplicationController{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: corev1.ReplicationControllerSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "replicationcontroller",
-				Name:       "test",
-				APIVersion: "v1",
-			},
-			"test",
 		},
 		{
 			"Success, statefulset, evaluation within min-max bounds, scale to evaluation",
@@ -826,29 +870,32 @@ func TestScale_Scale(t *testing.T) {
 			},
 			&config.Config{},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: 7,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(7),
+				},
+				Resource: func() *appsv1.StatefulSet {
+					replicas := int32(1)
+					return &appsv1.StatefulSet{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.StatefulSetSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "statefulset",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
 			},
-			func() *appsv1.StatefulSet {
-				replicas := int32(1)
-				return &appsv1.StatefulSet{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test",
-						Namespace: "test namespace",
-					},
-					Spec: appsv1.StatefulSetSpec{
-						Replicas: &replicas,
-					},
-				}
-			}(),
-			1,
-			10,
-			&autoscaling.CrossVersionObjectReference{
-				Kind:       "statefulset",
-				Name:       "test",
-				APIVersion: "apps/v1",
-			},
-			"test",
 		},
 	}
 
@@ -859,7 +906,7 @@ func TestScale_Scale(t *testing.T) {
 				Config:  test.config,
 				Execute: test.executer,
 			}
-			result, err := scaler.Scale(test.evaluation, test.resource, test.minReplicas, test.maxReplicas, test.scaleTargetRef, test.namespace)
+			result, err := scaler.Scale(test.spec)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return

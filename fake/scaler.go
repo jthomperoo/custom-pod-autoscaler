@@ -18,16 +18,15 @@ package fake
 
 import (
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
-	autoscaling "k8s.io/api/autoscaling/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/jthomperoo/custom-pod-autoscaler/scale"
 )
 
 // Scaler (fake) allows inserting logic into a scaler for testing
 type Scaler struct {
-	ScaleReactor func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas int32, maxReplicas int32, scaleTargetRef *autoscaling.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error)
+	ScaleReactor func(spec scale.Spec) (*evaluate.Evaluation, error)
 }
 
 // Scale calls the fake Scaler reactor method provided
-func (s *Scaler) Scale(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas int32, maxReplicas int32, scaleTargetRef *autoscaling.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
-	return s.ScaleReactor(evaluation, resource, minReplicas, maxReplicas, scaleTargetRef, namespace)
+func (s *Scaler) Scale(spec scale.Spec) (*evaluate.Evaluation, error) {
+	return s.ScaleReactor(spec)
 }

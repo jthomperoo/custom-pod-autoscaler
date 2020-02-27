@@ -215,14 +215,18 @@ The pre-metric hook is run before metric gathering occurs, it is provided with e
 Example of JSON provided to this hook:
 ```json
 {
-  "kind": "Deployment",
-  "apiVersion": "apps/v1",
-  "metadata": {
-    "name": "hello-kubernetes",
-    "namespace": "default",
+  "resource": {
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "hello-kubernetes",
+      "namespace": "default",
+    },
+    ...
   },
-  ...
+  "runType": "scaler"
 }
+
 ```
 [This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
 
@@ -257,8 +261,10 @@ Example of JSON provided to this hook:
       "resource": "hello-kubernetes",
       "value": "3"
     }
-  ]
+  ],
+  "runType": "scaler"
 }
+
 ```
 [This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
 
@@ -279,23 +285,26 @@ The pre-evaluate hook is run before evaluation occurs, it is provided with the f
 Example of JSON provided to this hook:
 ```json
 {
-  "runType": "scaler",
-  "metrics": [
-    {
-      "resource": "hello-kubernetes",
-      "value": "3"
+  "resourceMetrics": {
+    "metrics": [
+      {
+        "resource": "hello-kubernetes",
+        "value": "3"
+      }
+    ],
+    "resource": {
+      "kind": "Deployment",
+      "apiVersion": "apps/v1",
+      "metadata": {
+        "name": "hello-kubernetes",
+        "namespace": "default",
+      },
+      ...
     }
-  ],
-  "resource": {
-    "kind": "Deployment",
-    "apiVersion": "apps/v1",
-    "metadata": {
-      "name": "hello-kubernetes",
-      "namespace": "default",
-    },
-    ...
-  }
+  },
+  "runType": "scaler"
 }
+
 ```
 [This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
 
@@ -316,8 +325,7 @@ The post-evaluate hook is run after evaluation occurs, it is provided with the f
 Example of JSON provided to this hook:
 ```json
 {
-  "resource_metrics": {
-    "runType": "scaler",
+  "resourceMetrics": {
     "metrics": [
       {
         "resource": "hello-kubernetes",
@@ -336,8 +344,10 @@ Example of JSON provided to this hook:
   },
   "evaluation": {
     "targetReplicas": 3
-  }
+  },
+  "runType": "scaler"
 }
+
 ```
 [This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
 
@@ -359,10 +369,9 @@ The pre-scale hook is run before a scaling decision is made, it is provided with
 Example of JSON provided to this hook:
 ```json
 {
-  "minReplicas": 1,
-  "maxReplicas": 10,
-  "currentReplicas": 3,
-  "targetReplicas": 3,
+  "evaluation": {
+    "targetReplicas": 6
+  },
   "resource": {
     "kind": "Deployment",
     "apiVersion": "apps/v1",
@@ -371,7 +380,17 @@ Example of JSON provided to this hook:
       "namespace": "default",
     },
     ...
-  }
+  },
+  "scaleTargetRef": {
+    "kind": "Deployment",
+    "name": "hello-kubernetes",
+    "apiVersion": "apps/v1"
+  },
+  "namespace": "default",
+  "minReplicas": 1,
+  "maxReplicas": 10,
+  "targetReplicas": 0,
+  "runType": "scaler"
 }
 ```
 [This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
@@ -394,10 +413,9 @@ The post-scale hook is run after a scaling decision is made and effected, it is 
 Example of JSON provided to this hook:
 ```json
 {
-  "minReplicas": 1,
-  "maxReplicas": 10,
-  "currentReplicas": 3,
-  "targetReplicas": 3,
+  "evaluation": {
+    "targetReplicas": 6
+  },
   "resource": {
     "kind": "Deployment",
     "apiVersion": "apps/v1",
@@ -406,7 +424,17 @@ Example of JSON provided to this hook:
       "namespace": "default",
     },
     ...
-  }
+  },
+  "scaleTargetRef": {
+    "kind": "Deployment",
+    "name": "hello-kubernetes",
+    "apiVersion": "apps/v1"
+  },
+  "namespace": "default",
+  "minReplicas": 1,
+  "maxReplicas": 10,
+  "targetReplicas": 0,
+  "runType": "scaler"
 }
 ```
 [This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).

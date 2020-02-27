@@ -22,11 +22,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/jthomperoo/custom-pod-autoscaler/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/fake"
+	"github.com/jthomperoo/custom-pod-autoscaler/scale"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscaling "k8s.io/api/autoscaling/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestScaler_Scale(t *testing.T) {
@@ -37,30 +37,28 @@ func TestScaler_Scale(t *testing.T) {
 		return x.Error() == y.Error()
 	})
 	var tests = []struct {
-		description    string
-		expected       *evaluate.Evaluation
-		expectedErr    error
-		evaluation     evaluate.Evaluation
-		resource       metav1.Object
-		minReplicas    int32
-		maxReplicas    int32
-		scaleTargetRef *autoscaling.CrossVersionObjectReference
-		namespace      string
-		scaleReactor   func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas int32, maxReplicas int32, scaleTargetRef *autoscaling.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error)
+		description  string
+		expected     *evaluate.Evaluation
+		expectedErr  error
+		spec         scale.Spec
+		scaleReactor func(scale.Spec) (*evaluate.Evaluation, error)
 	}{
 		{
 			"Return error",
 			nil,
 			errors.New("scale error"),
-			evaluate.Evaluation{
-				TargetReplicas: 4,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: 4,
+				},
+				Resource:       &appsv1.Deployment{},
+				MinReplicas:    1,
+				MaxReplicas:    10,
+				Namespace:      "error",
+				ScaleTargetRef: nil,
+				RunType:        autoscaler.RunType,
 			},
-			&appsv1.Deployment{},
-			1,
-			10,
-			nil,
-			"error",
-			func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas, maxReplicas int32, scaleTargetRef *autoscaling.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
+			func(scale.Spec) (*evaluate.Evaluation, error) {
 				return nil, errors.New("scale error")
 			},
 		},
@@ -70,15 +68,18 @@ func TestScaler_Scale(t *testing.T) {
 				TargetReplicas: 3,
 			},
 			nil,
-			evaluate.Evaluation{
-				TargetReplicas: 1,
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: 1,
+				},
+				Resource:       &appsv1.Deployment{},
+				MinReplicas:    1,
+				MaxReplicas:    10,
+				Namespace:      "success",
+				ScaleTargetRef: nil,
+				RunType:        autoscaler.RunType,
 			},
-			&appsv1.Deployment{},
-			1,
-			10,
-			nil,
-			"success",
-			func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas, maxReplicas int32, scaleTargetRef *autoscaling.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
+			func(scale.Spec) (*evaluate.Evaluation, error) {
 				return &evaluate.Evaluation{
 					TargetReplicas: 3,
 				}, nil
@@ -90,7 +91,7 @@ func TestScaler_Scale(t *testing.T) {
 			scaler := &fake.Scaler{
 				ScaleReactor: test.scaleReactor,
 			}
-			result, err := scaler.Scale(test.evaluation, test.resource, test.minReplicas, test.maxReplicas, test.scaleTargetRef, test.namespace)
+			result, err := scaler.Scale(test.spec)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return

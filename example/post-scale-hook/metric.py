@@ -17,13 +17,13 @@ import json
 import sys
 
 def main():
-    # Parse resource JSON into a dict
-    resource = json.loads(sys.stdin.read())
-    metric(resource)
+    # Parse spec into a dict
+    spec = json.loads(sys.stdin.read())
+    metric(spec)
 
-def metric(resource):
+def metric(spec):
     # Get metadata from resource information provided
-    metadata = resource["metadata"]
+    metadata = spec["resource"]["metadata"]
     # Get labels from provided metdata
     labels = metadata["labels"]
 

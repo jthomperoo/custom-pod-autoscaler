@@ -55,21 +55,19 @@ deployment the deployment information will be passed in.
 An example of deployment JSON passed to the metric gatherer:
 ```json
 {
-    "apiVersion": "apps/v1",
+  "resource": {
     "kind": "Deployment",
+    "apiVersion": "apps/v1",
     "metadata": {
-        "creationTimestamp": "2019-12-22T17:16:53Z",
-        "generation": 1,
-        "labels": {
-            "numPods": "1"
-        },
-        "name": "hello-kubernetes",
-        "namespace": "default",
-        "resourceVersion": "494588",
-        "selfLink": "/apis/apps/v1/namespaces/default/deployments/hello-kubernetes",
-        "uid": "63eeee05-a979-4573-b543-7d7dece9f431"
+      "name": "hello-kubernetes",
+      "namespace": "default",
+      "labels": {
+        "numPods": "3"
+      },
     },
     ...
+  },
+  "runType": "scaler"
 }
 ```
 See the [Kubernetes Deployment definition for full description](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#deployment-v1-apps).
