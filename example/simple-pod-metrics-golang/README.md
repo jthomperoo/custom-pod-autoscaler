@@ -15,7 +15,7 @@ The CPA exposes two endpoints:
     * Displays all gathered metric values from every app instance in the resource.
     * Aliased with `metrics` in the example Dockerfile.
 * `GET /evaluation`
-    * Displays the evaluation decision made on how to scale, reporting the `target_replicas` - how many replicas the resource should have.
+    * Displays the evaluation decision made on how to scale, reporting the `targetReplicas` - how many replicas the resource should have.
     * Aliased with `evaluation` in the example Dockerfile.
 
 ## Usage
@@ -38,10 +38,8 @@ Now you have an app running to manage scaling for.
 
 ### Build CPA image
 Once CPAs have been enabled on your cluster, you need to build this example, run these commands to build the example:  
-* Vendor the Golang dependencies.  
-`go mod vendor`
-* Build the example image.  
-`docker build -t simple-pod-metrics-golang .`  
+* Use the Makefile to build the docker image 
+`make docker`
 * Deploy the CPA using the image just built.  
 `kubectl apply -f cpa.yaml`  
 Now the CPA should be running on your cluster, managing the app we previously deployed.

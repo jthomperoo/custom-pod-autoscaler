@@ -142,7 +142,7 @@ func TestAPI(t *testing.T) {
 			"Get metrics success metric gathering",
 			strings.ReplaceAll(strings.ReplaceAll(`
 			{
-				"run_type":"api",
+				"runType":"api",
 				"metrics":[
 					{
 						"resource":"SUCCESS_POD",
@@ -319,7 +319,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			"Evaluate success, not dry run, no parameter provided",
-			`{"target_replicas":1}`,
+			`{"targetReplicas":1}`,
 			http.StatusOK,
 			"POST",
 			"/api/v1/evaluation",
@@ -352,7 +352,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			"Evaluate success, not dry run, parameter provided",
-			`{"target_replicas":1}`,
+			`{"targetReplicas":1}`,
 			http.StatusOK,
 			"POST",
 			"/api/v1/evaluation?dry_run=false",
@@ -385,7 +385,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			"Evaluate success, dry run",
-			`{"target_replicas":1}`,
+			`{"targetReplicas":1}`,
 			http.StatusOK,
 			"POST",
 			"/api/v1/evaluation?dry_run=true",

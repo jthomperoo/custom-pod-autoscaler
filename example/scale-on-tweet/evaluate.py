@@ -1,4 +1,4 @@
-# Copyright 2019 The Custom Pod Autoscaler Authors.
+# Copyright 2020 The Custom Pod Autoscaler Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import sys
 # JSON piped into this script example:
 # {
 #   "resource": "hello-kubernetes",
-#   "run_type": "api",
+#   "runType": "api",
 #   "metrics": [
 #     {
 #       "resource": "hello-kubernetes",
@@ -49,7 +49,7 @@ def evaluate(metrics):
 
     # Output target number of replicas to stdout
     evaluation = {}
-    evaluation["target_replicas"] = replicas
+    evaluation["targetReplicas"] = replicas
     sys.stdout.write(json.dumps(evaluation))
 
 if __name__ == "__main__":

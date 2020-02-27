@@ -133,7 +133,7 @@ func TestGetEvaluation(t *testing.T) {
 					if method.Type == "postEvaluate" {
 						return "", errors.New("post-evaluate hook fail")
 					}
-					return `{ "target_replicas" : 3 }`, nil
+					return `{ "targetReplicas" : 3 }`, nil
 				}
 				return &execute
 			}(),

@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * `postScale` - Runs before scaling decision, given min and max replicas, current replicas, target replicas, and resource being scaled.
 ### Changed
 - Metrics from API now returns the entire resource definition as JSON rather than just the resource name.
+- Changed JSON generated to be in `camelCase` rather than `snake_case` for consistency with the Kubernetes API.
+  * Evaluation now uses `targetReplicas` over `target_replicas`.
+  * ResourceMetric now uses `runType` over `run_type`.
+  * Scale hook now provided with `minReplicas`, `maxReplicas`, `currentReplicas` and `targetReplicas` rather than their snakecase equivalents.
 
 ## [v0.10.0] - 2020-01-22
 ### Added

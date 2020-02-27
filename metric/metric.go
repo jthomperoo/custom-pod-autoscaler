@@ -40,7 +40,7 @@ type GetMetricer interface {
 
 // ResourceMetrics represents a resource's metrics, including each resource's metrics
 type ResourceMetrics struct {
-	RunType  string        `json:"run_type"`
+	RunType  string        `json:"runType"`
 	Metrics  []*Metric     `json:"metrics"`
 	Resource metav1.Object `json:"resource"`
 }

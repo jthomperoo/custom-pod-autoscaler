@@ -37,7 +37,7 @@ type GetEvaluationer interface {
 
 // Evaluation represents a decision on how to scale a resource
 type Evaluation struct {
-	TargetReplicas int32 `json:"target_replicas"`
+	TargetReplicas int32 `json:"targetReplicas"`
 }
 
 // Evaluator handles triggering the evaluation logic to decide how to scale a resource
@@ -83,7 +83,7 @@ func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Eva
 	if e.Config.PostEvaluate != nil {
 		glog.V(3).Infoln("Attempting to run post-evaluate hook")
 		postEvaluate := struct {
-			Metrics    *metric.ResourceMetrics `json:"resource_metrics"`
+			Metrics    *metric.ResourceMetrics `json:"resourceMetrics"`
 			Evaluation *Evaluation             `json:"evaluation"`
 		}{
 			Metrics:    resourceMetrics,

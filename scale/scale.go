@@ -73,10 +73,10 @@ func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, mi
 	}
 
 	scalingHookInput := struct {
-		MinReplicas     int32         `json:"min_replicas"`
-		MaxReplicas     int32         `json:"max_replicas"`
-		CurrentReplicas int32         `json:"current_replicas"`
-		TargetReplicas  int32         `json:"target_replicas"`
+		MinReplicas     int32         `json:"minReplicas"`
+		MaxReplicas     int32         `json:"maxReplicas"`
+		CurrentReplicas int32         `json:"currentReplicas"`
+		TargetReplicas  int32         `json:"targetReplicas"`
 		Resource        metav1.Object `json:"resource"`
 	}{
 		MinReplicas:     minReplicas,

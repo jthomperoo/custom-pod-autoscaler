@@ -19,7 +19,7 @@ import math
 # JSON piped into this script example:
 # {
 #   "resource": "hello-kubernetes",
-#   "run_type": "scaler",
+#   "runType": "scaler",
 #   "metrics": [
 #     {
 #       "resource": "hello-kubernetes",
@@ -39,9 +39,9 @@ def evaluate(metrics):
     try:
         value = int(metrics["metrics"][0]["value"])
 
-        # Build JSON dict with target_replicas
+        # Build JSON dict with targetReplicas
         evaluation = {}
-        evaluation["target_replicas"] = value
+        evaluation["targetReplicas"] = value
 
         # Output JSON to stdout
         sys.stdout.write(json.dumps(evaluation))
