@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,19 +35,19 @@ import (
 )
 
 type fakeGetMetric struct {
-	getMetrics func(resource metav1.Object) (*metric.ResourceMetrics, error)
+	getMetrics func(spec metric.Spec) ([]*metric.Metric, error)
 }
 
-func (m *fakeGetMetric) GetMetrics(resource metav1.Object) (*metric.ResourceMetrics, error) {
-	return m.getMetrics(resource)
+func (m *fakeGetMetric) GetMetrics(spec metric.Spec) ([]*metric.Metric, error) {
+	return m.getMetrics(spec)
 }
 
 type fakeGetEvaluation struct {
-	getEvaluation func(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error)
+	getEvaluation func(spec evaluate.Spec) (*evaluate.Evaluation, error)
 }
 
-func (e *fakeGetEvaluation) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
-	return e.getEvaluation(resourceMetrics)
+func (e *fakeGetEvaluation) GetEvaluation(spec evaluate.Spec) (*evaluate.Evaluation, error) {
+	return e.getEvaluation(spec)
 }
 
 func TestScaler(t *testing.T) {
@@ -111,7 +111,7 @@ func TestScaler(t *testing.T) {
 			},
 			func() *fakeGetMetric {
 				getMetric := fakeGetMetric{}
-				getMetric.getMetrics = func(resource metav1.Object) (*metric.ResourceMetrics, error) {
+				getMetric.getMetrics = func(spec metric.Spec) ([]*metric.Metric, error) {
 					return nil, errors.New("fail to get metric")
 				}
 				return &getMetric
@@ -142,14 +142,14 @@ func TestScaler(t *testing.T) {
 			},
 			func() *fakeGetMetric {
 				getMetric := fakeGetMetric{}
-				getMetric.getMetrics = func(resource metav1.Object) (*metric.ResourceMetrics, error) {
-					return &metric.ResourceMetrics{}, nil
+				getMetric.getMetrics = func(spec metric.Spec) ([]*metric.Metric, error) {
+					return []*metric.Metric{}, nil
 				}
 				return &getMetric
 			}(),
 			func() *fakeGetEvaluation {
 				getEvaluation := fakeGetEvaluation{}
-				getEvaluation.getEvaluation = func(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
+				getEvaluation.getEvaluation = func(spec evaluate.Spec) (*evaluate.Evaluation, error) {
 					return nil, errors.New("fail to evaluate")
 				}
 				return &getEvaluation
@@ -173,7 +173,7 @@ func TestScaler(t *testing.T) {
 				},
 			},
 			&fake.Scaler{
-				ScaleReactor: func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas, maxReplicas int32, scaleTargetRef *autoscaling.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
+				ScaleReactor: func(spec scale.Spec) (*evaluate.Evaluation, error) {
 					return nil, errors.New("fail to scale")
 				},
 			},
@@ -187,14 +187,14 @@ func TestScaler(t *testing.T) {
 			},
 			func() *fakeGetMetric {
 				getMetric := fakeGetMetric{}
-				getMetric.getMetrics = func(resource metav1.Object) (*metric.ResourceMetrics, error) {
-					return &metric.ResourceMetrics{}, nil
+				getMetric.getMetrics = func(spec metric.Spec) ([]*metric.Metric, error) {
+					return []*metric.Metric{}, nil
 				}
 				return &getMetric
 			}(),
 			func() *fakeGetEvaluation {
 				getEvaluation := fakeGetEvaluation{}
-				getEvaluation.getEvaluation = func(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
+				getEvaluation.getEvaluation = func(spec evaluate.Spec) (*evaluate.Evaluation, error) {
 					return &evaluate.Evaluation{}, nil
 				}
 				return &getEvaluation
@@ -218,7 +218,7 @@ func TestScaler(t *testing.T) {
 				},
 			},
 			&fake.Scaler{
-				ScaleReactor: func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas, maxReplicas int32, scaleTargetRef *autoscaling.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
+				ScaleReactor: func(spec scale.Spec) (*evaluate.Evaluation, error) {
 					return &evaluate.Evaluation{
 						TargetReplicas: 2,
 					}, nil
@@ -234,14 +234,14 @@ func TestScaler(t *testing.T) {
 			},
 			func() *fakeGetMetric {
 				getMetric := fakeGetMetric{}
-				getMetric.getMetrics = func(resource metav1.Object) (*metric.ResourceMetrics, error) {
-					return &metric.ResourceMetrics{}, nil
+				getMetric.getMetrics = func(spec metric.Spec) ([]*metric.Metric, error) {
+					return []*metric.Metric{}, nil
 				}
 				return &getMetric
 			}(),
 			func() *fakeGetEvaluation {
 				getEvaluation := fakeGetEvaluation{}
-				getEvaluation.getEvaluation = func(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
+				getEvaluation.getEvaluation = func(spec evaluate.Spec) (*evaluate.Evaluation, error) {
 					return &evaluate.Evaluation{}, nil
 				}
 				return &getEvaluation

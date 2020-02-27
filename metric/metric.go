@@ -35,14 +35,7 @@ import (
 
 // GetMetricer provides methods for retrieving metrics
 type GetMetricer interface {
-	GetMetrics(resource metav1.Object) (*ResourceMetrics, error)
-}
-
-// ResourceMetrics represents a resource's metrics, including each resource's metrics
-type ResourceMetrics struct {
-	RunType  string        `json:"runType"`
-	Metrics  []*Metric     `json:"metrics"`
-	Resource metav1.Object `json:"resource"`
+	GetMetrics(spec Spec) ([]*Metric, error)
 }
 
 // Metric is the result of the custom metric calculation, containing information on the
@@ -59,23 +52,31 @@ type Gatherer struct {
 	Execute   execute.Executer
 }
 
+// Spec defines information fed into a gatherer to retrieve metrics, contains an optional
+// field 'Metrics' for storing the result
+type Spec struct {
+	Resource metav1.Object `json:"resource"`
+	Metrics  *[]*Metric    `json:"metrics,omitempty"`
+	RunType  string        `json:"runType"`
+}
+
 // GetMetrics gathers metrics for the resource supplied
-func (m *Gatherer) GetMetrics(resource metav1.Object) (*ResourceMetrics, error) {
+func (m *Gatherer) GetMetrics(spec Spec) ([]*Metric, error) {
 	switch m.Config.RunMode {
 	case config.PerPodRunMode:
-		return m.getMetricsForPods(resource)
+		return m.getMetricsForPods(spec)
 	case config.PerResourceRunMode:
-		return m.getMetricsForResource(resource)
+		return m.getMetricsForResource(spec)
 	default:
 		return nil, fmt.Errorf("Unknown run mode: %s", m.Config.RunMode)
 	}
 }
 
-func (m *Gatherer) getMetricsForResource(resource metav1.Object) (*ResourceMetrics, error) {
+func (m *Gatherer) getMetricsForResource(spec Spec) ([]*Metric, error) {
 	glog.V(3).Infoln("Gathering metrics in per-resource mode")
 
 	// Convert the Resource description to JSON
-	resourceJSON, err := json.Marshal(resource)
+	specJSON, err := json.Marshal(spec)
 	if err != nil {
 		// Should not occur, panic
 		panic(err)
@@ -83,7 +84,7 @@ func (m *Gatherer) getMetricsForResource(resource metav1.Object) (*ResourceMetri
 
 	if m.Config.PreMetric != nil {
 		glog.V(3).Infoln("Attempting to run pre-metric hook")
-		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PreMetric, string(resourceJSON))
+		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PreMetric, string(specJSON))
 		if err != nil {
 			return nil, err
 		}
@@ -91,13 +92,13 @@ func (m *Gatherer) getMetricsForResource(resource metav1.Object) (*ResourceMetri
 	}
 
 	glog.V(3).Infoln("Attempting to run metric gathering logic")
-	gathered, err := m.Execute.ExecuteWithValue(m.Config.Metric, string(resourceJSON))
+	gathered, err := m.Execute.ExecuteWithValue(m.Config.Metric, string(specJSON))
 	if err != nil {
 		return nil, err
 	}
-	metrics := []*Metric{
+	spec.Metrics = &[]*Metric{
 		&Metric{
-			Resource: resource.GetName(),
+			Resource: spec.Resource.GetName(),
 			Value:    gathered,
 		},
 	}
@@ -105,37 +106,27 @@ func (m *Gatherer) getMetricsForResource(resource metav1.Object) (*ResourceMetri
 
 	if m.Config.PostMetric != nil {
 		glog.V(3).Infoln("Attempting to run post-metric hook")
-		postMetric := struct {
-			Resource metav1.Object `json:"resource"`
-			Metrics  []*Metric     `json:"metrics"`
-		}{
-			Resource: resource,
-			Metrics:  metrics,
-		}
 		// Convert post metrics into JSON
-		postMetricJSON, err := json.Marshal(postMetric)
+		postSpecJSON, err := json.Marshal(spec)
 		if err != nil {
 			// Should not occur, panic
 			panic(err)
 		}
-		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PostMetric, string(postMetricJSON))
+		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PostMetric, string(postSpecJSON))
 		if err != nil {
 			return nil, err
 		}
 		glog.V(3).Infof("Post-metric hook response: %+v", hookResult)
 	}
 
-	return &ResourceMetrics{
-		Resource: resource,
-		Metrics:  metrics,
-	}, nil
+	return *spec.Metrics, nil
 }
 
-func (m *Gatherer) getMetricsForPods(resource metav1.Object) (*ResourceMetrics, error) {
+func (m *Gatherer) getMetricsForPods(spec Spec) ([]*Metric, error) {
 	glog.V(3).Infoln("Gathering metrics in per-pod mode")
 
 	glog.V(3).Infoln("Attempting to get pod selector from managed resource")
-	labels, err := m.getPodSelectorForResource(resource)
+	labels, err := m.getPodSelectorForResource(spec.Resource)
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +139,8 @@ func (m *Gatherer) getMetricsForPods(resource metav1.Object) (*ResourceMetrics, 
 	}
 	glog.V(3).Infof("Pods retrieved: %+v", pods)
 
-	// Convert the Pods descriptions to JSON
-	podsJSON, err := json.Marshal(pods.Items)
+	// Convert the Spec into JSON
+	specJSON, err := json.Marshal(spec)
 	if err != nil {
 		// Should not occur, panic
 		panic(err)
@@ -157,7 +148,7 @@ func (m *Gatherer) getMetricsForPods(resource metav1.Object) (*ResourceMetrics, 
 
 	if m.Config.PreMetric != nil {
 		glog.V(3).Infoln("Attempting to run pre-metric hook")
-		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PreMetric, string(podsJSON))
+		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PreMetric, string(specJSON))
 		if err != nil {
 			return nil, err
 		}
@@ -168,14 +159,17 @@ func (m *Gatherer) getMetricsForPods(resource metav1.Object) (*ResourceMetrics, 
 	var metrics []*Metric
 	for _, pod := range pods.Items {
 		// Convert the Pod description to JSON
-		podJSON, err := json.Marshal(pod)
+		podSpecJSON, err := json.Marshal(Spec{
+			Resource: &pod,
+			RunType:  spec.RunType,
+		})
 		if err != nil {
 			// Should not occur, panic
 			panic(err)
 		}
 
 		glog.V(3).Infof("Running metric gathering for pod: %s", pod.Name)
-		gathered, err := m.Execute.ExecuteWithValue(m.Config.Metric, string(podJSON))
+		gathered, err := m.Execute.ExecuteWithValue(m.Config.Metric, string(podSpecJSON))
 		if err != nil {
 			return nil, err
 		}
@@ -188,33 +182,24 @@ func (m *Gatherer) getMetricsForPods(resource metav1.Object) (*ResourceMetrics, 
 		})
 	}
 	glog.V(3).Infoln("All metrics gathered for each pod successfully")
+	spec.Metrics = &metrics
 
 	if m.Config.PostMetric != nil {
 		glog.V(3).Infoln("Attempting to run post-metric hook")
-		postMetric := struct {
-			Resource metav1.Object `json:"resource"`
-			Metrics  []*Metric     `json:"metrics"`
-		}{
-			Resource: resource,
-			Metrics:  metrics,
-		}
 		// Convert post metrics into JSON
-		postMetricJSON, err := json.Marshal(postMetric)
+		postSpecJSON, err := json.Marshal(spec)
 		if err != nil {
 			// Should not occur, panic
 			panic(err)
 		}
-		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PostMetric, string(postMetricJSON))
+		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PostMetric, string(postSpecJSON))
 		if err != nil {
 			return nil, err
 		}
 		glog.V(3).Infof("Post-metric hook response: %+v", hookResult)
 	}
 
-	return &ResourceMetrics{
-		Resource: resource,
-		Metrics:  metrics,
-	}, nil
+	return metrics, nil
 }
 
 func (m *Gatherer) getPodSelectorForResource(resource metav1.Object) (string, error) {

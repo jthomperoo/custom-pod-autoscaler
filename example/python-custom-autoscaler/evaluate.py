@@ -1,4 +1,4 @@
-# Copyright 2019 The Custom Pod Autoscaler Authors.
+# Copyright 2020 The Custom Pod Autoscaler Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,28 +16,38 @@ import json
 import sys
 import math
 
-# JSON piped into this script example:
+# Example spec provided to this script through stdin:
 # {
-#   "resource": "hello-kubernetes",
-#   "runType": "scaler",
 #   "metrics": [
 #     {
 #       "resource": "hello-kubernetes",
-#       "value": "5"
+#       "value": "3"
 #     }
-#   ]
+#   ],
+#   "resource": {
+#     "kind": "Deployment",
+#     "apiVersion": "apps/v1",
+#     "metadata": {
+#       "name": "hello-kubernetes",
+#       "namespace": "default",
+#       "labels": {
+#         "numPods": "3"
+#       },
+#     },
+#     ...
+#   },
+#   "runType": "scaler"
 # }
 
 
 def main():
-    # Parse metrics JSON into a dict
-    metrics = json.loads(sys.stdin.read())
-    evaluate(metrics)
+    # Parse provided spec into a dict
+    spec = json.loads(sys.stdin.read())
+    evaluate(spec)
 
-
-def evaluate(metrics):
+def evaluate(spec):
     try:
-        value = int(metrics["metrics"][0]["value"])
+        value = int(spec["metrics"][0]["value"])
 
         # Build JSON dict with targetReplicas
         evaluation = {}
@@ -49,7 +59,6 @@ def evaluate(metrics):
         # If not an integer, output error
         sys.stderr.write(f"Invalid metric value: {err}")
         exit(1)
-
 
 if __name__ == "__main__":
     main()

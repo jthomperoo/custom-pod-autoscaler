@@ -9,6 +9,7 @@ nav:
   - Evaluating: 'user-guide/evaluating.md'
   - Methods: 'user-guide/methods.md'
   - Hooks: 'user-guide/hooks.md'
+  - 'Run Types': 'user-guide/run-types.md'
   - 'Rest API': 'user-guide/rest-api.md'
 - Reference:
   - Configuration: 'reference/configuration.md'

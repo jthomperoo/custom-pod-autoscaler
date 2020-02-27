@@ -36,7 +36,7 @@ import (
 
 // Scaler abstracts interactions with the Kubernetes scale API, allowing scaling based on an evaluation provided
 type Scaler interface {
-	Scale(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas int32, maxReplicas int32, scaleTargetRef *autoscaling.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error)
+	Scale(spec Spec) (*evaluate.Evaluation, error)
 }
 
 // Scale interacts with the Kubernetes API to allow scaling on evaluations
@@ -46,12 +46,24 @@ type Scale struct {
 	Execute execute.Executer
 }
 
+// Spec defines information fed into a Scaler in order for it to make decisions as to how to scale
+type Spec struct {
+	Evaluation     evaluate.Evaluation                      `json:"evaluation"`
+	Resource       metav1.Object                            `json:"resource"`
+	ScaleTargetRef *autoscaling.CrossVersionObjectReference `json:"scaleTargetRef"`
+	Namespace      string                                   `json:"namespace"`
+	MinReplicas    int32                                    `json:"minReplicas"`
+	MaxReplicas    int32                                    `json:"maxReplicas"`
+	TargetReplicas int32                                    `json:"targetReplicas"`
+	RunType        string                                   `json:"runType"`
+}
+
 // Scale takes an evaluation and uses it to interact with the Kubernetes scaling API,
 // to scale up/down, or keep the same number of replicas for a resource
-func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas int32, maxReplicas int32, scaleTargetRef *autoscaling.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
-	glog.V(3).Infof("Determining replica count for resource '%s'", resource.GetName())
+func (s *Scale) Scale(spec Spec) (*evaluate.Evaluation, error) {
+	glog.V(3).Infof("Determining replica count for resource '%s'", spec.Resource.GetName())
 	currentReplicas := int32(1)
-	resourceReplicas, err := s.getReplicaCount(resource)
+	resourceReplicas, err := s.getReplicaCount(spec.Resource)
 	if err != nil {
 		return nil, err
 	}
@@ -61,33 +73,21 @@ func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, mi
 	glog.V(3).Infof("Replica count determined: %d", currentReplicas)
 
 	targetReplicas := currentReplicas
-	if evaluation.TargetReplicas < minReplicas {
-		glog.V(1).Infof("Scale target less than min at %d replicas, setting target to min %d replicas", targetReplicas, minReplicas)
-		targetReplicas = minReplicas
-	} else if evaluation.TargetReplicas > maxReplicas {
-		glog.V(1).Infof("Scale target greater than max at %d replicas, setting target to max %d replicas", targetReplicas, minReplicas)
-		targetReplicas = maxReplicas
+	if spec.Evaluation.TargetReplicas < spec.MinReplicas {
+		glog.V(1).Infof("Scale target less than min at %d replicas, setting target to min %d replicas", targetReplicas, spec.MinReplicas)
+		targetReplicas = spec.MinReplicas
+	} else if spec.Evaluation.TargetReplicas > spec.MaxReplicas {
+		glog.V(1).Infof("Scale target greater than max at %d replicas, setting target to max %d replicas", targetReplicas, spec.MinReplicas)
+		targetReplicas = spec.MaxReplicas
 	} else {
 		glog.V(1).Infof("Scale target set to %d replicas", targetReplicas)
-		targetReplicas = evaluation.TargetReplicas
+		targetReplicas = spec.Evaluation.TargetReplicas
 	}
 
-	scalingHookInput := struct {
-		MinReplicas     int32         `json:"minReplicas"`
-		MaxReplicas     int32         `json:"maxReplicas"`
-		CurrentReplicas int32         `json:"currentReplicas"`
-		TargetReplicas  int32         `json:"targetReplicas"`
-		Resource        metav1.Object `json:"resource"`
-	}{
-		MinReplicas:     minReplicas,
-		MaxReplicas:     maxReplicas,
-		CurrentReplicas: currentReplicas,
-		TargetReplicas:  targetReplicas,
-		Resource:        resource,
-	}
+	spec.Evaluation.TargetReplicas = targetReplicas
 
 	// Convert scaling hook input to JSON
-	scalingHookJSON, err := json.Marshal(scalingHookInput)
+	specJSON, err := json.Marshal(spec)
 	if err != nil {
 		// Should not occur, panic
 		panic(err)
@@ -95,7 +95,7 @@ func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, mi
 
 	if s.Config.PreScale != nil {
 		glog.V(3).Infoln("Attempting to run pre-scaling hook")
-		hookResult, err := s.Execute.ExecuteWithValue(s.Config.PreScale, string(scalingHookJSON))
+		hookResult, err := s.Execute.ExecuteWithValue(s.Config.PreScale, string(specJSON))
 		if err != nil {
 			return nil, err
 		}
@@ -103,12 +103,10 @@ func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, mi
 	}
 
 	if currentReplicas == 0 {
-		glog.V(0).Infof("No scaling, autoscaling disabled on resource %s", resource.GetName())
-		evaluation.TargetReplicas = 0
-		return &evaluation, nil
+		glog.V(0).Infof("No scaling, autoscaling disabled on resource %s", spec.Resource.GetName())
+		spec.Evaluation.TargetReplicas = 0
+		return &spec.Evaluation, nil
 	}
-
-	evaluation.TargetReplicas = targetReplicas
 
 	// Check if evaluation requires an action
 	// If the resource needs scaled up/down
@@ -116,7 +114,7 @@ func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, mi
 		glog.V(0).Infof("Rescaling from %d to %d replicas", currentReplicas, targetReplicas)
 		glog.V(3).Infoln("Attempting to parse group version")
 		// Parse group version
-		resourceGV, err := schema.ParseGroupVersion(scaleTargetRef.APIVersion)
+		resourceGV, err := schema.ParseGroupVersion(spec.ScaleTargetRef.APIVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -124,11 +122,11 @@ func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, mi
 
 		targetGR := schema.GroupResource{
 			Group:    resourceGV.Group,
-			Resource: scaleTargetRef.Kind,
+			Resource: spec.ScaleTargetRef.Kind,
 		}
 
 		glog.V(3).Infoln("Attempting to get scale subresource for managed resource")
-		scale, err := s.Scaler.Scales(namespace).Get(targetGR, scaleTargetRef.Name)
+		scale, err := s.Scaler.Scales(spec.Namespace).Get(targetGR, spec.ScaleTargetRef.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +134,7 @@ func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, mi
 
 		glog.V(3).Infoln("Attempting to apply scaling changes to resource")
 		scale.Spec.Replicas = targetReplicas
-		_, err = s.Scaler.Scales(namespace).Update(targetGR, scale)
+		_, err = s.Scaler.Scales(spec.Namespace).Update(targetGR, scale)
 		if err != nil {
 			return nil, err
 		}
@@ -147,14 +145,14 @@ func (s *Scale) Scale(evaluation evaluate.Evaluation, resource metav1.Object, mi
 
 	if s.Config.PostScale != nil {
 		glog.V(3).Infoln("Attempting to run post-scaling hook")
-		hookResult, err := s.Execute.ExecuteWithValue(s.Config.PostScale, string(scalingHookJSON))
+		hookResult, err := s.Execute.ExecuteWithValue(s.Config.PostScale, string(specJSON))
 		if err != nil {
 			return nil, err
 		}
 		glog.V(3).Infof("Post-scaling hook response: %+v", hookResult)
 	}
 
-	return &evaluation, nil
+	return &spec.Evaluation, nil
 }
 
 func (s *Scale) getReplicaCount(resource metav1.Object) (*int32, error) {

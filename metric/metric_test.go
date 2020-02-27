@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/jthomperoo/custom-pod-autoscaler/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/fake"
@@ -49,7 +50,7 @@ func TestGetMetrics(t *testing.T) {
 		description string
 		expectedErr error
 		expected    []*metric.Metric
-		resource    metav1.Object
+		spec        metric.Spec
 		config      *config.Config
 		clientset   kubernetes.Interface
 		execute     execute.Executer
@@ -58,11 +59,14 @@ func TestGetMetrics(t *testing.T) {
 			"Invalid run mode",
 			errors.New("Unknown run mode: invalid"),
 			nil,
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -81,11 +85,14 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod unsupported resource selector",
 			errors.New("Unsupported resource of type *v1.DaemonSet"),
 			nil,
-			&appsv1.DaemonSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
+			metric.Spec{
+				Resource: &appsv1.DaemonSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -98,20 +105,23 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod fail to get deployment selector",
 			errors.New(`"invalid" is not a valid selector operator`),
 			nil,
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Selector: &metav1.LabelSelector{
-						MatchExpressions: []metav1.LabelSelectorRequirement{
-							metav1.LabelSelectorRequirement{
-								Operator: "invalid",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchExpressions: []metav1.LabelSelectorRequirement{
+								metav1.LabelSelectorRequirement{
+									Operator: "invalid",
+								},
 							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -124,20 +134,23 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod fail to get replicaset selector",
 			errors.New(`"invalid" is not a valid selector operator`),
 			nil,
-			&appsv1.ReplicaSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.ReplicaSetSpec{
-					Selector: &metav1.LabelSelector{
-						MatchExpressions: []metav1.LabelSelectorRequirement{
-							metav1.LabelSelectorRequirement{
-								Operator: "invalid",
+			metric.Spec{
+				Resource: &appsv1.ReplicaSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.ReplicaSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchExpressions: []metav1.LabelSelectorRequirement{
+								metav1.LabelSelectorRequirement{
+									Operator: "invalid",
+								},
 							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -150,20 +163,23 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod fail to get statefulset selector",
 			errors.New(`"invalid" is not a valid selector operator`),
 			nil,
-			&appsv1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.StatefulSetSpec{
-					Selector: &metav1.LabelSelector{
-						MatchExpressions: []metav1.LabelSelectorRequirement{
-							metav1.LabelSelectorRequirement{
-								Operator: "invalid",
+			metric.Spec{
+				Resource: &appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.StatefulSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchExpressions: []metav1.LabelSelectorRequirement{
+								metav1.LabelSelectorRequirement{
+									Operator: "invalid",
+								},
 							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -176,11 +192,14 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod error when listing pods",
 			errors.New("fail to list pods"),
 			nil,
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -199,18 +218,21 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod pre-metric hook fail",
 			errors.New("pre-metric hook fail"),
 			nil,
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": "test",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test",
+							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -240,18 +262,21 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod single pod single deployment shell execute fail",
 			errors.New("fail to get metric"),
 			nil,
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": "test",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test",
+							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -278,7 +303,10 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod no resources",
 			nil,
 			nil,
-			&appsv1.Deployment{},
+			metric.Spec{
+				Resource: &appsv1.Deployment{},
+				RunType:  autoscaler.RunType,
+			},
 			&config.Config{
 				Namespace: "test namespace",
 				RunMode:   config.PerPodRunMode,
@@ -296,18 +324,21 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod post-metric hook fail",
 			errors.New("post-metric hook fail"),
 			nil,
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": "test",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test",
+							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -343,18 +374,21 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod no pod in managed deployment, but pod in other deployment with different name in same namespace",
 			nil,
 			nil,
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test managed deployment",
-					Namespace: "test managed namespace",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": "test-managed",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test managed deployment",
+						Namespace: "test managed namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test-managed",
+							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test managed namespace",
@@ -381,18 +415,21 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod no pod in managed deployment, but pod in other deployment with same name in different namespace",
 			nil,
 			nil,
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test managed deployment",
-					Namespace: "test managed namespace",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": "test-managed",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test managed deployment",
+						Namespace: "test managed namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test-managed",
+							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test managed namespace",
@@ -424,18 +461,21 @@ func TestGetMetrics(t *testing.T) {
 					Value:    "test value",
 				},
 			},
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": "test",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test",
+							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -467,18 +507,21 @@ func TestGetMetrics(t *testing.T) {
 					Value:    "test value",
 				},
 			},
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": "test",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test",
+							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -516,18 +559,21 @@ func TestGetMetrics(t *testing.T) {
 					Value:    "test value",
 				},
 			},
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": "test",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test",
+							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -565,18 +611,21 @@ func TestGetMetrics(t *testing.T) {
 					Value:    "test value",
 				},
 			},
-			&appsv1.ReplicaSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.ReplicaSetSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": "test",
+			metric.Spec{
+				Resource: &appsv1.ReplicaSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.ReplicaSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test",
+							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -608,18 +657,21 @@ func TestGetMetrics(t *testing.T) {
 					Value:    "test value",
 				},
 			},
-			&appsv1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.StatefulSetSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": "test",
+			metric.Spec{
+				Resource: &appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.StatefulSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test",
+							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -651,16 +703,19 @@ func TestGetMetrics(t *testing.T) {
 					Value:    "test value",
 				},
 			},
-			&corev1.ReplicationController{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: corev1.ReplicationControllerSpec{
-					Selector: map[string]string{
-						"app": "test",
+			metric.Spec{
+				Resource: &corev1.ReplicationController{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: corev1.ReplicationControllerSpec{
+						Selector: map[string]string{
+							"app": "test",
+						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -696,18 +751,21 @@ func TestGetMetrics(t *testing.T) {
 					Value:    "test value",
 				},
 			},
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"app": "test",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: appsv1.DeploymentSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test",
+							},
 						},
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -741,11 +799,14 @@ func TestGetMetrics(t *testing.T) {
 			"Per resource shell execute fail",
 			errors.New("fail to get metric"),
 			nil,
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -764,11 +825,14 @@ func TestGetMetrics(t *testing.T) {
 			"Per resource pre-metric hook fail",
 			errors.New("pre-metric hook fail"),
 			nil,
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -790,11 +854,14 @@ func TestGetMetrics(t *testing.T) {
 			"Per resource post-metric hook fail",
 			errors.New("post-metric hook fail"),
 			nil,
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -827,11 +894,14 @@ func TestGetMetrics(t *testing.T) {
 					Value:    "test value",
 				},
 			},
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -855,11 +925,14 @@ func TestGetMetrics(t *testing.T) {
 					Value:    "test value",
 				},
 			},
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -886,11 +959,14 @@ func TestGetMetrics(t *testing.T) {
 					Value:    "test value",
 				},
 			},
-			&appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test deployment",
-					Namespace: "test namespace",
+			metric.Spec{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Namespace: "test namespace",
@@ -912,16 +988,12 @@ func TestGetMetrics(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			result := &metric.ResourceMetrics{
-				Metrics:  test.expected,
-				Resource: test.resource,
-			}
 			gatherer := &metric.Gatherer{
 				Clientset: test.clientset,
 				Config:    test.config,
 				Execute:   test.execute,
 			}
-			metrics, err := gatherer.GetMetrics(test.resource)
+			metrics, err := gatherer.GetMetrics(test.spec)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return
@@ -929,8 +1001,8 @@ func TestGetMetrics(t *testing.T) {
 			if test.expectedErr != nil {
 				return
 			}
-			if !cmp.Equal(metrics, result) {
-				t.Errorf("metrics mismatch (-want +got):\n%s", cmp.Diff(result, metrics))
+			if !cmp.Equal(metrics, test.expected) {
+				t.Errorf("metrics mismatch (-want +got):\n%s", cmp.Diff(test.expected, metrics))
 			}
 		})
 	}

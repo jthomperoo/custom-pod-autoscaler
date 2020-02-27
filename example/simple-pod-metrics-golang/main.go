@@ -36,12 +36,18 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-// ResourceMetrics represents a resource's metrics, including each resource's metrics
-type ResourceMetrics struct {
-	RunType              string                    `json:"runType"`
+// EvaluateSpec represents the information fed to the evaluator
+type EvaluateSpec struct {
 	Metrics              []*metric.Metric          `json:"metrics"`
 	UnstructuredResource unstructured.Unstructured `json:"resource"`
 	Resource             metav1.Object             `json:"-"`
+	RunType              string                    `json:"runType"`
+}
+
+// MetricSpec represents the information fed to the metric gatherer
+type MetricSpec struct {
+	Pod     corev1.Pod `json:"resource"`
+	RunType string     `json:"runType"`
 }
 
 // MetricValue is a representation of the metric retrieved from from the 'flask-metric' application
@@ -76,9 +82,8 @@ func main() {
 }
 
 func getMetrics(stdin []byte) {
-	// Attempt to unmarshal stdin resource description into a Pod definition
-	var pod corev1.Pod
-	err := json.Unmarshal(stdin, &pod)
+	var spec MetricSpec
+	err := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(stdin), 10).Decode(&spec)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
@@ -86,7 +91,7 @@ func getMetrics(stdin []byte) {
 
 	// Make a HTTP request to the pod's '/metric' endpoint
 	client := http.Client{}
-	resp, err := client.Get(fmt.Sprintf("http://%s:5000/metric", pod.Status.PodIP))
+	resp, err := client.Get(fmt.Sprintf("http://%s:5000/metric", spec.Pod.Status.PodIP))
 	if err != nil {
 		log.Fatalf("Error occurred retrieving metrics: %s", err)
 	}
@@ -106,15 +111,15 @@ func getMetrics(stdin []byte) {
 }
 
 func getEvaluation(stdin []byte) {
-	var resourceMetrics ResourceMetrics
-	err := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(stdin), 10).Decode(&resourceMetrics)
+	var spec EvaluateSpec
+	err := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(stdin), 10).Decode(&spec)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
 
 	// Create object from version and kind of piped value
-	resourceGVK := resourceMetrics.UnstructuredResource.GroupVersionKind()
+	resourceGVK := spec.UnstructuredResource.GroupVersionKind()
 	resourceRuntime, err := scheme.Scheme.New(resourceGVK)
 	if err != nil {
 		log.Fatal(err)
@@ -122,16 +127,16 @@ func getEvaluation(stdin []byte) {
 	}
 
 	// Parse the unstructured k8s resource into the object created, then convert to generic metav1.Object
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(resourceMetrics.UnstructuredResource.Object, resourceRuntime)
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(spec.UnstructuredResource.Object, resourceRuntime)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
-	resourceMetrics.Resource = resourceRuntime.(metav1.Object)
+	spec.Resource = resourceRuntime.(metav1.Object)
 
 	// Count total available
 	totalAvailable := 0
-	for _, metric := range resourceMetrics.Metrics {
+	for _, metric := range spec.Metrics {
 		var metricValue MetricValue
 		err := json.Unmarshal([]byte(metric.Value), &metricValue)
 		if err != nil {
@@ -142,7 +147,7 @@ func getEvaluation(stdin []byte) {
 	}
 
 	// Get current replica count
-	targetReplicaCount := len(resourceMetrics.Metrics)
+	targetReplicaCount := len(spec.Metrics)
 
 	// Decrease target rpelicas if more than 5 available
 	if totalAvailable > 5 {

@@ -21,7 +21,6 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/go-chi/chi"
@@ -43,33 +42,30 @@ import (
 
 type failGetMetrics struct{}
 
-func (f *failGetMetrics) GetMetrics(resource metav1.Object) (*metric.ResourceMetrics, error) {
+func (f *failGetMetrics) GetMetrics(spec metric.Spec) ([]*metric.Metric, error) {
 	return nil, errors.New("FAIL GET METRICS")
 }
 
 type successGetMetrics struct{}
 
-func (s *successGetMetrics) GetMetrics(resource metav1.Object) (*metric.ResourceMetrics, error) {
-	return &metric.ResourceMetrics{
-		Metrics: []*metric.Metric{
-			&metric.Metric{
-				Value:    "SUCCESS",
-				Resource: "SUCCESS_POD",
-			},
+func (s *successGetMetrics) GetMetrics(spec metric.Spec) ([]*metric.Metric, error) {
+	return []*metric.Metric{
+		&metric.Metric{
+			Value:    "SUCCESS",
+			Resource: "SUCCESS_POD",
 		},
-		Resource: resource,
 	}, nil
 }
 
 type failGetEvaluation struct{}
 
-func (f *failGetEvaluation) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
+func (f *failGetEvaluation) GetEvaluation(spec evaluate.Spec) (*evaluate.Evaluation, error) {
 	return nil, errors.New("FAIL GET EVALUATION")
 }
 
 type successGetEvaluation struct{}
 
-func (s *successGetEvaluation) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*evaluate.Evaluation, error) {
+func (s *successGetEvaluation) GetEvaluation(spec evaluate.Spec) (*evaluate.Evaluation, error) {
 	return &evaluate.Evaluation{
 		TargetReplicas: int32(1),
 	}, nil
@@ -139,39 +135,77 @@ func TestAPI(t *testing.T) {
 			nil,
 		},
 		{
-			"Get metrics success metric gathering",
-			strings.ReplaceAll(strings.ReplaceAll(`
-			{
-				"runType":"api",
-				"metrics":[
-					{
-						"resource":"SUCCESS_POD",
-						"value":"SUCCESS"
-					}
-				],
-				"resource":{
-					"metadata":{
-						"name":"test",
-						"creationTimestamp":null
-					},
-					"spec":{
-						"selector":null,
-						"template":{
-							"metadata":{
-								"creationTimestamp":null
-							},
-							"spec":{
-								"containers":null
-							}
-						},
-						"strategy":{}
-					},
-					"status":{}
-				}
-			}`, "\n", ""), "\t", ""),
+			"Get metrics fail invalid dry_run parameter",
+			`{"message":"Invalid format for 'dry_run' query parameter; 'invalid' is not a valid boolean value","code":400}`,
+			http.StatusBadRequest,
+			"GET",
+			"/api/v1/metrics?dry_run=invalid",
+			nil,
+			nil,
+			nil,
+			nil,
+			nil,
+		},
+		{
+			"Get metrics success metric gathering, not dry run, no parameter provided",
+			`[{"resource":"SUCCESS_POD","value":"SUCCESS"}]`,
 			http.StatusOK,
 			"GET",
 			"/api/v1/metrics",
+			&config.Config{
+				Namespace: "test-namespace",
+				ScaleTargetRef: &v1.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+			},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: name,
+						},
+					}, nil
+				},
+			},
+			&successGetMetrics{},
+			nil,
+			nil,
+		},
+		{
+			"Get metrics success metric gathering, not dry run, parameter provided",
+			`[{"resource":"SUCCESS_POD","value":"SUCCESS"}]`,
+			http.StatusOK,
+			"GET",
+			"/api/v1/metrics?dry_run=false",
+			&config.Config{
+				Namespace: "test-namespace",
+				ScaleTargetRef: &v1.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+			},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: name,
+						},
+					}, nil
+				},
+			},
+			&successGetMetrics{},
+			nil,
+			nil,
+		},
+		{
+			"Get metrics success metric gathering, dry run",
+			`[{"resource":"SUCCESS_POD","value":"SUCCESS"}]`,
+			http.StatusOK,
+			"GET",
+			"/api/v1/metrics?dry_run=true",
 			&config.Config{
 				Namespace: "test-namespace",
 				ScaleTargetRef: &v1.CrossVersionObjectReference{
@@ -312,7 +346,7 @@ func TestAPI(t *testing.T) {
 			&successGetMetrics{},
 			&successGetEvaluation{},
 			&fake.Scaler{
-				ScaleReactor: func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas, maxReplicas int32, scaleTargetRef *v1.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
+				ScaleReactor: func(spec scale.Spec) (*evaluate.Evaluation, error) {
 					return nil, errors.New("FAILURE SCALING")
 				},
 			},
@@ -343,7 +377,7 @@ func TestAPI(t *testing.T) {
 			&successGetMetrics{},
 			&successGetEvaluation{},
 			&fake.Scaler{
-				ScaleReactor: func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas, maxReplicas int32, scaleTargetRef *v1.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
+				ScaleReactor: func(spec scale.Spec) (*evaluate.Evaluation, error) {
 					return &evaluate.Evaluation{
 						TargetReplicas: 1,
 					}, nil
@@ -376,7 +410,7 @@ func TestAPI(t *testing.T) {
 			&successGetMetrics{},
 			&successGetEvaluation{},
 			&fake.Scaler{
-				ScaleReactor: func(evaluation evaluate.Evaluation, resource metav1.Object, minReplicas, maxReplicas int32, scaleTargetRef *v1.CrossVersionObjectReference, namespace string) (*evaluate.Evaluation, error) {
+				ScaleReactor: func(spec scale.Spec) (*evaluate.Evaluation, error) {
 					return &evaluate.Evaluation{
 						TargetReplicas: 1,
 					}, nil

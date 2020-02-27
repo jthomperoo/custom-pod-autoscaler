@@ -11,19 +11,29 @@ error information surfaced.
 # Information in
 
 The evaluation stage recieves the output of the [metric gathering stage](../metric-gathering) stage 
-passed into it wrapped in JSON, with additional information such as the resource name, the run type 
-and the resource the metric was gathered from.  
+passed into it wrapped in JSON, with additional information such as the run type and the resource the metric was gathered from.  
 An example of the JSON passed into the evaluation stage:
 ```json
 {
-  "resource": "hello-kubernetes",
-  "runType": "scaler",
   "metrics": [
     {
       "resource": "hello-kubernetes",
-      "value": "5"
+      "value": "3"
     }
-  ]
+  ],
+  "resource": {
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "hello-kubernetes",
+      "namespace": "default",
+      "labels": {
+        "numPods": "3"
+      },
+    },
+    ...
+  },
+  "runType": "scaler"
 }
 ```
 How the information is provided depends on the method used, e.g. if it is a shell

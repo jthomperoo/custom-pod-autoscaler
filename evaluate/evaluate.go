@@ -26,13 +26,14 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const invalidEvaluationMessage = "Invalid evaluation returned by evaluator: %s"
 
 // GetEvaluationer provides methods for retrieving an evaluation
 type GetEvaluationer interface {
-	GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Evaluation, error)
+	GetEvaluation(evaluateSpec Spec) (*Evaluation, error)
 }
 
 // Evaluation represents a decision on how to scale a resource
@@ -46,11 +47,20 @@ type Evaluator struct {
 	Execute execute.Executer
 }
 
+// Spec defines information fed into an evaluator to produce an evaluation,
+// contains optional 'Evaluation' field for storing the result
+type Spec struct {
+	Metrics    []*metric.Metric `json:"metrics"`
+	Resource   metav1.Object    `json:"resource"`
+	Evaluation *Evaluation      `json:"evaluation,omitempty"`
+	RunType    string           `json:"runType"`
+}
+
 // GetEvaluation uses the metrics provided to determine a set of evaluations
-func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Evaluation, error) {
+func (e *Evaluator) GetEvaluation(spec Spec) (*Evaluation, error) {
 	glog.V(3).Infoln("Evaluating gathered metrics")
-	// Convert metrics into JSON
-	metricJSON, err := json.Marshal(resourceMetrics)
+	// Convert evaluation input into JSON
+	specJSON, err := json.Marshal(spec)
 	if err != nil {
 		// Should not occur, panic
 		panic(err)
@@ -58,7 +68,7 @@ func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Eva
 
 	if e.Config.PreEvaluate != nil {
 		glog.V(3).Infoln("Attempting to run pre-evaluate hook")
-		hookResult, err := e.Execute.ExecuteWithValue(e.Config.PreEvaluate, string(metricJSON))
+		hookResult, err := e.Execute.ExecuteWithValue(e.Config.PreEvaluate, string(specJSON))
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +76,7 @@ func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Eva
 	}
 
 	glog.V(3).Infoln("Attempting to run evaluation logic")
-	gathered, err := e.Execute.ExecuteWithValue(e.Config.Evaluate, string(metricJSON))
+	gathered, err := e.Execute.ExecuteWithValue(e.Config.Evaluate, string(specJSON))
 	if err != nil {
 		return nil, err
 	}
@@ -80,22 +90,18 @@ func (e *Evaluator) GetEvaluation(resourceMetrics *metric.ResourceMetrics) (*Eva
 	}
 	glog.V(3).Infof("Evaluation parsed: %+v", evaluation)
 
+	// Add results into the evaluation spec
+	spec.Evaluation = evaluation
+
 	if e.Config.PostEvaluate != nil {
 		glog.V(3).Infoln("Attempting to run post-evaluate hook")
-		postEvaluate := struct {
-			Metrics    *metric.ResourceMetrics `json:"resourceMetrics"`
-			Evaluation *Evaluation             `json:"evaluation"`
-		}{
-			Metrics:    resourceMetrics,
-			Evaluation: evaluation,
-		}
 		// Convert post evaluation into JSON
-		postEvaluateJSON, err := json.Marshal(postEvaluate)
+		postSpecJSON, err := json.Marshal(spec)
 		if err != nil {
 			// Should not occur, panic
 			panic(err)
 		}
-		hookResult, err := e.Execute.ExecuteWithValue(e.Config.PostEvaluate, string(postEvaluateJSON))
+		hookResult, err := e.Execute.ExecuteWithValue(e.Config.PostEvaluate, string(postSpecJSON))
 		if err != nil {
 			return nil, err
 		}

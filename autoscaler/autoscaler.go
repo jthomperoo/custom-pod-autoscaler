@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/scale"
 )
 
-// RunType scaler marks the metric gathering/evaluation as running during a scale
+// RunType autoscaler marks the metric gathering/evaluation as running during a scale
 const RunType = "scaler"
 
 // Scaler handles scaling up/down the resource being managed; triggering metric gathering and
@@ -53,24 +53,36 @@ func (s *Scaler) Scale() error {
 	glog.V(2).Infof("Managed resource retrieved: %+v", resource)
 
 	glog.V(2).Infoln("Attempting to get resource metrics")
-	metrics, err := s.GetMetricer.GetMetrics(resource)
+	metrics, err := s.GetMetricer.GetMetrics(metric.Spec{
+		Resource: resource,
+		RunType:  RunType,
+	})
 	if err != nil {
 		return err
 	}
 	glog.V(2).Infof("Retrieved metrics: %+v", metrics)
 
-	// Mark the runtype as scaler
-	metrics.RunType = RunType
-
 	glog.V(2).Infoln("Attempting to evaluate metrics")
-	evaluation, err := s.GetEvaluationer.GetEvaluation(metrics)
+	evaluation, err := s.GetEvaluationer.GetEvaluation(evaluate.Spec{
+		Metrics:  metrics,
+		Resource: resource,
+		RunType:  RunType,
+	})
 	if err != nil {
 		return err
 	}
 	glog.V(2).Infof("Metrics evaluated: %+v", evaluation)
 
 	glog.V(2).Infoln("Attempting to scale resource based on evaluation")
-	_, err = s.Scaler.Scale(*evaluation, resource, s.Config.MinReplicas, s.Config.MaxReplicas, s.Config.ScaleTargetRef, s.Config.Namespace)
+	_, err = s.Scaler.Scale(scale.Spec{
+		Evaluation:     *evaluation,
+		Resource:       resource,
+		MinReplicas:    s.Config.MinReplicas,
+		MaxReplicas:    s.Config.MaxReplicas,
+		Namespace:      s.Config.Namespace,
+		ScaleTargetRef: s.Config.ScaleTargetRef,
+		RunType:        RunType,
+	})
 	if err != nil {
 		return err
 	}

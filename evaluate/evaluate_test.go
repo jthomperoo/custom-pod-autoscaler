@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/jthomperoo/custom-pod-autoscaler/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
@@ -43,7 +44,7 @@ func TestGetEvaluation(t *testing.T) {
 		description string
 		expectedErr error
 		expected    *evaluate.Evaluation
-		metrics     *metric.ResourceMetrics
+		spec        evaluate.Spec
 		config      *config.Config
 		execute     execute.Executer
 	}{
@@ -51,13 +52,14 @@ func TestGetEvaluation(t *testing.T) {
 			"Pre-evaluate hook fail",
 			errors.New("pre-evaluate hook fail"),
 			nil,
-			&metric.ResourceMetrics{
+			evaluate.Spec{
 				Metrics: []*metric.Metric{
 					&metric.Metric{
 						Resource: "test pod",
 						Value:    "test value",
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				PreEvaluate: &config.Method{
@@ -76,13 +78,14 @@ func TestGetEvaluation(t *testing.T) {
 			"Execute fail",
 			errors.New("fail to evaluate"),
 			nil,
-			&metric.ResourceMetrics{
+			evaluate.Spec{
 				Metrics: []*metric.Metric{
 					&metric.Metric{
 						Resource: "test pod",
 						Value:    "test value",
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{
@@ -106,13 +109,14 @@ func TestGetEvaluation(t *testing.T) {
 			"Post-evaluate hook fail",
 			errors.New("post-evaluate hook fail"),
 			nil,
-			&metric.ResourceMetrics{
+			evaluate.Spec{
 				Metrics: []*metric.Metric{
 					&metric.Metric{
 						Resource: "test pod",
 						Value:    "test value",
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{
@@ -144,13 +148,14 @@ func TestGetEvaluation(t *testing.T) {
 			&evaluate.Evaluation{
 				TargetReplicas: int32(3),
 			},
-			&metric.ResourceMetrics{
+			evaluate.Spec{
 				Metrics: []*metric.Metric{
 					&metric.Metric{
 						Resource: "test pod",
 						Value:    "test value",
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{
@@ -186,13 +191,14 @@ func TestGetEvaluation(t *testing.T) {
 			&evaluate.Evaluation{
 				TargetReplicas: int32(3),
 			},
-			&metric.ResourceMetrics{
+			evaluate.Spec{
 				Metrics: []*metric.Metric{
 					&metric.Metric{
 						Resource: "test pod",
 						Value:    "test value",
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{
@@ -228,13 +234,14 @@ func TestGetEvaluation(t *testing.T) {
 			&evaluate.Evaluation{
 				TargetReplicas: int32(3),
 			},
-			&metric.ResourceMetrics{
+			evaluate.Spec{
 				Metrics: []*metric.Metric{
 					&metric.Metric{
 						Resource: "test pod",
 						Value:    "test value",
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{
@@ -265,13 +272,14 @@ func TestGetEvaluation(t *testing.T) {
 			"Execute success with invalid JSON",
 			errors.New(`invalid character 'i' looking for beginning of value`),
 			nil,
-			&metric.ResourceMetrics{
+			evaluate.Spec{
 				Metrics: []*metric.Metric{
 					&metric.Metric{
 						Resource: "test pod",
 						Value:    "test value",
 					},
 				},
+				RunType: autoscaler.RunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{
@@ -299,7 +307,7 @@ func TestGetEvaluation(t *testing.T) {
 				Config:  test.config,
 				Execute: test.execute,
 			}
-			evaluation, err := evaluator.GetEvaluation(test.metrics)
+			evaluation, err := evaluator.GetEvaluation(test.spec)
 			if !cmp.Equal(&test.expectedErr, &err, equateErrorMessage) {
 				t.Errorf("Error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return

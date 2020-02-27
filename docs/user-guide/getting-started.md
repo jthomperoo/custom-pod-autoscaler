@@ -72,13 +72,13 @@ import json
 import sys
 
 def main():
-    # Parse resource JSON into a dict
-    resource = json.loads(sys.stdin.read())
-    metric(resource)
+    # Parse spec into a dict
+    spec = json.loads(sys.stdin.read())
+    metric(spec)
 
-def metric(resource):
+def metric(spec):
     # Get metadata from resource information provided
-    metadata = resource["metadata"]
+    metadata = spec["resource"]["metadata"]
     # Get labels from provided metdata
     labels = metadata["labels"]
 
@@ -93,6 +93,7 @@ def metric(resource):
 
 if __name__ == "__main__":
     main()
+
 ```
 
 The metric gathering stage gets relevant information piped into it from the autoscaler program; for 
@@ -102,21 +103,19 @@ are managing a deployment the autoscaler would provide a full JSON description o
 we are managing as the value piped in, e.g.
 ```json
 {
-    "apiVersion": "apps/v1",
+  "resource": {
     "kind": "Deployment",
+    "apiVersion": "apps/v1",
     "metadata": {
-        "creationTimestamp": "2019-12-22T17:16:53Z",
-        "generation": 1,
-        "labels": {
-            "numPods": "1"
-        },
-        "name": "hello-kubernetes",
-        "namespace": "default",
-        "resourceVersion": "494588",
-        "selfLink": "/apis/apps/v1/namespaces/default/deployments/hello-kubernetes",
-        "uid": "63eeee05-a979-4573-b543-7d7dece9f431"
+      "name": "hello-kubernetes",
+      "namespace": "default",
+      "labels": {
+        "numPods": "3"
+      },
     },
     ...
+  },
+  "runType": "scaler"
 }
 ```
 
@@ -139,13 +138,13 @@ import sys
 import math
 
 def main():
-    # Parse metrics JSON into a dict
-    metrics = json.loads(sys.stdin.read())
-    evaluate(metrics)
+    # Parse provided spec into a dict
+    spec = json.loads(sys.stdin.read())
+    evaluate(spec)
 
-def evaluate(metrics):
+def evaluate(spec):
     try:
-        value = int(metrics[0]["value"])
+        value = int(spec["metrics"][0]["value"])
 
         # Build JSON dict with targetReplicas
         evaluation = {}
@@ -166,14 +165,25 @@ if __name__ == "__main__":
 The JSON value piped into this step would look like this:
 ```json
 {
-  "deployment": "hello-kubernetes",
-  "runType": "scaler",
   "metrics": [
     {
       "resource": "hello-kubernetes",
-      "value": "5"
+      "value": "3"
     }
-  ]
+  ],
+  "resource": {
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "hello-kubernetes",
+      "namespace": "default",
+      "labels": {
+        "numPods": "3"
+      },
+    },
+    ...
+  },
+  "runType": "scaler"
 }
 ```
 This is simply the metric value, in this case `5` from the previous step but wrapped in a JSON 
@@ -319,13 +329,13 @@ import sys
 import math
 
 def main():
-    # Parse metrics JSON into a dict
-    metrics = json.loads(sys.stdin.read())
-    evaluate(metrics)
+    # Parse provided spec into a dict
+    spec = json.loads(sys.stdin.read())
+    evaluate(spec)
 
-def evaluate(metrics):
+def evaluate(spec):
     try:
-        value = int(metrics["metrics"][0]["value"])
+        value = int(spec["metrics"][0]["value"])
 
         # Build JSON dict with targetReplicas
         evaluation = {}
@@ -340,6 +350,7 @@ def evaluate(metrics):
 
 if __name__ == "__main__":
     main()
+
 ```
 
 Rebuild the image as [described in the step above](#test-the-autoscaler).  

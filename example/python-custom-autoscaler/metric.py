@@ -1,4 +1,4 @@
-# Copyright 2019 The Custom Pod Autoscaler Authors.
+# Copyright 2020 The Custom Pod Autoscaler Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,14 +16,31 @@ import os
 import json
 import sys
 
-def main():
-    # Parse resource JSON into a dict
-    resource = json.loads(sys.stdin.read())
-    metric(resource)
+# Example spec provided to this script through stdin:
+# {
+#   "resource": {
+#     "kind": "Deployment",
+#     "apiVersion": "apps/v1",
+#     "metadata": {
+#       "name": "hello-kubernetes",
+#       "namespace": "default",
+#       "labels": {
+#         "numPods": "3"
+#       },
+#     },
+#     ...
+#   },
+#   "runType": "scaler"
+# }
 
-def metric(resource):
+def main():
+    # Parse spec into a dict
+    spec = json.loads(sys.stdin.read())
+    metric(spec)
+
+def metric(spec):
     # Get metadata from resource information provided
-    metadata = resource["metadata"]
+    metadata = spec["resource"]["metadata"]
     # Get labels from provided metdata
     labels = metadata["labels"]
 
