@@ -15,7 +15,7 @@ The CPA exposes two endpoints:
     * Displays all gathered metric values from every app instance in the resource.
     * Aliased with `metrics` in the example Dockerfile.
 * `GET /evaluation`
-    * Displays the evaluation decision made on how to scale, reporting the `target_replicas` - how many replicas the resource should have.
+    * Displays the evaluation decision made on how to scale, reporting the `targetReplicas` - how many replicas the resource should have.
     * Aliased with `evaluation` in the example Dockerfile.
 
 ## Usage

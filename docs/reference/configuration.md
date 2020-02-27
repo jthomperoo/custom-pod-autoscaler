@@ -279,7 +279,7 @@ The pre-evaluate hook is run before evaluation occurs, it is provided with the f
 Example of JSON provided to this hook:
 ```json
 {
-  "run_type": "scaler",
+  "runType": "scaler",
   "metrics": [
     {
       "resource": "hello-kubernetes",
@@ -317,7 +317,7 @@ Example of JSON provided to this hook:
 ```json
 {
   "resource_metrics": {
-    "run_type": "scaler",
+    "runType": "scaler",
     "metrics": [
       {
         "resource": "hello-kubernetes",
@@ -335,7 +335,7 @@ Example of JSON provided to this hook:
     }
   },
   "evaluation": {
-    "target_replicas": 3
+    "targetReplicas": 3
   }
 }
 ```
@@ -359,10 +359,10 @@ The pre-scale hook is run before a scaling decision is made, it is provided with
 Example of JSON provided to this hook:
 ```json
 {
-  "min_replicas": 1,
-  "max_replicas": 10,
-  "current_replicas": 3,
-  "target_replicas": 3,
+  "minReplicas": 1,
+  "maxReplicas": 10,
+  "currentReplicas": 3,
+  "targetReplicas": 3,
   "resource": {
     "kind": "Deployment",
     "apiVersion": "apps/v1",
@@ -394,10 +394,10 @@ The post-scale hook is run after a scaling decision is made and effected, it is 
 Example of JSON provided to this hook:
 ```json
 {
-  "min_replicas": 1,
-  "max_replicas": 10,
-  "current_replicas": 3,
-  "target_replicas": 3,
+  "minReplicas": 1,
+  "maxReplicas": 10,
+  "currentReplicas": 3,
+  "targetReplicas": 3,
   "resource": {
     "kind": "Deployment",
     "apiVersion": "apps/v1",

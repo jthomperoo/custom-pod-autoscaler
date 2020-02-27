@@ -8,7 +8,7 @@ spec:
       containers:
       - name: scale-on-tweet
         image: scale-on-tweet:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment

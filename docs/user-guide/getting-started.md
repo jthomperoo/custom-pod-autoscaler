@@ -147,9 +147,9 @@ def evaluate(metrics):
     try:
         value = int(metrics[0]["value"])
 
-        # Build JSON dict with target_replicas
+        # Build JSON dict with targetReplicas
         evaluation = {}
-        evaluation["target_replicas"] = value
+        evaluation["targetReplicas"] = value
 
         # Output JSON to stdout
         sys.stdout.write(json.dumps(evaluation))
@@ -167,7 +167,7 @@ The JSON value piped into this step would look like this:
 ```json
 {
   "deployment": "hello-kubernetes",
-  "run_type": "scaler",
+  "runType": "scaler",
   "metrics": [
     {
       "resource": "hello-kubernetes",
@@ -182,11 +182,11 @@ object, with additional information such as run type and deployment name.
 The JSON value output by this step would look like this:
 ```json
 {
-  "target_replicas": 5
+  "targetReplicas": 5
 }
 ```
 The Custom Pod Autoscaler program expects the response to be in this JSON serialised form, with 
-`target_replicas` defined as an integer.
+`targetReplicas` defined as an integer.
 
 # Write the Dockerfile
 
@@ -327,9 +327,9 @@ def evaluate(metrics):
     try:
         value = int(metrics["metrics"][0]["value"])
 
-        # Build JSON dict with target_replicas
+        # Build JSON dict with targetReplicas
         evaluation = {}
-        evaluation["target_replicas"] = value * 2
+        evaluation["targetReplicas"] = value * 2
 
         # Output JSON to stdout
         sys.stdout.write(json.dumps(evaluation))

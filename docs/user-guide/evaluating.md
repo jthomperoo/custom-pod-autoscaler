@@ -17,7 +17,7 @@ An example of the JSON passed into the evaluation stage:
 ```json
 {
   "resource": "hello-kubernetes",
-  "run_type": "scaler",
+  "runType": "scaler",
   "metrics": [
     {
       "resource": "hello-kubernetes",
@@ -36,7 +36,7 @@ The evaluation stage, if successful, is expected to calculate the replica count 
 in a wrapped JSON object, for example:
 ```json
 {
-  "target_replicas": 5
+  "targetReplicas": 5
 }
 ```
 

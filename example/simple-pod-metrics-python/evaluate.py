@@ -1,4 +1,4 @@
-# Copyright 2019 The Custom Pod Autoscaler Authors.
+# Copyright 2020 The Custom Pod Autoscaler Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import math
 # JSON piped into this script example:
 # {
 #   "resource": "flask-metric",
-#   "run_type": "api",
+#   "runType": "api",
 #   "metrics": [
 #     {
 #       "resource": "flask-metric-869879868f-jgbg4",
@@ -52,9 +52,9 @@ def evaluate(metrics):
     if total_available <= 0:
         target_replica_count += 1
 
-    # Build JSON dict with target_replicas
+    # Build JSON dict with targetReplicas
     evaluation = {}
-    evaluation["target_replicas"] = target_replica_count
+    evaluation["targetReplicas"] = target_replica_count
 
     # Output JSON to stdout
     sys.stdout.write(json.dumps(evaluation))

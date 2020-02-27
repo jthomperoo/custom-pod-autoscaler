@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -28,7 +29,20 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/kubernetes/scheme"
 )
+
+// ResourceMetrics represents a resource's metrics, including each resource's metrics
+type ResourceMetrics struct {
+	RunType              string                    `json:"runType"`
+	Metrics              []*metric.Metric          `json:"metrics"`
+	UnstructuredResource unstructured.Unstructured `json:"resource"`
+	Resource             metav1.Object             `json:"-"`
+}
 
 // MetricValue is a representation of the metric retrieved from from the 'flask-metric' application
 type MetricValue struct {
@@ -92,12 +106,28 @@ func getMetrics(stdin []byte) {
 }
 
 func getEvaluation(stdin []byte) {
-	var resourceMetrics metric.ResourceMetrics
-	err := json.Unmarshal(stdin, &resourceMetrics)
+	var resourceMetrics ResourceMetrics
+	err := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(stdin), 10).Decode(&resourceMetrics)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
+
+	// Create object from version and kind of piped value
+	resourceGVK := resourceMetrics.UnstructuredResource.GroupVersionKind()
+	resourceRuntime, err := scheme.Scheme.New(resourceGVK)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	// Parse the unstructured k8s resource into the object created, then convert to generic metav1.Object
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(resourceMetrics.UnstructuredResource.Object, resourceRuntime)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+	resourceMetrics.Resource = resourceRuntime.(metav1.Object)
 
 	// Count total available
 	totalAvailable := 0
