@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Metric gathering and hooks have access to `dryRun` field, allowing them to determine if they are called as part of a dry run.
 - Standardised input to metric gatherer, evaluator and scaler to take specs rather than lists of parameters, allowing easier serialisation for hooks.
 - Endpoint `/api/v1/metrics` now accepts the optional `dry_run` parameter for marking metric gathering as in dry run mode.
+- `ResourceMetrics` replaced with a list of `Metric` and a `Resource`.
+- `/api/v1/metrics` now simply returns a list of `Metrics` rather than a `ResourceMetrics`.
+### Removed
+- `ResourceMetrics` struct removed as it was redundant.
 
 ## [v0.10.0] - 2020-01-22
 ### Added

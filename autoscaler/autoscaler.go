@@ -64,8 +64,9 @@ func (s *Scaler) Scale() error {
 
 	glog.V(2).Infoln("Attempting to evaluate metrics")
 	evaluation, err := s.GetEvaluationer.GetEvaluation(evaluate.Spec{
-		ResourceMetrics: metrics,
-		RunType:         RunType,
+		Metrics:  metrics,
+		Resource: resource,
+		RunType:  RunType,
 	})
 	if err != nil {
 		return err

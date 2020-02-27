@@ -988,10 +988,6 @@ func TestGetMetrics(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			result := &metric.ResourceMetrics{
-				Metrics:  test.expected,
-				Resource: test.spec.Resource,
-			}
 			gatherer := &metric.Gatherer{
 				Clientset: test.clientset,
 				Config:    test.config,
@@ -1005,8 +1001,8 @@ func TestGetMetrics(t *testing.T) {
 			if test.expectedErr != nil {
 				return
 			}
-			if !cmp.Equal(metrics, result) {
-				t.Errorf("metrics mismatch (-want +got):\n%s", cmp.Diff(result, metrics))
+			if !cmp.Equal(metrics, test.expected) {
+				t.Errorf("metrics mismatch (-want +got):\n%s", cmp.Diff(test.expected, metrics))
 			}
 		})
 	}

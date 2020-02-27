@@ -144,7 +144,7 @@ def main():
 
 def evaluate(spec):
     try:
-        value = int(spec["resourceMetrics"]["metrics"][0]["value"])
+        value = int(spec["metrics"][0]["value"])
 
         # Build JSON dict with targetReplicas
         evaluation = {}
@@ -165,23 +165,23 @@ if __name__ == "__main__":
 The JSON value piped into this step would look like this:
 ```json
 {
-  "resourceMetrics": {
-    "metrics": [
-      {
-        "resource": "hello-kubernetes",
-        "value": "3"
-      }
-    ],
-    "resource": {
-      "kind": "Deployment",
-      "apiVersion": "apps/v1",
-      "metadata": {
-        "name": "hello-kubernetes",
-        "namespace": "default",
-        "labels": {
-          "numPods": "3"
-        },
+  "metrics": [
+    {
+      "resource": "hello-kubernetes",
+      "value": "3"
+    }
+  ],
+  "resource": {
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "hello-kubernetes",
+      "namespace": "default",
+      "labels": {
+        "numPods": "3"
       },
+    },
+    ...
   },
   "runType": "scaler"
 }
@@ -335,7 +335,7 @@ def main():
 
 def evaluate(spec):
     try:
-        value = int(spec["resourceMetrics"]["metrics"][0]["value"])
+        value = int(spec["metrics"][0]["value"])
 
         # Build JSON dict with targetReplicas
         evaluation = {}

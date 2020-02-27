@@ -21,7 +21,6 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/go-chi/chi"
@@ -43,21 +42,18 @@ import (
 
 type failGetMetrics struct{}
 
-func (f *failGetMetrics) GetMetrics(spec metric.Spec) (*metric.ResourceMetrics, error) {
+func (f *failGetMetrics) GetMetrics(spec metric.Spec) ([]*metric.Metric, error) {
 	return nil, errors.New("FAIL GET METRICS")
 }
 
 type successGetMetrics struct{}
 
-func (s *successGetMetrics) GetMetrics(spec metric.Spec) (*metric.ResourceMetrics, error) {
-	return &metric.ResourceMetrics{
-		Metrics: []*metric.Metric{
-			&metric.Metric{
-				Value:    "SUCCESS",
-				Resource: "SUCCESS_POD",
-			},
+func (s *successGetMetrics) GetMetrics(spec metric.Spec) ([]*metric.Metric, error) {
+	return []*metric.Metric{
+		&metric.Metric{
+			Value:    "SUCCESS",
+			Resource: "SUCCESS_POD",
 		},
-		Resource: spec.Resource,
 	}, nil
 }
 
@@ -152,34 +148,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			"Get metrics success metric gathering, not dry run, no parameter provided",
-			strings.ReplaceAll(strings.ReplaceAll(`
-			{
-				"metrics":[
-					{
-						"resource":"SUCCESS_POD",
-						"value":"SUCCESS"
-					}
-				],
-				"resource":{
-					"metadata":{
-						"name":"test",
-						"creationTimestamp":null
-					},
-					"spec":{
-						"selector":null,
-						"template":{
-							"metadata":{
-								"creationTimestamp":null
-							},
-							"spec":{
-								"containers":null
-							}
-						},
-						"strategy":{}
-					},
-					"status":{}
-				}
-			}`, "\n", ""), "\t", ""),
+			`[{"resource":"SUCCESS_POD","value":"SUCCESS"}]`,
 			http.StatusOK,
 			"GET",
 			"/api/v1/metrics",
@@ -206,34 +175,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			"Get metrics success metric gathering, not dry run, parameter provided",
-			strings.ReplaceAll(strings.ReplaceAll(`
-			{
-				"metrics":[
-					{
-						"resource":"SUCCESS_POD",
-						"value":"SUCCESS"
-					}
-				],
-				"resource":{
-					"metadata":{
-						"name":"test",
-						"creationTimestamp":null
-					},
-					"spec":{
-						"selector":null,
-						"template":{
-							"metadata":{
-								"creationTimestamp":null
-							},
-							"spec":{
-								"containers":null
-							}
-						},
-						"strategy":{}
-					},
-					"status":{}
-				}
-			}`, "\n", ""), "\t", ""),
+			`[{"resource":"SUCCESS_POD","value":"SUCCESS"}]`,
 			http.StatusOK,
 			"GET",
 			"/api/v1/metrics?dry_run=false",
@@ -260,34 +202,7 @@ func TestAPI(t *testing.T) {
 		},
 		{
 			"Get metrics success metric gathering, dry run",
-			strings.ReplaceAll(strings.ReplaceAll(`
-			{
-				"metrics":[
-					{
-						"resource":"SUCCESS_POD",
-						"value":"SUCCESS"
-					}
-				],
-				"resource":{
-					"metadata":{
-						"name":"test",
-						"creationTimestamp":null
-					},
-					"spec":{
-						"selector":null,
-						"template":{
-							"metadata":{
-								"creationTimestamp":null
-							},
-							"spec":{
-								"containers":null
-							}
-						},
-						"strategy":{}
-					},
-					"status":{}
-				}
-			}`, "\n", ""), "\t", ""),
+			`[{"resource":"SUCCESS_POD","value":"SUCCESS"}]`,
 			http.StatusOK,
 			"GET",
 			"/api/v1/metrics?dry_run=true",

@@ -18,28 +18,27 @@ import math
 
 # Example spec provided to this script through stdin:
 # {
-#   "resourceMetrics": {
-#     "metrics": [
-#       {
-#         "resource": "hello-kubernetes",
-#         "value": "3"
-#       }
-#     ],
-#     "resource": {
-#       "kind": "Deployment",
-#       "apiVersion": "apps/v1",
-#       "metadata": {
-#         "name": "hello-kubernetes",
-#         "namespace": "default",
-#         "labels": {
-#           "numPods": "3"
-#         },
-#       },
-#       ...
+#   "metrics": [
+#     {
+#       "resource": "hello-kubernetes",
+#       "value": "3"
 #     }
+#   ],
+#   "resource": {
+#     "kind": "Deployment",
+#     "apiVersion": "apps/v1",
+#     "metadata": {
+#       "name": "hello-kubernetes",
+#       "namespace": "default",
+#       "labels": {
+#         "numPods": "3"
+#       },
+#     },
+#     ...
 #   },
 #   "runType": "scaler"
 # }
+
 
 def main():
     # Parse provided spec into a dict
@@ -48,7 +47,7 @@ def main():
 
 def evaluate(spec):
     try:
-        value = int(spec["resourceMetrics"]["metrics"][0]["value"])
+        value = int(spec["metrics"][0]["value"])
 
         # Build JSON dict with targetReplicas
         evaluation = {}

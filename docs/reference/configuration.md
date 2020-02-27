@@ -285,22 +285,20 @@ The pre-evaluate hook is run before evaluation occurs, it is provided with the f
 Example of JSON provided to this hook:
 ```json
 {
-  "resourceMetrics": {
-    "metrics": [
-      {
-        "resource": "hello-kubernetes",
-        "value": "3"
-      }
-    ],
-    "resource": {
-      "kind": "Deployment",
-      "apiVersion": "apps/v1",
-      "metadata": {
-        "name": "hello-kubernetes",
-        "namespace": "default",
-      },
-      ...
+  "metrics": [
+    {
+      "resource": "hello-kubernetes",
+      "value": "3"
     }
+  ],
+  "resource": {
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "hello-kubernetes",
+      "namespace": "default",
+    },
+    ...
   },
   "runType": "scaler"
 }
@@ -325,22 +323,20 @@ The post-evaluate hook is run after evaluation occurs, it is provided with the f
 Example of JSON provided to this hook:
 ```json
 {
-  "resourceMetrics": {
-    "metrics": [
-      {
-        "resource": "hello-kubernetes",
-        "value": "3"
-      }
-    ],
-    "resource": {
-      "kind": "Deployment",
-      "apiVersion": "apps/v1",
-      "metadata": {
-        "name": "hello-kubernetes",
-        "namespace": "default",
-      },
-      ...
+  "metrics": [
+    {
+      "resource": "hello-kubernetes",
+      "value": "3"
     }
+  ],
+  "resource": {
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "hello-kubernetes",
+      "namespace": "default",
+    },
+    ...
   },
   "evaluation": {
     "targetReplicas": 3

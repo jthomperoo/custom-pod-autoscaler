@@ -35,13 +35,7 @@ import (
 
 // GetMetricer provides methods for retrieving metrics
 type GetMetricer interface {
-	GetMetrics(spec Spec) (*ResourceMetrics, error)
-}
-
-// ResourceMetrics represents a resource's metrics, including each resource's metrics
-type ResourceMetrics struct {
-	Metrics  []*Metric     `json:"metrics"`
-	Resource metav1.Object `json:"resource"`
+	GetMetrics(spec Spec) ([]*Metric, error)
 }
 
 // Metric is the result of the custom metric calculation, containing information on the
@@ -67,7 +61,7 @@ type Spec struct {
 }
 
 // GetMetrics gathers metrics for the resource supplied
-func (m *Gatherer) GetMetrics(spec Spec) (*ResourceMetrics, error) {
+func (m *Gatherer) GetMetrics(spec Spec) ([]*Metric, error) {
 	switch m.Config.RunMode {
 	case config.PerPodRunMode:
 		return m.getMetricsForPods(spec)
@@ -78,7 +72,7 @@ func (m *Gatherer) GetMetrics(spec Spec) (*ResourceMetrics, error) {
 	}
 }
 
-func (m *Gatherer) getMetricsForResource(spec Spec) (*ResourceMetrics, error) {
+func (m *Gatherer) getMetricsForResource(spec Spec) ([]*Metric, error) {
 	glog.V(3).Infoln("Gathering metrics in per-resource mode")
 
 	// Convert the Resource description to JSON
@@ -125,13 +119,10 @@ func (m *Gatherer) getMetricsForResource(spec Spec) (*ResourceMetrics, error) {
 		glog.V(3).Infof("Post-metric hook response: %+v", hookResult)
 	}
 
-	return &ResourceMetrics{
-		Resource: spec.Resource,
-		Metrics:  *spec.Metrics,
-	}, nil
+	return *spec.Metrics, nil
 }
 
-func (m *Gatherer) getMetricsForPods(spec Spec) (*ResourceMetrics, error) {
+func (m *Gatherer) getMetricsForPods(spec Spec) ([]*Metric, error) {
 	glog.V(3).Infoln("Gathering metrics in per-pod mode")
 
 	glog.V(3).Infoln("Attempting to get pod selector from managed resource")
@@ -208,10 +199,7 @@ func (m *Gatherer) getMetricsForPods(spec Spec) (*ResourceMetrics, error) {
 		glog.V(3).Infof("Post-metric hook response: %+v", hookResult)
 	}
 
-	return &ResourceMetrics{
-		Resource: spec.Resource,
-		Metrics:  metrics,
-	}, nil
+	return metrics, nil
 }
 
 func (m *Gatherer) getPodSelectorForResource(resource metav1.Object) (string, error) {

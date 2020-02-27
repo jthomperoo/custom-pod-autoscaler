@@ -11,10 +11,10 @@ This example contains a docker image of the example Python Custom Pod Autoscaler
 The CPA will try to ensure that there is always atleast `1` available across the resource and each app in the resource.  
 The CPA will also ensure there are no more than `5` available across the resource.  
 The CPA exposes two endpoints:
-* `GET /metrics`
+* `GET /api/v1/metrics`
     * Displays all gathered metric values from every app instance in the resource.
     * Aliased with `metrics` in the example Dockerfile.
-* `GET /evaluation`
+* `GET /api/v1/evaluation`
     * Displays the evaluation decision made on how to scale, reporting the `targetReplicas` - how many replicas the resource should have.
     * Aliased with `evaluation` in the example Dockerfile.
 

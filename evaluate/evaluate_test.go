@@ -53,12 +53,10 @@ func TestGetEvaluation(t *testing.T) {
 			errors.New("pre-evaluate hook fail"),
 			nil,
 			evaluate.Spec{
-				ResourceMetrics: &metric.ResourceMetrics{
-					Metrics: []*metric.Metric{
-						&metric.Metric{
-							Resource: "test pod",
-							Value:    "test value",
-						},
+				Metrics: []*metric.Metric{
+					&metric.Metric{
+						Resource: "test pod",
+						Value:    "test value",
 					},
 				},
 				RunType: autoscaler.RunType,
@@ -81,12 +79,10 @@ func TestGetEvaluation(t *testing.T) {
 			errors.New("fail to evaluate"),
 			nil,
 			evaluate.Spec{
-				ResourceMetrics: &metric.ResourceMetrics{
-					Metrics: []*metric.Metric{
-						&metric.Metric{
-							Resource: "test pod",
-							Value:    "test value",
-						},
+				Metrics: []*metric.Metric{
+					&metric.Metric{
+						Resource: "test pod",
+						Value:    "test value",
 					},
 				},
 				RunType: autoscaler.RunType,
@@ -114,12 +110,10 @@ func TestGetEvaluation(t *testing.T) {
 			errors.New("post-evaluate hook fail"),
 			nil,
 			evaluate.Spec{
-				ResourceMetrics: &metric.ResourceMetrics{
-					Metrics: []*metric.Metric{
-						&metric.Metric{
-							Resource: "test pod",
-							Value:    "test value",
-						},
+				Metrics: []*metric.Metric{
+					&metric.Metric{
+						Resource: "test pod",
+						Value:    "test value",
 					},
 				},
 				RunType: autoscaler.RunType,
@@ -155,12 +149,10 @@ func TestGetEvaluation(t *testing.T) {
 				TargetReplicas: int32(3),
 			},
 			evaluate.Spec{
-				ResourceMetrics: &metric.ResourceMetrics{
-					Metrics: []*metric.Metric{
-						&metric.Metric{
-							Resource: "test pod",
-							Value:    "test value",
-						},
+				Metrics: []*metric.Metric{
+					&metric.Metric{
+						Resource: "test pod",
+						Value:    "test value",
 					},
 				},
 				RunType: autoscaler.RunType,
@@ -200,12 +192,10 @@ func TestGetEvaluation(t *testing.T) {
 				TargetReplicas: int32(3),
 			},
 			evaluate.Spec{
-				ResourceMetrics: &metric.ResourceMetrics{
-					Metrics: []*metric.Metric{
-						&metric.Metric{
-							Resource: "test pod",
-							Value:    "test value",
-						},
+				Metrics: []*metric.Metric{
+					&metric.Metric{
+						Resource: "test pod",
+						Value:    "test value",
 					},
 				},
 				RunType: autoscaler.RunType,
@@ -245,12 +235,10 @@ func TestGetEvaluation(t *testing.T) {
 				TargetReplicas: int32(3),
 			},
 			evaluate.Spec{
-				ResourceMetrics: &metric.ResourceMetrics{
-					Metrics: []*metric.Metric{
-						&metric.Metric{
-							Resource: "test pod",
-							Value:    "test value",
-						},
+				Metrics: []*metric.Metric{
+					&metric.Metric{
+						Resource: "test pod",
+						Value:    "test value",
 					},
 				},
 				RunType: autoscaler.RunType,
@@ -285,12 +273,10 @@ func TestGetEvaluation(t *testing.T) {
 			errors.New(`invalid character 'i' looking for beginning of value`),
 			nil,
 			evaluate.Spec{
-				ResourceMetrics: &metric.ResourceMetrics{
-					Metrics: []*metric.Metric{
-						&metric.Metric{
-							Resource: "test pod",
-							Value:    "test value",
-						},
+				Metrics: []*metric.Metric{
+					&metric.Metric{
+						Resource: "test pod",
+						Value:    "test value",
 					},
 				},
 				RunType: autoscaler.RunType,

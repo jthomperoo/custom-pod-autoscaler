@@ -23,7 +23,7 @@ def main():
 
 def evaluate(spec):
     try:
-        value = int(spec["resourceMetrics"]["metrics"][0]["value"])
+        value = int(spec["metrics"][0]["value"])
 
         # Build JSON dict with targetReplicas
         evaluation = {}

@@ -18,26 +18,23 @@ import math
 
 # JSON piped into this script example:
 # {
-#   "resourceMetrics": {
-#     "metrics": [
-#       {
-#         "resource": "flask-metric-869879868f-jgbg4",
-#         "value": "{\"value\": 0, \"available\": 5, \"min\": 0, \"max\": 5}"
-#       }
-#     ],
-#     "resource": {
-#       "kind": "Deployment",
-#       "apiVersion": "apps/v1",
-#       "metadata": {
-#         "name": "flask-metric",
-#         "namespace": "default",
-#       },
-#       ...
+#   "metrics": [
+#     {
+#       "resource": "flask-metric-869879868f-jgbg4",
+#       "value": "{\"value\": 0, \"available\": 5, \"min\": 0, \"max\": 5}"
 #     }
+#   ],
+#   "resource": {
+#     "kind": "Deployment",
+#     "apiVersion": "apps/v1",
+#     "metadata": {
+#       "name": "flask-metric",
+#       "namespace": "default",
+#     },
+#     ...
 #   },
 #   "runType": "api"
 # }
-
 
 def main():
     # Parse JSON into a dict
@@ -47,13 +44,13 @@ def main():
 def evaluate(spec):
     # Count total available
     total_available = 0
-    for metric in spec["resourceMetrics"]["metrics"]:
+    for metric in spec["metrics"]:
         json_value = json.loads(metric["value"])
         available = json_value["available"]
         total_available += int(available)
 
     # Get current replica count
-    target_replica_count = len(spec["resourceMetrics"]["metrics"])
+    target_replica_count = int(spec["resource"]["status"]["replicas"])
 
     # Decrease target replicas if more than 5 available
     if total_available > 5:

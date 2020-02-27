@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,10 +35,10 @@ import (
 )
 
 type fakeGetMetric struct {
-	getMetrics func(spec metric.Spec) (*metric.ResourceMetrics, error)
+	getMetrics func(spec metric.Spec) ([]*metric.Metric, error)
 }
 
-func (m *fakeGetMetric) GetMetrics(spec metric.Spec) (*metric.ResourceMetrics, error) {
+func (m *fakeGetMetric) GetMetrics(spec metric.Spec) ([]*metric.Metric, error) {
 	return m.getMetrics(spec)
 }
 
@@ -111,7 +111,7 @@ func TestScaler(t *testing.T) {
 			},
 			func() *fakeGetMetric {
 				getMetric := fakeGetMetric{}
-				getMetric.getMetrics = func(spec metric.Spec) (*metric.ResourceMetrics, error) {
+				getMetric.getMetrics = func(spec metric.Spec) ([]*metric.Metric, error) {
 					return nil, errors.New("fail to get metric")
 				}
 				return &getMetric
@@ -142,8 +142,8 @@ func TestScaler(t *testing.T) {
 			},
 			func() *fakeGetMetric {
 				getMetric := fakeGetMetric{}
-				getMetric.getMetrics = func(spec metric.Spec) (*metric.ResourceMetrics, error) {
-					return &metric.ResourceMetrics{}, nil
+				getMetric.getMetrics = func(spec metric.Spec) ([]*metric.Metric, error) {
+					return []*metric.Metric{}, nil
 				}
 				return &getMetric
 			}(),
@@ -187,8 +187,8 @@ func TestScaler(t *testing.T) {
 			},
 			func() *fakeGetMetric {
 				getMetric := fakeGetMetric{}
-				getMetric.getMetrics = func(spec metric.Spec) (*metric.ResourceMetrics, error) {
-					return &metric.ResourceMetrics{}, nil
+				getMetric.getMetrics = func(spec metric.Spec) ([]*metric.Metric, error) {
+					return []*metric.Metric{}, nil
 				}
 				return &getMetric
 			}(),
@@ -234,8 +234,8 @@ func TestScaler(t *testing.T) {
 			},
 			func() *fakeGetMetric {
 				getMetric := fakeGetMetric{}
-				getMetric.getMetrics = func(spec metric.Spec) (*metric.ResourceMetrics, error) {
-					return &metric.ResourceMetrics{}, nil
+				getMetric.getMetrics = func(spec metric.Spec) ([]*metric.Metric, error) {
+					return []*metric.Metric{}, nil
 				}
 				return &getMetric
 			}(),

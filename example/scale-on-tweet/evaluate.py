@@ -30,17 +30,17 @@ import sys
 
 def main():
     # Parse metrics in JSON
-    metrics = json.loads(sys.stdin.read())
-    evaluate(metrics)
+    spec = json.loads(sys.stdin.read())
+    evaluate(spec)
 
-def evaluate(metrics):
+def evaluate(spec):
     # Only expect 1 metric provided
-    if len(metrics["metrics"]) != 1:
+    if len(spec["metrics"]) != 1:
         sys.stderr.write("Expected 1 metric")
         exit(1)
 
     # Get thumbs up and thumbs down values
-    tweet_ratio_json = json.loads(metrics["metrics"][0]["value"])
+    tweet_ratio_json = json.loads(spec["metrics"][0]["value"])
     up = int(tweet_ratio_json["up"])
     down = int(tweet_ratio_json["down"])
 

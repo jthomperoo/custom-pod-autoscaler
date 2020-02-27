@@ -26,6 +26,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const invalidEvaluationMessage = "Invalid evaluation returned by evaluator: %s"
@@ -49,9 +50,10 @@ type Evaluator struct {
 // Spec defines information fed into an evaluator to produce an evaluation,
 // contains optional 'Evaluation' field for storing the result
 type Spec struct {
-	ResourceMetrics *metric.ResourceMetrics `json:"resourceMetrics"`
-	Evaluation      *Evaluation             `json:"evaluation,omitempty"`
-	RunType         string                  `json:"runType"`
+	Metrics    []*metric.Metric `json:"metrics"`
+	Resource   metav1.Object    `json:"resource"`
+	Evaluation *Evaluation      `json:"evaluation,omitempty"`
+	RunType    string           `json:"runType"`
 }
 
 // GetEvaluation uses the metrics provided to determine a set of evaluations

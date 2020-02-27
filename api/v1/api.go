@@ -178,8 +178,9 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 
 	// Get evaluations for metrics
 	evaluation, err := api.GetEvaluationer.GetEvaluation(evaluate.Spec{
-		ResourceMetrics: metrics,
-		RunType:         runType,
+		Metrics:  metrics,
+		Resource: resource,
+		RunType:  runType,
 	})
 	if err != nil {
 		apiError(w, &Error{

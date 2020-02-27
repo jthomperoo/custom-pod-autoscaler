@@ -15,23 +15,23 @@ passed into it wrapped in JSON, with additional information such as the run type
 An example of the JSON passed into the evaluation stage:
 ```json
 {
-  "resourceMetrics": {
-    "metrics": [
-      {
-        "resource": "hello-kubernetes",
-        "value": "3"
-      }
-    ],
-    "resource": {
-      "kind": "Deployment",
-      "apiVersion": "apps/v1",
-      "metadata": {
-        "name": "hello-kubernetes",
-        "namespace": "default",
-        "labels": {
-          "numPods": "3"
-        },
+  "metrics": [
+    {
+      "resource": "hello-kubernetes",
+      "value": "3"
+    }
+  ],
+  "resource": {
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+      "name": "hello-kubernetes",
+      "namespace": "default",
+      "labels": {
+        "numPods": "3"
       },
+    },
+    ...
   },
   "runType": "scaler"
 }
