@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * `postEvaluate` - Runs after evaluation, given evaluation input and result.
   * `preScale` - Runs before scaling decision, given min and max replicas, current replicas, target replicas, and resource being scaled.
   * `postScale` - Runs before scaling decision, given min and max replicas, current replicas, target replicas, and resource being scaled.
+- New `downscaleStabilization` option, based on [the Horizontal Pod Autoscaler downscale stabilization](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#support-for-cooldown-delay), operates by taking the maximum target replica count over the stabilization window.
 ### Changed
 - Metrics from API now returns the entire resource definition as JSON rather than just the resource name.
 - Changed JSON generated to be in `camelCase` rather than `snake_case` for consistency with the Kubernetes API.

@@ -28,15 +28,16 @@ import (
 )
 
 const (
-	defaultInterval        = 15000
-	defaultMetricTimeout   = 5000
-	defaultEvaluateTimeout = 5000
-	defaultNamespace       = "default"
-	defaultMinReplicas     = 1
-	defaultMaxReplicas     = 10
-	defaultStartTime       = 1
-	defaultRunMode         = "per-pod"
-	defaultLogVerbosity    = 0
+	defaultInterval               = 15000
+	defaultMetricTimeout          = 5000
+	defaultEvaluateTimeout        = 5000
+	defaultNamespace              = "default"
+	defaultMinReplicas            = 1
+	defaultMaxReplicas            = 10
+	defaultStartTime              = 1
+	defaultRunMode                = "per-pod"
+	defaultLogVerbosity           = 0
+	defaultDownscaleStabilization = 0
 )
 
 const (
@@ -101,13 +102,14 @@ func TestLoadConfig(t *testing.T) {
 			nil,
 			nil,
 			&config.Config{
-				Interval:     defaultInterval,
-				Namespace:    defaultNamespace,
-				RunMode:      defaultRunMode,
-				MinReplicas:  defaultMinReplicas,
-				MaxReplicas:  defaultMaxReplicas,
-				StartTime:    defaultStartTime,
-				LogVerbosity: defaultLogVerbosity,
+				Interval:               defaultInterval,
+				Namespace:              defaultNamespace,
+				RunMode:                defaultRunMode,
+				MinReplicas:            defaultMinReplicas,
+				MaxReplicas:            defaultMaxReplicas,
+				StartTime:              defaultStartTime,
+				LogVerbosity:           defaultLogVerbosity,
+				DownscaleStabilization: defaultDownscaleStabilization,
 				APIConfig: &config.APIConfig{
 					Enabled:  defaultAPIEnabled,
 					UseHTTPS: defaultUseHTTPS,
@@ -131,14 +133,15 @@ func TestLoadConfig(t *testing.T) {
 						"entrypoint" : "testentry"
 					}
 				}`,
-				"interval":       "35",
-				"namespace":      "test env namespace",
-				"runMode":        "test run mode",
-				"minReplicas":    "3",
-				"maxReplicas":    "6",
-				"startTime":      "0",
-				"scaleTargetRef": `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
-				"logVerbosity":   "3",
+				"interval":               "35",
+				"namespace":              "test env namespace",
+				"runMode":                "test run mode",
+				"minReplicas":            "3",
+				"maxReplicas":            "6",
+				"startTime":              "0",
+				"scaleTargetRef":         `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
+				"logVerbosity":           "3",
+				"downscaleStabilization": "200",
 				"apiConfig": `{
 					"port": 3000,
 					"enabled": true,
@@ -168,7 +171,8 @@ func TestLoadConfig(t *testing.T) {
 					Kind:       "test target kind",
 					APIVersion: "test target api version",
 				},
-				LogVerbosity: 3,
+				LogVerbosity:           3,
+				DownscaleStabilization: 200,
 				APIConfig: &config.APIConfig{
 					Enabled:  true,
 					UseHTTPS: true,
@@ -204,6 +208,7 @@ func TestLoadConfig(t *testing.T) {
 				startTime: 0
 				namespace: "test yaml namespace"
 				logVerbosity: 2
+				downscaleStabilization: 200
 				apiConfig:
 				  enabled: true
 				  useHTTPS: false
@@ -235,7 +240,8 @@ func TestLoadConfig(t *testing.T) {
 						Entrypoint: "testentry",
 					},
 				},
-				LogVerbosity: 2,
+				LogVerbosity:           2,
+				DownscaleStabilization: 200,
 				APIConfig: &config.APIConfig{
 					Enabled:  true,
 					UseHTTPS: false,
@@ -270,6 +276,7 @@ func TestLoadConfig(t *testing.T) {
 				"startTime":0,
 				"namespace":"test yaml namespace",
 				"logVerbosity":1,
+				"downscaleStabilization":200,
 				"apiConfig": {
 					"port": 7890,
 					"enabled": false,
@@ -303,7 +310,8 @@ func TestLoadConfig(t *testing.T) {
 						Entrypoint: "testentry",
 					},
 				},
-				LogVerbosity: 1,
+				LogVerbosity:           1,
+				DownscaleStabilization: 200,
 				APIConfig: &config.APIConfig{
 					Enabled:  false,
 					UseHTTPS: true,
@@ -341,12 +349,13 @@ func TestLoadConfig(t *testing.T) {
 				namespace: "test yaml namespace"
 			`, "\t", "", -1)),
 			map[string]string{
-				"interval":       "35",
-				"minReplicas":    "3",
-				"maxReplicas":    "6",
-				"startTime":      "0",
-				"logVerbosity":   "5",
-				"scaleTargetRef": `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
+				"interval":               "35",
+				"minReplicas":            "3",
+				"maxReplicas":            "6",
+				"startTime":              "0",
+				"logVerbosity":           "5",
+				"downscaleStabilization": "300",
+				"scaleTargetRef":         `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
 			},
 			nil,
 			&config.Config{
@@ -376,7 +385,8 @@ func TestLoadConfig(t *testing.T) {
 						Entrypoint: "testentry",
 					},
 				},
-				LogVerbosity: 5,
+				LogVerbosity:           5,
+				DownscaleStabilization: 300,
 				APIConfig: &config.APIConfig{
 					Enabled:  true,
 					UseHTTPS: false,
@@ -410,12 +420,13 @@ func TestLoadConfig(t *testing.T) {
 				"namespace": "test yaml namespace"
 			}`),
 			map[string]string{
-				"interval":       "35",
-				"minReplicas":    "3",
-				"maxReplicas":    "6",
-				"startTime":      "0",
-				"scaleTargetRef": `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
-				"logVerbosity":   "3",
+				"interval":               "35",
+				"minReplicas":            "3",
+				"maxReplicas":            "6",
+				"startTime":              "0",
+				"scaleTargetRef":         `{ "name": "test target name", "kind": "test target kind", "apiVersion": "test target api version"}`,
+				"logVerbosity":           "3",
+				"downscaleStabilization": "300",
 				"apiConfig": strings.Replace(`
 				host: "test host"
 				port: 7890
@@ -452,7 +463,8 @@ func TestLoadConfig(t *testing.T) {
 						Entrypoint: "testentry",
 					},
 				},
-				LogVerbosity: 3,
+				LogVerbosity:           3,
+				DownscaleStabilization: 300,
 				APIConfig: &config.APIConfig{
 					Enabled:  true,
 					UseHTTPS: false,

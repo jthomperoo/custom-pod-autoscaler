@@ -1,0 +1,20 @@
+apiVersion: custompodautoscaler.com/v1alpha1
+kind: CustomPodAutoscaler
+metadata:
+  name: downscale-stabilization
+spec:
+  template:
+    spec:
+      containers:
+      - name: downscale-stabilization
+        image: downscale-stabilization:latest
+        imagePullPolicy: Always
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: flask-metric
+  config: 
+    - name: interval
+      value: "10000"
+    - name: downscaleStabilization
+      value: "60"

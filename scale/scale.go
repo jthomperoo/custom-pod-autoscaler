@@ -21,6 +21,7 @@ package scale
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
@@ -41,9 +42,17 @@ type Scaler interface {
 
 // Scale interacts with the Kubernetes API to allow scaling on evaluations
 type Scale struct {
-	Scaler  scale.ScalesGetter
-	Config  *config.Config
-	Execute execute.Executer
+	Scaler                   scale.ScalesGetter
+	Config                   *config.Config
+	Execute                  execute.Executer
+	StabilizationEvaluations []TimestampedEvaluation
+}
+
+// TimestampedEvaluation is used to associate an evaluation with a timestamp, used in stabilizing evaluations
+// with the downscale stabilization window
+type TimestampedEvaluation struct {
+	Time       time.Time
+	Evaluation evaluate.Evaluation
 }
 
 // Spec defines information fed into a Scaler in order for it to make decisions as to how to scale
@@ -84,8 +93,6 @@ func (s *Scale) Scale(spec Spec) (*evaluate.Evaluation, error) {
 		targetReplicas = spec.Evaluation.TargetReplicas
 	}
 
-	spec.Evaluation.TargetReplicas = targetReplicas
-
 	// Convert scaling hook input to JSON
 	specJSON, err := json.Marshal(spec)
 	if err != nil {
@@ -107,6 +114,37 @@ func (s *Scale) Scale(spec Spec) (*evaluate.Evaluation, error) {
 		spec.Evaluation.TargetReplicas = 0
 		return &spec.Evaluation, nil
 	}
+
+	// Prune old evaluations
+	now := time.Now().UTC()
+	// Cutoff is current time - stabilization window
+	cutoff := now.Add(time.Duration(-s.Config.DownscaleStabilization) * time.Second)
+	// Loop backwards over stabilization evaluations to prune old ones
+	// Backwards loop to allow values to be removed mid-loop without breaking it
+	for i := len(s.StabilizationEvaluations) - 1; i >= 0; i-- {
+		timestampedEvaluation := s.StabilizationEvaluations[i]
+		if timestampedEvaluation.Time.Before(cutoff) {
+			s.StabilizationEvaluations = append(s.StabilizationEvaluations[:i], s.StabilizationEvaluations[i+1:]...)
+		}
+	}
+
+	// Add to stabilization evaluations
+	s.StabilizationEvaluations = append(s.StabilizationEvaluations, TimestampedEvaluation{
+		Time: time.Now(),
+		Evaluation: evaluate.Evaluation{
+			TargetReplicas: targetReplicas,
+		},
+	})
+
+	// Pick max evaluation
+	for _, timestampedEvaluation := range s.StabilizationEvaluations {
+		if timestampedEvaluation.Evaluation.TargetReplicas > targetReplicas {
+			targetReplicas = timestampedEvaluation.Evaluation.TargetReplicas
+		}
+	}
+	glog.V(0).Infof("Picked max evaluation over stabilization window of %d seconds; replicas %d", s.Config.DownscaleStabilization, targetReplicas)
+
+	spec.Evaluation.TargetReplicas = targetReplicas
 
 	// Check if evaluation requires an action
 	// If the resource needs scaled up/down

@@ -39,13 +39,14 @@ const (
 )
 
 const (
-	defaultInterval     = 15000
-	defaultNamespace    = "default"
-	defaultMinReplicas  = 1
-	defaultMaxReplicas  = 10
-	defaultStartTime    = 1
-	defaultRunMode      = PerPodRunMode
-	defaultLogVerbosity = 0
+	defaultInterval               = 15000
+	defaultNamespace              = "default"
+	defaultMinReplicas            = 1
+	defaultMaxReplicas            = 10
+	defaultStartTime              = 1
+	defaultRunMode                = PerPodRunMode
+	defaultLogVerbosity           = 0
+	defaultDownscaleStabilization = 0
 )
 
 const (
@@ -61,23 +62,24 @@ const jsonStructTag = "json"
 
 // Config is the configuration options for the CPA
 type Config struct {
-	ScaleTargetRef *autoscaling.CrossVersionObjectReference `json:"scaleTargetRef"`
-	PreMetric      *Method                                  `json:"preMetric"`
-	PostMetric     *Method                                  `json:"postMetric"`
-	PreEvaluate    *Method                                  `json:"preEvaluate"`
-	PostEvaluate   *Method                                  `json:"postEvaluate"`
-	PreScale       *Method                                  `json:"preScale"`
-	PostScale      *Method                                  `json:"postScale"`
-	Evaluate       *Method                                  `json:"evaluate"`
-	Metric         *Method                                  `json:"metric"`
-	Interval       int                                      `json:"interval"`
-	Namespace      string                                   `json:"namespace"`
-	MinReplicas    int32                                    `json:"minReplicas"`
-	MaxReplicas    int32                                    `json:"maxReplicas"`
-	RunMode        string                                   `json:"runMode"`
-	StartTime      int64                                    `json:"startTime"`
-	LogVerbosity   int32                                    `json:"logVerbosity"`
-	APIConfig      *APIConfig                               `json:"apiConfig"`
+	ScaleTargetRef         *autoscaling.CrossVersionObjectReference `json:"scaleTargetRef"`
+	PreMetric              *Method                                  `json:"preMetric"`
+	PostMetric             *Method                                  `json:"postMetric"`
+	PreEvaluate            *Method                                  `json:"preEvaluate"`
+	PostEvaluate           *Method                                  `json:"postEvaluate"`
+	PreScale               *Method                                  `json:"preScale"`
+	PostScale              *Method                                  `json:"postScale"`
+	Evaluate               *Method                                  `json:"evaluate"`
+	Metric                 *Method                                  `json:"metric"`
+	Interval               int                                      `json:"interval"`
+	Namespace              string                                   `json:"namespace"`
+	MinReplicas            int32                                    `json:"minReplicas"`
+	MaxReplicas            int32                                    `json:"maxReplicas"`
+	RunMode                string                                   `json:"runMode"`
+	StartTime              int64                                    `json:"startTime"`
+	LogVerbosity           int32                                    `json:"logVerbosity"`
+	DownscaleStabilization int                                      `json:"downscaleStabilization"`
+	APIConfig              *APIConfig                               `json:"apiConfig"`
 }
 
 // APIConfig is configuration options specifically for the API exposed by the CPA
@@ -183,12 +185,13 @@ func loadFromEnv(config *Config, envVars map[string]string) error {
 
 func newDefaultConfig() *Config {
 	return &Config{
-		Interval:    defaultInterval,
-		Namespace:   defaultNamespace,
-		MinReplicas: defaultMinReplicas,
-		MaxReplicas: defaultMaxReplicas,
-		StartTime:   defaultStartTime,
-		RunMode:     defaultRunMode,
+		Interval:               defaultInterval,
+		Namespace:              defaultNamespace,
+		MinReplicas:            defaultMinReplicas,
+		MaxReplicas:            defaultMaxReplicas,
+		StartTime:              defaultStartTime,
+		RunMode:                defaultRunMode,
+		DownscaleStabilization: defaultDownscaleStabilization,
 		APIConfig: &APIConfig{
 			Enabled:  defaultAPIEnabled,
 			UseHTTPS: defaultUseHTTPS,

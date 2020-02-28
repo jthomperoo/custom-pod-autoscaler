@@ -10,6 +10,7 @@ nav:
   - Methods: 'user-guide/methods.md'
   - Hooks: 'user-guide/hooks.md'
   - 'Run Types': 'user-guide/run-types.md'
+  - Cooldown: 'user-guide/cooldown.md'
   - 'Rest API': 'user-guide/rest-api.md'
 - Reference:
   - Configuration: 'reference/configuration.md'

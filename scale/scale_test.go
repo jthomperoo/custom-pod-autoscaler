@@ -19,12 +19,12 @@ package scale_test
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
-	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/scale"
 	appsv1 "k8s.io/api/apps/v1"
@@ -32,7 +32,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	k8sscale "k8s.io/client-go/scale"
 	scaleFake "k8s.io/client-go/scale/fake"
 	k8stesting "k8s.io/client-go/testing"
 )
@@ -49,18 +48,19 @@ func TestScale_Scale(t *testing.T) {
 		description string
 		expected    *evaluate.Evaluation
 		expectedErr error
-		scaler      k8sscale.ScalesGetter
-		config      *config.Config
-		executer    execute.Executer
+		scaler      scale.Scaler
 		spec        scale.Spec
 	}{
 		{
 			"Unsupported resource",
 			nil,
 			errors.New(`Unsupported resource of type *v1.DaemonSet`),
-			nil,
-			&config.Config{},
-			nil,
+			&scale.Scale{
+				nil,
+				&config.Config{},
+				nil,
+				nil,
+			},
 			scale.Spec{
 				Evaluation:  evaluate.Evaluation{},
 				Resource:    &appsv1.DaemonSet{},
@@ -79,9 +79,12 @@ func TestScale_Scale(t *testing.T) {
 			"Fail to parse group version",
 			nil,
 			errors.New("unexpected GroupVersion string: /invalid/"),
-			nil,
-			&config.Config{},
-			nil,
+			&scale.Scale{
+				nil,
+				&config.Config{},
+				nil,
+				nil,
+			},
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(3),
@@ -110,21 +113,24 @@ func TestScale_Scale(t *testing.T) {
 			"Fail to get scale for resource",
 			nil,
 			errors.New("fail to get resource"),
-			&scaleFake.FakeScaleClient{
-				Fake: k8stesting.Fake{
-					ReactionChain: []k8stesting.Reactor{
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "get",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, nil, errors.New("fail to get resource")
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, nil, errors.New("fail to get resource")
+								},
 							},
 						},
 					},
 				},
+				&config.Config{},
+				nil,
+				nil,
 			},
-			&config.Config{},
-			nil,
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(3),
@@ -153,32 +159,36 @@ func TestScale_Scale(t *testing.T) {
 			"Fail to update scale for resource",
 			nil,
 			errors.New("fail to update resource"),
-			&scaleFake.FakeScaleClient{
-				Fake: k8stesting.Fake{
-					ReactionChain: []k8stesting.Reactor{
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "get",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{
-									Spec: autoscaling.ScaleSpec{
-										Replicas: 3,
-									},
-								}, nil
+			&scale.Scale{
+
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 3,
+										},
+									}, nil
+								},
 							},
-						},
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "update",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, nil, errors.New("fail to update resource")
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, nil, errors.New("fail to update resource")
+								},
 							},
 						},
 					},
 				},
+				&config.Config{},
+				nil,
+				nil,
 			},
-			&config.Config{},
-			nil,
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(1),
@@ -210,16 +220,19 @@ func TestScale_Scale(t *testing.T) {
 			"Fail to run pre-scaling hook",
 			nil,
 			errors.New("fail to run pre-scaling hook"),
-			nil,
-			&config.Config{
-				PreScale: &config.Method{
-					Type: "test",
+			&scale.Scale{
+				nil,
+				&config.Config{
+					PreScale: &config.Method{
+						Type: "test",
+					},
 				},
-			},
-			&fake.Execute{
-				ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
-					return "", errors.New("fail to run pre-scaling hook")
+				&fake.Execute{
+					ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
+						return "", errors.New("fail to run pre-scaling hook")
+					},
 				},
+				nil,
 			},
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
@@ -252,16 +265,19 @@ func TestScale_Scale(t *testing.T) {
 			"Fail to run post-scaling hook",
 			nil,
 			errors.New("fail to run post-scaling hook"),
-			nil,
-			&config.Config{
-				PostScale: &config.Method{
-					Type: "test",
+			&scale.Scale{
+				nil,
+				&config.Config{
+					PostScale: &config.Method{
+						Type: "test",
+					},
 				},
-			},
-			&fake.Execute{
-				ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
-					return "", errors.New("fail to run post-scaling hook")
+				&fake.Execute{
+					ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
+						return "", errors.New("fail to run post-scaling hook")
+					},
 				},
+				nil,
 			},
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
@@ -296,9 +312,12 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: 0,
 			},
 			nil,
-			nil,
-			&config.Config{},
-			nil,
+			&scale.Scale{
+				nil,
+				&config.Config{},
+				nil,
+				nil,
+			},
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(3),
@@ -332,16 +351,19 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: 0,
 			},
 			nil,
-			nil,
-			&config.Config{
-				PreScale: &config.Method{
-					Type: "test",
+			&scale.Scale{
+				nil,
+				&config.Config{
+					PreScale: &config.Method{
+						Type: "test",
+					},
 				},
-			},
-			&fake.Execute{
-				ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
-					return "success", nil
+				&fake.Execute{
+					ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
+						return "success", nil
+					},
 				},
+				nil,
 			},
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
@@ -376,9 +398,12 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: 3,
 			},
 			nil,
-			nil,
-			&config.Config{},
-			nil,
+			&scale.Scale{
+				nil,
+				&config.Config{},
+				nil,
+				nil,
+			},
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(3),
@@ -412,32 +437,35 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: 5,
 			},
 			nil,
-			&scaleFake.FakeScaleClient{
-				Fake: k8stesting.Fake{
-					ReactionChain: []k8stesting.Reactor{
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "get",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{
-									Spec: autoscaling.ScaleSpec{
-										Replicas: 3,
-									},
-								}, nil
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 3,
+										},
+									}, nil
+								},
 							},
-						},
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "update",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{}, nil
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
 							},
 						},
 					},
 				},
+				&config.Config{},
+				nil,
+				nil,
 			},
-			&config.Config{},
-			nil,
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(10),
@@ -471,32 +499,35 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: 2,
 			},
 			nil,
-			&scaleFake.FakeScaleClient{
-				Fake: k8stesting.Fake{
-					ReactionChain: []k8stesting.Reactor{
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "get",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{
-									Spec: autoscaling.ScaleSpec{
-										Replicas: 2,
-									},
-								}, nil
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 2,
+										},
+									}, nil
+								},
 							},
-						},
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "update",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{}, nil
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
 							},
 						},
 					},
 				},
+				&config.Config{},
+				nil,
+				nil,
 			},
-			&config.Config{},
-			nil,
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(1),
@@ -530,32 +561,35 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: int32(7),
 			},
 			nil,
-			&scaleFake.FakeScaleClient{
-				Fake: k8stesting.Fake{
-					ReactionChain: []k8stesting.Reactor{
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "get",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{
-									Spec: autoscaling.ScaleSpec{
-										Replicas: 7,
-									},
-								}, nil
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 7,
+										},
+									}, nil
+								},
 							},
-						},
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "update",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{}, nil
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
 							},
 						},
 					},
 				},
+				&config.Config{},
+				nil,
+				nil,
 			},
-			&config.Config{},
-			nil,
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
@@ -589,39 +623,42 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: int32(7),
 			},
 			nil,
-			&scaleFake.FakeScaleClient{
-				Fake: k8stesting.Fake{
-					ReactionChain: []k8stesting.Reactor{
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "get",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{
-									Spec: autoscaling.ScaleSpec{
-										Replicas: 7,
-									},
-								}, nil
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 7,
+										},
+									}, nil
+								},
 							},
-						},
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "update",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{}, nil
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
 							},
 						},
 					},
 				},
-			},
-			&config.Config{
-				PostScale: &config.Method{
-					Type: "test",
+				&config.Config{
+					PostScale: &config.Method{
+						Type: "test",
+					},
 				},
-			},
-			&fake.Execute{
-				ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
-					return "success", nil
+				&fake.Execute{
+					ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
+						return "success", nil
+					},
 				},
+				nil,
 			},
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
@@ -656,42 +693,45 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: int32(7),
 			},
 			nil,
-			&scaleFake.FakeScaleClient{
-				Fake: k8stesting.Fake{
-					ReactionChain: []k8stesting.Reactor{
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "get",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{
-									Spec: autoscaling.ScaleSpec{
-										Replicas: 7,
-									},
-								}, nil
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 7,
+										},
+									}, nil
+								},
 							},
-						},
-						&k8stesting.SimpleReactor{
-							Resource: "deployment",
-							Verb:     "update",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{}, nil
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
 							},
 						},
 					},
 				},
-			},
-			&config.Config{
-				PostScale: &config.Method{
-					Type: "test",
+				&config.Config{
+					PostScale: &config.Method{
+						Type: "test",
+					},
+					PreScale: &config.Method{
+						Type: "test",
+					},
 				},
-				PreScale: &config.Method{
-					Type: "test",
+				&fake.Execute{
+					ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
+						return "success", nil
+					},
 				},
-			},
-			&fake.Execute{
-				ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
-					return "success", nil
-				},
+				nil,
 			},
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
@@ -726,32 +766,35 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: int32(7),
 			},
 			nil,
-			&scaleFake.FakeScaleClient{
-				Fake: k8stesting.Fake{
-					ReactionChain: []k8stesting.Reactor{
-						&k8stesting.SimpleReactor{
-							Resource: "replicaset",
-							Verb:     "get",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{
-									Spec: autoscaling.ScaleSpec{
-										Replicas: 4,
-									},
-								}, nil
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "replicaset",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 4,
+										},
+									}, nil
+								},
 							},
-						},
-						&k8stesting.SimpleReactor{
-							Resource: "replicaset",
-							Verb:     "update",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{}, nil
+							&k8stesting.SimpleReactor{
+								Resource: "replicaset",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
 							},
 						},
 					},
 				},
+				&config.Config{},
+				nil,
+				nil,
 			},
-			&config.Config{},
-			nil,
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
@@ -785,32 +828,35 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: int32(7),
 			},
 			nil,
-			&scaleFake.FakeScaleClient{
-				Fake: k8stesting.Fake{
-					ReactionChain: []k8stesting.Reactor{
-						&k8stesting.SimpleReactor{
-							Resource: "replicationcontroller",
-							Verb:     "get",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{
-									Spec: autoscaling.ScaleSpec{
-										Replicas: 4,
-									},
-								}, nil
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "replicationcontroller",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 4,
+										},
+									}, nil
+								},
 							},
-						},
-						&k8stesting.SimpleReactor{
-							Resource: "replicationcontroller",
-							Verb:     "update",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{}, nil
+							&k8stesting.SimpleReactor{
+								Resource: "replicationcontroller",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
 							},
 						},
 					},
 				},
+				&config.Config{},
+				nil,
+				nil,
 			},
-			&config.Config{},
-			nil,
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
@@ -844,32 +890,35 @@ func TestScale_Scale(t *testing.T) {
 				TargetReplicas: int32(7),
 			},
 			nil,
-			&scaleFake.FakeScaleClient{
-				Fake: k8stesting.Fake{
-					ReactionChain: []k8stesting.Reactor{
-						&k8stesting.SimpleReactor{
-							Resource: "statefulset",
-							Verb:     "get",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{
-									Spec: autoscaling.ScaleSpec{
-										Replicas: 10,
-									},
-								}, nil
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "statefulset",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 10,
+										},
+									}, nil
+								},
 							},
-						},
-						&k8stesting.SimpleReactor{
-							Resource: "statefulset",
-							Verb:     "update",
-							Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-								return true, &autoscaling.Scale{}, nil
+							&k8stesting.SimpleReactor{
+								Resource: "statefulset",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
 							},
 						},
 					},
 				},
+				&config.Config{},
+				nil,
+				nil,
 			},
-			&config.Config{},
-			nil,
 			scale.Spec{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
@@ -897,16 +946,201 @@ func TestScale_Scale(t *testing.T) {
 				RunType:   autoscaler.RunType,
 			},
 		},
+		{
+			"Success, deployment, 3 values within downscale stabilization window, 2 values pruned, previous max",
+			&evaluate.Evaluation{
+				TargetReplicas: int32(9),
+			},
+			nil,
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 5,
+										},
+									}, nil
+								},
+							},
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
+							},
+						},
+					},
+				},
+				&config.Config{
+					DownscaleStabilization: 45,
+				},
+				nil,
+				[]scale.TimestampedEvaluation{
+					scale.TimestampedEvaluation{
+						Time: time.Now().Add(-60 * time.Second),
+						Evaluation: evaluate.Evaluation{
+							TargetReplicas: 100,
+						},
+					},
+					scale.TimestampedEvaluation{
+						Time: time.Now().Add(-50 * time.Second),
+						Evaluation: evaluate.Evaluation{
+							TargetReplicas: 2,
+						},
+					},
+					scale.TimestampedEvaluation{
+						Time: time.Now().Add(-40 * time.Second),
+						Evaluation: evaluate.Evaluation{
+							TargetReplicas: 2,
+						},
+					},
+					scale.TimestampedEvaluation{
+						Time: time.Now().Add(-30 * time.Second),
+						Evaluation: evaluate.Evaluation{
+							TargetReplicas: 9,
+						},
+					},
+					scale.TimestampedEvaluation{
+						Time: time.Now().Add(-20 * time.Second),
+						Evaluation: evaluate.Evaluation{
+							TargetReplicas: 2,
+						},
+					},
+				},
+			},
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(2),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(5)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
+			},
+		},
+		{
+			"Success, deployment, 3 values within downscale stabilization window, 2 values pruned, latest max",
+			&evaluate.Evaluation{
+				TargetReplicas: int32(3),
+			},
+			nil,
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 5,
+										},
+									}, nil
+								},
+							},
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
+							},
+						},
+					},
+				},
+				&config.Config{
+					DownscaleStabilization: 25,
+				},
+				nil,
+				[]scale.TimestampedEvaluation{
+					scale.TimestampedEvaluation{
+						Time: time.Now().Add(-30 * time.Second),
+						Evaluation: evaluate.Evaluation{
+							TargetReplicas: 100,
+						},
+					},
+					scale.TimestampedEvaluation{
+						Time: time.Now().Add(-20 * time.Second),
+						Evaluation: evaluate.Evaluation{
+							TargetReplicas: 2,
+						},
+					},
+					scale.TimestampedEvaluation{
+						Time: time.Now().Add(-15 * time.Second),
+						Evaluation: evaluate.Evaluation{
+							TargetReplicas: 2,
+						},
+					},
+					scale.TimestampedEvaluation{
+						Time: time.Now().Add(-10 * time.Second),
+						Evaluation: evaluate.Evaluation{
+							TargetReplicas: 1,
+						},
+					},
+					scale.TimestampedEvaluation{
+						Time: time.Now().Add(-5 * time.Second),
+						Evaluation: evaluate.Evaluation{
+							TargetReplicas: 2,
+						},
+					},
+				},
+			},
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(3),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(5)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			scaler := &scale.Scale{
-				Scaler:  test.scaler,
-				Config:  test.config,
-				Execute: test.executer,
-			}
-			result, err := scaler.Scale(test.spec)
+			result, err := test.scaler.Scale(test.spec)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return
