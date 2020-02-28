@@ -16,20 +16,6 @@ import json
 import sys
 import requests
 
-# JSON piped into this script example:
-# {
-#   "resource": {
-#     "kind": "Deployment",
-#     "apiVersion": "apps/v1",
-#     "metadata": {
-#       "name": "flask-metric",
-#       "namespace": "default",
-#     },
-#     ...
-#   },
-#   "runType": "scaler"
-# }
-
 def main():
     # Parse JSON into a dict
     spec = json.loads(sys.stdin.read())

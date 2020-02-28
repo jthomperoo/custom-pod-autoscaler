@@ -162,6 +162,13 @@ Log levels:
 * `1` - verbose.
 * `2` - more verbose around high level logic such as autoscaling/rest api.
 * `3` - more verbose around lower level logic such as metric gathering and evaluation.
+## downscaleStabilization
+Example:
+```yaml
+downscaleStabilization: 200
+```
+Default value: `0`  
+This defines in seconds the length of the downscale stabilization window; based on [the Horizontal Pod Autoscaler downscale stabilization](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#support-for-cooldown-delay). Downscale stabilization works by recording all evaluations over the window specified and picking out the maximum target replicas from these evaluations. This results in a more smoothed downscaling and a cooldown, which can reduce the effect of thrashing.
 ## apiConfig
 Example:  
 ```yaml
