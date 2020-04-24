@@ -346,6 +346,130 @@ func TestScale_Scale(t *testing.T) {
 			},
 		},
 		{
+			"Success, deployment, scale to 0",
+			&evaluate.Evaluation{
+				TargetReplicas: int32(0),
+			},
+			nil,
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 0,
+										},
+									}, nil
+								},
+							},
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
+							},
+						},
+					},
+				},
+				&config.Config{},
+				nil,
+				nil,
+			},
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(0),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(5)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 0,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
+			},
+		},
+		{
+			"Success, deployment, scale from 0",
+			&evaluate.Evaluation{
+				TargetReplicas: int32(3),
+			},
+			nil,
+			&scale.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{
+										Spec: autoscaling.ScaleSpec{
+											Replicas: 3,
+										},
+									}, nil
+								},
+							},
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscaling.Scale{}, nil
+								},
+							},
+						},
+					},
+				},
+				&config.Config{},
+				nil,
+				nil,
+			},
+			scale.Spec{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(3),
+				},
+				Resource: func() *appsv1.Deployment {
+					replicas := int32(0)
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 0,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   autoscaler.RunType,
+			},
+		},
+		{
 			"Success, deployment, autoscaling disabled, run pre-scaling hook",
 			&evaluate.Evaluation{
 				TargetReplicas: 0,
@@ -982,31 +1106,31 @@ func TestScale_Scale(t *testing.T) {
 				},
 				nil,
 				[]scale.TimestampedEvaluation{
-					scale.TimestampedEvaluation{
+					{
 						Time: time.Now().Add(-60 * time.Second),
 						Evaluation: evaluate.Evaluation{
 							TargetReplicas: 100,
 						},
 					},
-					scale.TimestampedEvaluation{
+					{
 						Time: time.Now().Add(-50 * time.Second),
 						Evaluation: evaluate.Evaluation{
 							TargetReplicas: 2,
 						},
 					},
-					scale.TimestampedEvaluation{
+					{
 						Time: time.Now().Add(-40 * time.Second),
 						Evaluation: evaluate.Evaluation{
 							TargetReplicas: 2,
 						},
 					},
-					scale.TimestampedEvaluation{
+					{
 						Time: time.Now().Add(-30 * time.Second),
 						Evaluation: evaluate.Evaluation{
 							TargetReplicas: 9,
 						},
 					},
-					scale.TimestampedEvaluation{
+					{
 						Time: time.Now().Add(-20 * time.Second),
 						Evaluation: evaluate.Evaluation{
 							TargetReplicas: 2,
@@ -1077,31 +1201,31 @@ func TestScale_Scale(t *testing.T) {
 				},
 				nil,
 				[]scale.TimestampedEvaluation{
-					scale.TimestampedEvaluation{
+					{
 						Time: time.Now().Add(-30 * time.Second),
 						Evaluation: evaluate.Evaluation{
 							TargetReplicas: 100,
 						},
 					},
-					scale.TimestampedEvaluation{
+					{
 						Time: time.Now().Add(-20 * time.Second),
 						Evaluation: evaluate.Evaluation{
 							TargetReplicas: 2,
 						},
 					},
-					scale.TimestampedEvaluation{
+					{
 						Time: time.Now().Add(-15 * time.Second),
 						Evaluation: evaluate.Evaluation{
 							TargetReplicas: 2,
 						},
 					},
-					scale.TimestampedEvaluation{
+					{
 						Time: time.Now().Add(-10 * time.Second),
 						Evaluation: evaluate.Evaluation{
 							TargetReplicas: 1,
 						},
 					},
-					scale.TimestampedEvaluation{
+					{
 						Time: time.Now().Add(-5 * time.Second),
 						Evaluation: evaluate.Evaluation{
 							TargetReplicas: 2,

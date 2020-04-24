@@ -121,7 +121,10 @@ Example:
 minReplicas: 1
 ```
 Default value: `1`  
-Defines the minimum number of replicas allowed, resource won't be scaled below this value.
+Defines the minimum number of replicas allowed, resource won't be scaled below
+this value. If set to anything but `0` scaling to zero is disabled, and a
+replica count of `0` will be treated as autoscaling disabled. If set to `0`
+scaling to `0` is enabled.
 ## maxReplicas
 Example:  
 ```yaml
