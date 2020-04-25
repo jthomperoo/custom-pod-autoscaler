@@ -32,8 +32,10 @@ information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/exa
   stabilisation, sync period etc.)
 - Allows fast and easy prototyping and development.
 - Abstracts away all complicated Kubernetes API interactions.
+- Exposes a HTTP REST API for integration with wider systems/manual intervention.
 - Can write autoscalers with limited Kubernetes API or lifecycle knowledge.
 - Configuration at build time or deploy time.
+- Allows scaling to and from zero.
 - Can be configured without master node access, can be configured on managed
   providers such as EKS or GKE.
 
