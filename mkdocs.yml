@@ -4,14 +4,15 @@ nav:
 - Home: 'index.md'
 - 'User Guide':
   - Installation: 'user-guide/installation.md'
-  - 'Getting started': 'user-guide/getting-started.md'
-  - 'Metric gathering': 'user-guide/metric-gathering.md'
+  - 'Getting Started': 'user-guide/getting-started.md'
+  - 'Metric Gathering': 'user-guide/metric-gathering.md'
   - Evaluating: 'user-guide/evaluating.md'
   - Methods: 'user-guide/methods.md'
   - Hooks: 'user-guide/hooks.md'
   - 'Run Types': 'user-guide/run-types.md'
   - Cooldown: 'user-guide/cooldown.md'
   - 'Rest API': 'user-guide/rest-api.md'
+  - 'Zero Scaling': 'user-guide/scaling-to-and-from-zero.md'
 - Reference:
   - Configuration: 'reference/configuration.md'
   - 'Scaling Targets': 'reference/scaling-targets.md'

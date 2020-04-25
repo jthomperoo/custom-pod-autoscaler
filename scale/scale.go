@@ -109,7 +109,7 @@ func (s *Scale) Scale(spec Spec) (*evaluate.Evaluation, error) {
 		glog.V(3).Infof("Pre-scaling hook response: %+v", hookResult)
 	}
 
-	if currentReplicas == 0 {
+	if currentReplicas == 0 && spec.MinReplicas != 0 {
 		glog.V(0).Infof("No scaling, autoscaling disabled on resource %s", spec.Resource.GetName())
 		spec.Evaluation.TargetReplicas = 0
 		return &spec.Evaluation, nil
