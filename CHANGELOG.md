@@ -6,6 +6,12 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- HTTP method, allows specifying an HTTP request to make as a method - for
+  example querying an external API as part of the metric gathering stage.
+- Extra error checking for `shell` method, will no longer throw nil pointer if
+  no shell configuration is provided, more useful error is raised instead.
+
 ## [v0.12.0] - 2020-04-25
 ### Changed
 - Support scaling to and from zero, matching misimplemented functionality from

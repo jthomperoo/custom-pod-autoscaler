@@ -95,7 +95,7 @@ func TestClient_Get(t *testing.T) {
 		{
 			"Fail to create new object using schema",
 			nil,
-			errors.New(`no kind "test" is registered for version "test/v1" in scheme "pkg/runtime/scheme.go:101"`),
+			errors.New(`no kind "test" is registered for version "test/v1" in scheme "k8s.io/client-go/kubernetes/scheme/register.go:69"`),
 			fake.NewSimpleDynamicClient(runtime.NewScheme(),
 				&unstructured.Unstructured{
 					Object: map[string]interface{}{

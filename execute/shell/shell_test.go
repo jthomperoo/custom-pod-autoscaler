@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -94,6 +94,16 @@ var processes map[string]process
 func TestMain(m *testing.M) {
 	processes = map[string]process{}
 	tests = []test{
+		{
+			"Missing shell method configuration",
+			errors.New(`Missing required 'shell' configuration on method`),
+			"",
+			&config.Method{
+				Type: "shell",
+			},
+			"test",
+			exec.Command,
+		},
 		{
 			"Successful shell command",
 			nil,

@@ -9,11 +9,11 @@ default: vendor
 
 unittest: vendor
 	@echo "=============Running unit tests============="
-	go test ./... -cover -coverprofile unit_cover.out --tags=unit
+	CGO_ENABLED=0 GOOS=linux go test -mod vendor ./... -cover -coverprofile unit_cover.out --tags=unit
 
 lint: vendor
 	@echo "=============Linting============="
-	go list -mod=vendor ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
+	go list -mod vendor ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
 
 docker: default
 	@echo "=============Building docker images============="

@@ -28,7 +28,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
+	gohttp "net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -44,6 +44,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
+	"github.com/jthomperoo/custom-pod-autoscaler/execute/http"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute/shell"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/resourceclient"
@@ -155,10 +156,13 @@ func main() {
 		Command: exec.Command,
 	}
 
+	httpExec := &http.Execute{}
+
 	// Combine executers
 	combinedExecute := &execute.CombinedExecute{
 		Executers: []execute.Executer{
 			shellExec,
+			httpExec,
 		},
 	}
 
@@ -194,7 +198,7 @@ func main() {
 		Scaler:          scaler,
 	}
 	api.Routes()
-	srv := http.Server{
+	srv := gohttp.Server{
 		Addr:    fmt.Sprintf("%s:%d", config.APIConfig.Host, config.APIConfig.Port),
 		Handler: api.Router,
 	}
@@ -257,7 +261,7 @@ func main() {
 			glog.V(0).Infoln("Starting API using HTTPS")
 			// Start API
 			err := srv.ListenAndServeTLS(config.APIConfig.CertFile, config.APIConfig.KeyFile)
-			if err != http.ErrServerClosed {
+			if err != gohttp.ErrServerClosed {
 				glog.Fatalf("HTTPS API Error: %s", err)
 			}
 
@@ -265,7 +269,7 @@ func main() {
 			glog.V(0).Infoln("Starting API using HTTP")
 			// Start API
 			err := srv.ListenAndServe()
-			if err != http.ErrServerClosed {
+			if err != gohttp.ErrServerClosed {
 				glog.Fatalf("HTTP API Error: %s", err)
 			}
 		}

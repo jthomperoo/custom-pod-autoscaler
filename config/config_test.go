@@ -194,13 +194,18 @@ func TestLoadConfig(t *testing.T) {
 				      - "arg1"
 				    entrypoint: "testentry"
 				metric: 
-				  type: shell
+				  type: http
 				  timeout: 10
-				  shell: 
-				    command: 
-				      - "testcommand"
-				      - "arg1"
-				    entrypoint: "testentry"
+				  http:
+				    method: "GET"
+				    url: "https://www.custompodautoscaler.com"
+				    successCodes:
+				      - 200
+				    headers:
+				      a: testa
+				      b: testb
+				      c: testc
+				    parameterMode: query
 				interval: 30
 				runMode: "test run mode"
 				minReplicas: 2
@@ -233,11 +238,18 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Metric: &config.Method{
-					Type:    "shell",
+					Type:    "http",
 					Timeout: 10,
-					Shell: &config.Shell{
-						Command:    []string{"testcommand", "arg1"},
-						Entrypoint: "testentry",
+					HTTP: &config.HTTP{
+						Method:        "GET",
+						URL:           "https://www.custompodautoscaler.com",
+						SuccessCodes:  []int{200},
+						ParameterMode: "query",
+						Headers: map[string]string{
+							"a": "testa",
+							"b": "testb",
+							"c": "testc",
+						},
 					},
 				},
 				LogVerbosity:           2,
@@ -262,11 +274,20 @@ func TestLoadConfig(t *testing.T) {
 					}
 				},
 				"metric":{
-					"type":"shell",
+					"type":"http",
 					"timeout":10,
-					"shell": { 
-						"command": ["testcommand"], 
-						"entrypoint": "testentry"
+					"http": { 
+						"method": "POST", 
+						"url": "https://www.custompodautoscaler.com",
+						"successCodes": [
+							200
+						],
+						"headers": {
+							"a": "testa",
+							"b": "testb",
+							"c": "testc"
+						},
+						"parameterMode": "body"
 					}
 				},
 				"interval":30,
@@ -303,11 +324,18 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Metric: &config.Method{
-					Type:    "shell",
+					Type:    "http",
 					Timeout: 10,
-					Shell: &config.Shell{
-						Command:    []string{"testcommand"},
-						Entrypoint: "testentry",
+					HTTP: &config.HTTP{
+						Method:        "POST",
+						URL:           "https://www.custompodautoscaler.com",
+						SuccessCodes:  []int{200},
+						ParameterMode: "body",
+						Headers: map[string]string{
+							"a": "testa",
+							"b": "testb",
+							"c": "testc",
+						},
 					},
 				},
 				LogVerbosity:           1,
