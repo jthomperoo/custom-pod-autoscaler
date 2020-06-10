@@ -98,12 +98,22 @@ type Method struct {
 	Type    string `json:"type"`
 	Timeout int    `json:"timeout"`
 	Shell   *Shell `json:"shell"`
+	HTTP    *HTTP  `json:"http"`
 }
 
 // Shell describes configuration options for a shell command method
 type Shell struct {
 	Command    []string `json:"command"`
 	Entrypoint string   `json:"entrypoint"`
+}
+
+// HTTP describes configuration options for an HTTP request method
+type HTTP struct {
+	Method        string            `json:"method"`
+	URL           string            `json:"url"`
+	Headers       map[string]string `json:"headers,omitempty"`
+	SuccessCodes  []int             `json:"successCodes"`
+	ParameterMode string            `json:"parameterMode"`
 }
 
 // LoadConfig loads in the default configuration, then overrides it from the config file,

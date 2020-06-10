@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2020 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -43,6 +43,10 @@ type Execute struct {
 // If it exits with code 1, an error is returned and the stderr is captured and returned.
 // If the timeout is reached, an error is returned.
 func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string, error) {
+	if method.Shell == nil {
+		return "", fmt.Errorf("Missing required 'shell' configuration on method")
+	}
+
 	glog.V(4).Infof("Running shell command, entrypoint: '%s', command '%s'", method.Shell.Entrypoint, method.Shell.Command)
 	// Build command string with value piped into it
 	cmd := e.Command(method.Shell.Entrypoint, method.Shell.Command...)
