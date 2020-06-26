@@ -6,6 +6,14 @@ Card](https://goreportcard.com/badge/github.com/jthomperoo/custom-pod-autoscaler
 [![Documentation
 Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=latest)](https://custom-pod-autoscaler.readthedocs.io/en/latest)
 [![License](http://img.shields.io/:license-apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
+
+<p>This project is supported by:</p>
+<p>
+  <a href="https://www.digitalocean.com/">
+    <img src="https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/SVG/DO_Logo_horizontal_blue.svg" width="201px">
+  </a>
+</p>
+
 # Custom Pod Autoscaler
 
 This is the Custom Pod Autoscaler (CPA) code and base images.  
