@@ -13,7 +13,7 @@ and the
 [example code](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example/python-custom-autoscaler)
 in a file called `cpa.yaml`:
 ```yaml
-apiVersion: custompodautoscaler.com/v1alpha1
+apiVersion: custompodautoscaler.com/v1
 kind: CustomPodAutoscaler
 metadata:
   name: python-custom-autoscaler

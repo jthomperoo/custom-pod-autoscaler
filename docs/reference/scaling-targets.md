@@ -11,7 +11,7 @@ Custom Pod Autoscalers can target any resource that the Horizontal Pod Autoscale
 
 To tell a Custom Pod Autoscaler which resource to target, provide a `scaleTargetRef` - a description of the resource to target. Within a Custom Pod Autoscaler definition it looks like this:
 ```yaml
-apiVersion: custompodautoscaler.com/v1alpha1
+apiVersion: custompodautoscaler.com/v1
 kind: CustomPodAutoscaler
 metadata:
   name: python-custom-autoscaler
