@@ -6,6 +6,7 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [v0.13.0] - 2020-07-18
 ### Added
 - HTTP method, allows specifying an HTTP request to make as a method - for
   example querying an external API as part of the metric gathering stage.
@@ -198,7 +199,9 @@ evaluate:
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v0.12.0...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v0.13.0...HEAD
+[v0.13.0]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v0.12.0...v0.13.0
 [v0.12.0]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v0.11.0...v0.12.0
 [v0.11.0]:
