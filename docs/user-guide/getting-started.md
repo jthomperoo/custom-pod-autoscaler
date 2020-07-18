@@ -216,12 +216,16 @@ creating our autoscaler, lets see how it works.
 
 # Test the autoscaler
 First we should enable custom autoscalers on our cluster by installing the Custom Pod Autoscaler 
-Operator, for this guide we are using `v0.5.0`, but check out the latest version from the 
-[Custom Pod Autoscaler Operator releases](https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases).
+Operator, for this guide we are using `v0.7.0`, but check out the latest version from the 
+[Custom Pod Autoscaler Operator
+releases](https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases)
+and see the [install
+guide](https://github.com/jthomperoo/custom-pod-autoscaler-operator/blob/master/INSTALL.md)
+for the latest install information.
 
 ```
-VERSION=v0.5.0
-curl -L "https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases/download/${VERSION}/cluster.tar.gz" | tar xvz --to-command 'kubectl apply -f -'
+VERSION=v0.7.0
+kubectl apply -f https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases/download/${VERSION}/cluster.yaml
 ```
 
 This will do a cluster-wide install of `v0.5.0` of the Custom Pod Autoscaler Operator.  
@@ -271,7 +275,7 @@ docker build -t python-custom-autoscaler .
 ```
 Lets create the YAML for our autoscaler, create a new file `cpa.yaml`:
 ```yaml
-apiVersion: custompodautoscaler.com/v1alpha1
+apiVersion: custompodautoscaler.com/v1
 kind: CustomPodAutoscaler
 metadata:
   name: python-custom-autoscaler
