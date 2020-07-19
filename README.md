@@ -30,7 +30,7 @@ faster development of Kubernetes autoscalers.
 A Custom Pod Autoscaler can be created by using this project, extending the
 Docker base images provided and inserting your own logic; see the [examples for
 more
-information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).
+information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v1.0.0/example).
 
 ## Features
 
@@ -70,7 +70,7 @@ developers](https://custom-pod-autoscaler.readthedocs.io/en/latest/user-guide/ge
 ## More information
 
 See the [wiki for more information, such as guides and
-references](https://custom-pod-autoscaler.readthedocs.io/en/latest/).
+references](https://custom-pod-autoscaler.readthedocs.io/en/stable/).
 
 ## Developing this project
 ### Environment
