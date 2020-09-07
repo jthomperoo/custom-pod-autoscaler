@@ -5,7 +5,7 @@
 Card](https://goreportcard.com/badge/github.com/jthomperoo/custom-pod-autoscaler)](https://goreportcard.com/report/github.com/jthomperoo/custom-pod-autoscaler)
 [![Documentation
 Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=latest)](https://custom-pod-autoscaler.readthedocs.io/en/latest)
-[![License](http://img.shields.io/:license-apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
+[![License](https://img.shields.io/:license-apache-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 <p>This project is supported by:</p>
 <p>
@@ -16,17 +16,17 @@ Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=la
 
 # Custom Pod Autoscaler
 
-This is the Custom Pod Autoscaler (CPA) code and base images.  
+This is the Custom Pod Autoscaler (CPA) code and base images.
 
 The CPA is part of the [Custom Pod Autoscaler
-Framework](https://custom-pod-autoscaler.readthedocs.io/en/latest).  
+Framework](https://custom-pod-autoscaler.readthedocs.io/en/latest).
 
 ## What is it?
 
 A Custom Pod Autoscaler is a Kubernetes autoscaler that is customised and user
 created. Custom Pod Autoscalers are designed to be similar to the Kubernetes
 Horizontal Pod Autoscaler. The Custom Pod Autoscaler framework allows easier and
-faster development of Kubernetes autoscalers.  
+faster development of Kubernetes autoscalers.
 A Custom Pod Autoscaler can be created by using this project, extending the
 Docker base images provided and inserting your own logic; see the [examples for
 more
@@ -50,7 +50,7 @@ information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v1.0.0/exa
 ## How does it work?
 A Custom Pod Autoscaler has a base program (defined in this repository) that
 handles interacting with user logic, for example by using shell commands and
-piping data into them.  
+piping data into them.
 When developing a Custom Pod Autoscaler you define logic for two stages:
 
 * Metric gathering - collecting or generating metrics; can be calling metrics
@@ -70,7 +70,7 @@ developers](https://custom-pod-autoscaler.readthedocs.io/en/latest/user-guide/ge
 ## More information
 
 See the [wiki for more information, such as guides and
-references](https://custom-pod-autoscaler.readthedocs.io/en/stable/).
+references](https://custom-pod-autoscaler.readthedocs.io/en/latest/).
 
 ## Developing this project
 ### Environment
