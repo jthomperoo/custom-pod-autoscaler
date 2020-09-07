@@ -83,12 +83,9 @@ discussed the issue.
 <!-- omit in toc -->
 #### How Do I Submit a Good Bug Report?
 
-> You must never report security related issues, vulnerabilities or bugs to the issue tracker, or elsewhere in public.
-> Instead sensitive bugs must be sent by email to j.thomperoo@hotmail.com.
-
 We use GitHub issues to track bugs and errors. If you run into an issue with the project:
 
-- Open an [Issue](https://github.com/jthomperoo/custom-pod-autoscalerissues/new). (Since we can't be sure at this point
+- Open an [Issue](https://github.com/jthomperoo/custom-pod-autoscaler/issues/new). (Since we can't be sure at this point
 whether it is a bug or not, we ask you not to talk about a bug yet and not to label the issue.)
 - Explain the behavior you would expect and the actual behavior.
 - Please provide as much context as possible and describe the *reproduction steps* that someone else can follow to
