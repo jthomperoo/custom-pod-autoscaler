@@ -6,6 +6,8 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v1.0.1] - 2020-09-12
 ### Added
 - Three new Python images:
   * `custompodautoscaler/python-3-6` tracks latest stable Python 3.6.x release.
@@ -180,7 +182,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v1.0.0...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v1.0.1...HEAD
+[v1.0.1]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v1.0.0...v1.0.1
 [v1.0.0]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v0.13.0...v1.0.0
 [v0.13.0]:
