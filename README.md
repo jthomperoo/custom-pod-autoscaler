@@ -18,7 +18,7 @@ Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=la
 
 This is the Custom Pod Autoscaler (CPA) code and base images.
 
-The CPA is part of the [Custom Pod Autoscaler Framework](https://custom-pod-autoscaler.readthedocs.io/en/latest).
+The CPA is part of the [Custom Pod Autoscaler Framework](https://custom-pod-autoscaler.readthedocs.io/en/stable).
 
 ## What is it?
 
@@ -27,7 +27,7 @@ designed to be similar to the Kubernetes Horizontal Pod Autoscaler. The Custom P
 and faster development of Kubernetes autoscalers.
 A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting
 your own logic; see the
-[examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v1.0.0/example).
+[examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v1.0.1/example).
 
 ## Features
 
@@ -57,12 +57,12 @@ handle all Kubernetes API interactions for scaling/retrieving resources.
 ## Getting started
 
 Check out [this getting started guide for a quick start for
-developers](https://custom-pod-autoscaler.readthedocs.io/en/latest/user-guide/getting-started).
+developers](https://custom-pod-autoscaler.readthedocs.io/en/stable/user-guide/getting-started).
 
 ## More information
 
 See the [wiki for more information, such as guides and
-references](https://custom-pod-autoscaler.readthedocs.io/en/latest/).
+references](https://custom-pod-autoscaler.readthedocs.io/en/stable/).
 
 ## Developing this project
 ### Environment
