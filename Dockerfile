@@ -12,8 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Python build
-FROM python:3.6-slim AS python
+# Python 3.6 build
+FROM python:3.8-slim AS python-3-8
+WORKDIR /app
+COPY dist /app/
+CMD [ "/app/custom-pod-autoscaler" ]
+
+# Python 3.7 build
+FROM python:3.7-slim AS python-3-7
+WORKDIR /app
+COPY dist /app/
+CMD [ "/app/custom-pod-autoscaler" ]
+
+# Python 3.6 build
+FROM python:3.6-slim AS python-3-6
 WORKDIR /app
 COPY dist /app/
 CMD [ "/app/custom-pod-autoscaler" ]

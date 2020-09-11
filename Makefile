@@ -17,8 +17,11 @@ lint: vendor
 
 docker: default
 	@echo "=============Building docker images============="
-	docker build --target=python -t $(REGISTRY)/python:$(VERSION) .
+	docker build --target=python-3-6 -t $(REGISTRY)/python-3-6:$(VERSION) .
+	docker build --target=python-3-7 -t $(REGISTRY)/python-3-7:$(VERSION) .
+	docker build --target=python-3-8 -t $(REGISTRY)/python-3-8:$(VERSION) .
 	docker build --target=alpine -t $(REGISTRY)/alpine:$(VERSION) .
+	docker tag $(REGISTRY)/python-3-8:$(VERSION) $(REGISTRY)/python:$(VERSION)
 
 doc:
 	@echo "=============Serving docs============="

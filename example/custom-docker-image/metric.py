@@ -16,23 +16,6 @@ import os
 import json
 import sys
 
-# Example spec provided to this script through stdin:
-# {
-#   "resource": {
-#     "kind": "Deployment",
-#     "apiVersion": "apps/v1",
-#     "metadata": {
-#       "name": "hello-kubernetes",
-#       "namespace": "default",
-#       "labels": {
-#         "numPods": "3"
-#       },
-#     },
-#     ...
-#   },
-#   "runType": "scaler"
-# }
-
 def main():
     # Parse spec into a dict
     spec = json.loads(sys.stdin.read())

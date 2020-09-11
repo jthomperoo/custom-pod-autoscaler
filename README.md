@@ -18,49 +18,41 @@ Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=la
 
 This is the Custom Pod Autoscaler (CPA) code and base images.
 
-The CPA is part of the [Custom Pod Autoscaler
-Framework](https://custom-pod-autoscaler.readthedocs.io/en/latest).
+The CPA is part of the [Custom Pod Autoscaler Framework](https://custom-pod-autoscaler.readthedocs.io/en/latest).
 
 ## What is it?
 
-A Custom Pod Autoscaler is a Kubernetes autoscaler that is customised and user
-created. Custom Pod Autoscalers are designed to be similar to the Kubernetes
-Horizontal Pod Autoscaler. The Custom Pod Autoscaler framework allows easier and
-faster development of Kubernetes autoscalers.
-A Custom Pod Autoscaler can be created by using this project, extending the
-Docker base images provided and inserting your own logic; see the [examples for
-more
-information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v1.0.0/example).
+A Custom Pod Autoscaler is a Kubernetes autoscaler that is customised and user created. Custom Pod Autoscalers are
+designed to be similar to the Kubernetes Horizontal Pod Autoscaler. The Custom Pod Autoscaler framework allows easier
+and faster development of Kubernetes autoscalers.
+A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting
+your own logic; see the
+[examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v1.0.0/example).
 
 ## Features
 
-- Supports any language, environment and framework; the only requirement is it
-  must be startable by a shell command.
-- Supports all configuration options of the Horizontal Pod Autoscaler (downscale
-  stabilisation, sync period etc.)
+- Supports any language, environment and framework; the only requirement is it must be startable by a shell command
+or HTTP request.
+- Supports all configuration options of the Horizontal Pod Autoscaler (downscale stabilisation, sync period etc.)
 - Allows fast and easy prototyping and development.
 - Abstracts away all complicated Kubernetes API interactions.
 - Exposes a HTTP REST API for integration with wider systems/manual intervention.
 - Can write autoscalers with limited Kubernetes API or lifecycle knowledge.
 - Configuration at build time or deploy time.
 - Allows scaling to and from zero.
-- Can be configured without master node access, can be configured on managed
-  providers such as EKS or GKE.
+- Can be configured without master node access, can be configured on managed providers such as EKS or GKE.
 
 ## How does it work?
-A Custom Pod Autoscaler has a base program (defined in this repository) that
-handles interacting with user logic, for example by using shell commands and
-piping data into them.
+A Custom Pod Autoscaler has a base program (defined in this repository) that handles interacting with user logic, for
+example by using shell commands and piping data into them.
 When developing a Custom Pod Autoscaler you define logic for two stages:
 
-* Metric gathering - collecting or generating metrics; can be calling metrics
-  APIs, running calculations locally, making HTTP requests.
-* Evaluating metrics - taking these gathered metrics and using them to decide
-  how many replicas a resource should have.
+* Metric gathering - collecting or generating metrics; can be calling metrics APIs, running calculations locally,
+making HTTP requests.
+* Evaluating metrics - taking these gathered metrics and using them to decide how many replicas a resource should have.
 
-These two pieces of logic are all the custom logic required to build a Custom
-Pod Autoscaler, the base program will handle all Kubernetes API interactions for
-scaling/retrieving resources.
+These two pieces of logic are all the custom logic required to build a Custom Pod Autoscaler, the base program will
+handle all Kubernetes API interactions for scaling/retrieving resources.
 
 ## Getting started
 
