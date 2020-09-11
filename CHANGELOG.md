@@ -8,9 +8,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 ### Added
 - Three new Python images:
-  - `custompodautoscaler/python-3-6` tracks latest stable Python 3.6.x release.
-  - `custompodautoscaler/python-3-7` tracks latest stable Python 3.7.x release.
-  - `custompodautoscaler/python-3-8` tracks latest stable Python 3.8.x release.
+  * `custompodautoscaler/python-3-6` tracks latest stable Python 3.6.x release.
+  * `custompodautoscaler/python-3-7` tracks latest stable Python 3.7.x release.
+  * `custompodautoscaler/python-3-8` tracks latest stable Python 3.8.x release.
 ### Changed
 - The `custompodautoscaler/python` image now tracks the latest stable Python 3.x release.
 
