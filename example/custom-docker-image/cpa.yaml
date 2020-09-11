@@ -1,0 +1,18 @@
+apiVersion: custompodautoscaler.com/v1
+kind: CustomPodAutoscaler
+metadata:
+  name: custom-docker-image
+spec:
+  template:
+    spec:
+      containers:
+      - name: custom-docker-image
+        image: custom-docker-image:latest
+        imagePullPolicy: Always
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hello-kubernetes
+  config:
+    - name: interval
+      value: "10000"

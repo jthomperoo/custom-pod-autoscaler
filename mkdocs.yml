@@ -15,6 +15,7 @@ nav:
   - 'Zero Scaling': 'user-guide/scaling-to-and-from-zero.md'
 - Reference:
   - Configuration: 'reference/configuration.md'
+  - 'Docker Images': 'reference/docker-images.md'
   - 'Scaling Targets': 'reference/scaling-targets.md'
   - 'Rest API':
     - v1: 'reference/rest-api/v1.md'
