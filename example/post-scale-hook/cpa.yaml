@@ -8,12 +8,12 @@ spec:
       containers:
       - name: post-scale-hook
         image: post-scale-hook:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: hello-kubernetes
-  config: 
+  config:
     - name: interval
       value: "10000"
     - name: logVerbosity

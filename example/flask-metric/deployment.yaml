@@ -19,4 +19,4 @@ spec:
         image: flask-metric:latest
         ports:
         - containerPort: 5000
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
