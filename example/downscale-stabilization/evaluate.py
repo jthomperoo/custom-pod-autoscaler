@@ -30,12 +30,12 @@ def evaluate(spec):
         total_available += int(available)
 
     # Get current replica count
-    target_replica_count = int(spec["resource"]["status"]["replicas"])
+    target_replica_count = int(spec["resource"]["spec"]["replicas"])
 
     # Decrease target replicas if more than 5 available
     if total_available > 5:
         target_replica_count -= 1
-    
+
     # Increase target replicas if none available
     if total_available <= 0:
         target_replica_count += 1

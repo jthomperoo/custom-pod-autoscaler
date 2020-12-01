@@ -8,7 +8,7 @@ spec:
       containers:
       - name: custom-docker-image
         image: custom-docker-image:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment

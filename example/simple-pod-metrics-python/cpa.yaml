@@ -8,11 +8,11 @@ spec:
       containers:
       - name: simple-pod-metrics-python
         image: simple-pod-metrics-python:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: flask-metric
-  config: 
+  config:
     - name: interval
       value: "10000"
