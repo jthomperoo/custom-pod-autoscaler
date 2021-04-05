@@ -68,19 +68,27 @@ references](https://custom-pod-autoscaler.readthedocs.io/en/stable/).
 ### Environment
 Developing this project requires these dependencies:
 
-* [Go](https://golang.org/doc/install) >= `1.13`
-* [Golint](https://github.com/golang/lint)
+* [Go](https://golang.org/doc/install) >= `1.16`
+* [Golint](https://github.com/golang/lint) == `v0.0.0-20201208152925-83fdc39ff7b5`
 * [Docker](https://docs.docker.com/install/)
 
-To view docs locally, requires:
+To view the docs, you need Python 3 installed:
 
-* [mkdocs](https://www.mkdocs.org/)
+* [Python](https://www.python.org/downloads/) == `3.8.5`
+
+To view docs locally you need some Python dependencies, run:
+
+```bash
+pip install -r docs/requirements.txt
+```
 
 ### Commands
 
 * `make` - builds the CPA binary.
 * `make docker` - builds the CPA base images.
 * `make lint` - lints the code.
+* `make beautify` - beautifies the code, must be run to pass the CI.
 * `make unittest` - runs the unit tests.
 * `make vendor` - generates a vendor folder.
 * `make doc` - hosts the documentation locally, at `127.0.0.1:8000`.
+* `make view_coverage` - opens up any generated coverage reports in the browser.

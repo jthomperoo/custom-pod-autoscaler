@@ -97,7 +97,7 @@ func (m *Gatherer) getMetricsForResource(spec Spec) ([]*Metric, error) {
 		return nil, err
 	}
 	spec.Metrics = &[]*Metric{
-		&Metric{
+		{
 			Resource: spec.Resource.GetName(),
 			Value:    gathered,
 		},

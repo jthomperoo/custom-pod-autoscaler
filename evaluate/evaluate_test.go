@@ -54,7 +54,7 @@ func TestGetEvaluation(t *testing.T) {
 			nil,
 			evaluate.Spec{
 				Metrics: []*metric.Metric{
-					&metric.Metric{
+					{
 						Resource: "test pod",
 						Value:    "test value",
 					},
@@ -80,7 +80,7 @@ func TestGetEvaluation(t *testing.T) {
 			nil,
 			evaluate.Spec{
 				Metrics: []*metric.Metric{
-					&metric.Metric{
+					{
 						Resource: "test pod",
 						Value:    "test value",
 					},
@@ -111,7 +111,7 @@ func TestGetEvaluation(t *testing.T) {
 			nil,
 			evaluate.Spec{
 				Metrics: []*metric.Metric{
-					&metric.Metric{
+					{
 						Resource: "test pod",
 						Value:    "test value",
 					},
@@ -150,7 +150,7 @@ func TestGetEvaluation(t *testing.T) {
 			},
 			evaluate.Spec{
 				Metrics: []*metric.Metric{
-					&metric.Metric{
+					{
 						Resource: "test pod",
 						Value:    "test value",
 					},
@@ -193,7 +193,7 @@ func TestGetEvaluation(t *testing.T) {
 			},
 			evaluate.Spec{
 				Metrics: []*metric.Metric{
-					&metric.Metric{
+					{
 						Resource: "test pod",
 						Value:    "test value",
 					},
@@ -236,7 +236,7 @@ func TestGetEvaluation(t *testing.T) {
 			},
 			evaluate.Spec{
 				Metrics: []*metric.Metric{
-					&metric.Metric{
+					{
 						Resource: "test pod",
 						Value:    "test value",
 					},
@@ -274,7 +274,7 @@ func TestGetEvaluation(t *testing.T) {
 			nil,
 			evaluate.Spec{
 				Metrics: []*metric.Metric{
-					&metric.Metric{
+					{
 						Resource: "test pod",
 						Value:    "test value",
 					},

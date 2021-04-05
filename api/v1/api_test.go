@@ -50,7 +50,7 @@ type successGetMetrics struct{}
 
 func (s *successGetMetrics) GetMetrics(spec metric.Spec) ([]*metric.Metric, error) {
 	return []*metric.Metric{
-		&metric.Metric{
+		{
 			Value:    "SUCCESS",
 			Resource: "SUCCESS_POD",
 		},

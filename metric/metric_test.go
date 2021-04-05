@@ -114,7 +114,7 @@ func TestGetMetrics(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{
 						Selector: &metav1.LabelSelector{
 							MatchExpressions: []metav1.LabelSelectorRequirement{
-								metav1.LabelSelectorRequirement{
+								{
 									Operator: "invalid",
 								},
 							},
@@ -143,7 +143,7 @@ func TestGetMetrics(t *testing.T) {
 					Spec: appsv1.ReplicaSetSpec{
 						Selector: &metav1.LabelSelector{
 							MatchExpressions: []metav1.LabelSelectorRequirement{
-								metav1.LabelSelectorRequirement{
+								{
 									Operator: "invalid",
 								},
 							},
@@ -172,7 +172,7 @@ func TestGetMetrics(t *testing.T) {
 					Spec: appsv1.StatefulSetSpec{
 						Selector: &metav1.LabelSelector{
 							MatchExpressions: []metav1.LabelSelectorRequirement{
-								metav1.LabelSelectorRequirement{
+								{
 									Operator: "invalid",
 								},
 							},
@@ -456,7 +456,7 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod single pod single deployment shell execute success",
 			nil,
 			[]*metric.Metric{
-				&metric.Metric{
+				{
 					Resource: "test pod",
 					Value:    "test value",
 				},
@@ -502,7 +502,7 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod single pod single deployment shell execute success with pre-metric hook",
 			nil,
 			[]*metric.Metric{
-				&metric.Metric{
+				{
 					Resource: "test pod",
 					Value:    "test value",
 				},
@@ -554,7 +554,7 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod single pod single deployment shell execute success with post-metric hook",
 			nil,
 			[]*metric.Metric{
-				&metric.Metric{
+				{
 					Resource: "test pod",
 					Value:    "test value",
 				},
@@ -606,7 +606,7 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod single pod, single replicaset success",
 			nil,
 			[]*metric.Metric{
-				&metric.Metric{
+				{
 					Resource: "test pod",
 					Value:    "test value",
 				},
@@ -652,7 +652,7 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod single pod, single statefulset success",
 			nil,
 			[]*metric.Metric{
-				&metric.Metric{
+				{
 					Resource: "test pod",
 					Value:    "test value",
 				},
@@ -698,7 +698,7 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod single pod, single replicationcontroller success",
 			nil,
 			[]*metric.Metric{
-				&metric.Metric{
+				{
 					Resource: "test pod",
 					Value:    "test value",
 				},
@@ -742,11 +742,11 @@ func TestGetMetrics(t *testing.T) {
 			"Per pod multiple pod single deployment shell execute success",
 			nil,
 			[]*metric.Metric{
-				&metric.Metric{
+				{
 					Resource: "first pod",
 					Value:    "test value",
 				},
-				&metric.Metric{
+				{
 					Resource: "second pod",
 					Value:    "test value",
 				},
@@ -889,7 +889,7 @@ func TestGetMetrics(t *testing.T) {
 			"Per resource shell execute success",
 			nil,
 			[]*metric.Metric{
-				&metric.Metric{
+				{
 					Resource: "test deployment",
 					Value:    "test value",
 				},
@@ -920,7 +920,7 @@ func TestGetMetrics(t *testing.T) {
 			"Per resource shell execute success with pre-metric hook",
 			nil,
 			[]*metric.Metric{
-				&metric.Metric{
+				{
 					Resource: "test deployment",
 					Value:    "test value",
 				},
@@ -954,7 +954,7 @@ func TestGetMetrics(t *testing.T) {
 			"Per resource shell execute success with post-metric hook",
 			nil,
 			[]*metric.Metric{
-				&metric.Metric{
+				{
 					Resource: "test deployment",
 					Value:    "test value",
 				},

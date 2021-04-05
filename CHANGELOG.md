@@ -6,6 +6,8 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Switched docs theme to material theme.
 
 ## [v1.0.1] - 2020-09-12
 ### Added
