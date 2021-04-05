@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Custom Pod Autoscaler Authors.
+Copyright 2021 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,12 +20,14 @@ limitations under the License.
 package metric
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
+	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,13 +57,15 @@ type Gatherer struct {
 // Spec defines information fed into a gatherer to retrieve metrics, contains an optional
 // field 'Metrics' for storing the result
 type Spec struct {
-	Resource metav1.Object `json:"resource"`
-	Metrics  *[]*Metric    `json:"metrics,omitempty"`
-	RunType  string        `json:"runType"`
+	Resource          metav1.Object     `json:"resource"`
+	Metrics           *[]*Metric        `json:"metrics,omitempty"`
+	RunType           string            `json:"runType"`
+	KubernetesMetrics []*measure.Metric `json:"kubernetesMetrics,omitempty"`
 }
 
 // GetMetrics gathers metrics for the resource supplied
 func (m *Gatherer) GetMetrics(spec Spec) ([]*Metric, error) {
+
 	switch m.Config.RunMode {
 	case config.PerPodRunMode:
 		return m.getMetricsForPods(spec)
@@ -133,7 +137,7 @@ func (m *Gatherer) getMetricsForPods(spec Spec) ([]*Metric, error) {
 	glog.V(3).Infof("Label selector retrieved: %+v", labels)
 
 	glog.V(3).Infoln("Attempting to get pods being managed")
-	pods, err := m.Clientset.CoreV1().Pods(m.Config.Namespace).List(metav1.ListOptions{LabelSelector: labels})
+	pods, err := m.Clientset.CoreV1().Pods(m.Config.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: labels})
 	if err != nil {
 		return nil, err
 	}
@@ -160,8 +164,9 @@ func (m *Gatherer) getMetricsForPods(spec Spec) ([]*Metric, error) {
 	for _, pod := range pods.Items {
 		// Convert the Pod description to JSON
 		podSpecJSON, err := json.Marshal(Spec{
-			Resource: &pod,
-			RunType:  spec.RunType,
+			Resource:          &pod,
+			RunType:           spec.RunType,
+			KubernetesMetrics: spec.KubernetesMetrics,
 		})
 		if err != nil {
 			// Should not occur, panic

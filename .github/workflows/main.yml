@@ -23,7 +23,7 @@ jobs:
         go install golang.org/x/lint/golint@v0.0.0-20201208152925-83fdc39ff7b5
 
         # Lint and test
-        make vendor
+        make vendor_modules
         make lint
         make beautify
 

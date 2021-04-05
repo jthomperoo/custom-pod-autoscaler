@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Custom Pod Autoscaler Authors.
+Copyright 2021 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ func TestClient_Get(t *testing.T) {
 		{
 			"Fail to create new object using schema",
 			nil,
-			errors.New(`no kind "test" is registered for version "test/v1" in scheme "k8s.io/client-go/kubernetes/scheme/register.go:69"`),
+			errors.New(`no kind "test" is registered for version "test/v1" in scheme "k8s.io/client-go/kubernetes/scheme/register.go:72"`),
 			fake.NewSimpleDynamicClient(runtime.NewScheme(),
 				&unstructured.Unstructured{
 					Object: map[string]interface{}{

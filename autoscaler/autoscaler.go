@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Custom Pod Autoscaler Authors.
+Copyright 2021 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/resourceclient"
 	"github.com/jthomperoo/custom-pod-autoscaler/scale"
@@ -35,11 +36,12 @@ const RunType = "scaler"
 // feeding an evaluator these metrics, before taking the results and using them to interact with Kubernetes
 // to scale up/down
 type Scaler struct {
-	Scaler          scale.Scaler
-	Client          resourceclient.Client
-	Config          *config.Config
-	GetMetricer     metric.GetMetricer
-	GetEvaluationer evaluate.GetEvaluationer
+	Scaler            scale.Scaler
+	Client            resourceclient.Client
+	Config            *config.Config
+	GetMetricer       metric.GetMetricer
+	GetEvaluationer   evaluate.GetEvaluationer
+	K8sMetricGatherer measure.Gatherer
 }
 
 // Scale gets the managed resource, gathers metrics, evaluates these metrics and finally if a change is required
@@ -52,11 +54,28 @@ func (s *Scaler) Scale() error {
 	}
 	glog.V(2).Infof("Managed resource retrieved: %+v", resource)
 
-	glog.V(2).Infoln("Attempting to get resource metrics")
-	metrics, err := s.GetMetricer.GetMetrics(metric.Spec{
+	metricSpec := metric.Spec{
 		Resource: resource,
 		RunType:  RunType,
-	})
+	}
+
+	if s.Config.KubernetesMetricSpecs != nil {
+		glog.V(2).Infoln("K8s Metrics specs provided, attempting to query the K8s metrics server")
+		k8sMetricSpec, err := s.K8sMetricGatherer.GetMetrics(resource, s.Config.KubernetesMetricSpecs, s.Config.Namespace)
+		if err != nil {
+			if s.Config.RequireKubernetesMetrics {
+				return err
+			}
+			glog.Errorf("Failed to retrieve K8s metrics, not required so continuing: %+v", err)
+		} else {
+			glog.V(2).Infof("Successfully retrieved K8s metrics: %+v", k8sMetricSpec)
+		}
+		metricSpec.KubernetesMetrics = k8sMetricSpec
+		glog.V(2).Infoln("Finished querying the K8s metrics server")
+	}
+
+	glog.V(2).Infoln("Attempting to get resource metrics")
+	metrics, err := s.GetMetricer.GetMetrics(metricSpec)
 	if err != nil {
 		return err
 	}

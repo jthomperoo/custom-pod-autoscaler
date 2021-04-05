@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Custom Pod Autoscaler Authors.
+Copyright 2021 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,16 +28,18 @@ import (
 )
 
 const (
-	defaultInterval               = 15000
-	defaultMetricTimeout          = 5000
-	defaultEvaluateTimeout        = 5000
-	defaultNamespace              = "default"
-	defaultMinReplicas            = 1
-	defaultMaxReplicas            = 10
-	defaultStartTime              = 1
-	defaultRunMode                = "per-pod"
-	defaultLogVerbosity           = 0
-	defaultDownscaleStabilization = 0
+	defaultInterval                = 15000
+	defaultMetricTimeout           = 5000
+	defaultEvaluateTimeout         = 5000
+	defaultNamespace               = "default"
+	defaultMinReplicas             = 1
+	defaultMaxReplicas             = 10
+	defaultStartTime               = 1
+	defaultRunMode                 = "per-pod"
+	defaultLogVerbosity            = 0
+	defaultDownscaleStabilization  = 0
+	defaultCPUInitializationPeriod = 300
+	defaultInitialReadinessDelay   = 30
 )
 
 const (
@@ -118,17 +120,19 @@ func TestLoadConfig(t *testing.T) {
 					CertFile: defaultCertFile,
 					KeyFile:  defaultKeyFile,
 				},
-				ScaleTargetRef: nil,
+				ScaleTargetRef:          nil,
+				InitialReadinessDelay:   defaultInitialReadinessDelay,
+				CPUInitializationPeriod: defaultCPUInitializationPeriod,
 			},
 		},
 		{
 			"No JSON or YAML override with env",
 			nil,
 			map[string]string{
-				"metric": `{ 
-					"type" : "shell", 
-					"timeout": 10, 
-					"shell": { 
+				"metric": `{
+					"type" : "shell",
+					"timeout": 10,
+					"shell": {
 						"command" : ["testcommand"],
 						"entrypoint" : "testentry"
 					}
@@ -180,20 +184,22 @@ func TestLoadConfig(t *testing.T) {
 					CertFile: "testcert",
 					KeyFile:  "testkey",
 				},
+				InitialReadinessDelay:   defaultInitialReadinessDelay,
+				CPUInitializationPeriod: defaultCPUInitializationPeriod,
 			},
 		},
 		{
 			"No env override with YAML",
 			[]byte(strings.Replace(`
-				evaluate: 
+				evaluate:
 				  type: shell
 				  timeout: 10
-				  shell: 
-				    command: 
+				  shell:
+				    command:
 				      - "testcommand"
 				      - "arg1"
 				    entrypoint: "testentry"
-				metric: 
+				metric:
 				  type: http
 				  timeout: 10
 				  http:
@@ -260,6 +266,8 @@ func TestLoadConfig(t *testing.T) {
 					Port:     7890,
 					Host:     "test yaml host",
 				},
+				InitialReadinessDelay:   defaultInitialReadinessDelay,
+				CPUInitializationPeriod: defaultCPUInitializationPeriod,
 			},
 		},
 		{
@@ -268,16 +276,16 @@ func TestLoadConfig(t *testing.T) {
 				"evaluate":{
 					"type":"shell",
 					"timeout":10,
-					"shell": { 
-						"command": ["testcommand", "arg1"], 
+					"shell": {
+						"command": ["testcommand", "arg1"],
 						"entrypoint": "testentry"
 					}
 				},
 				"metric":{
 					"type":"http",
 					"timeout":10,
-					"http": { 
-						"method": "POST", 
+					"http": {
+						"method": "POST",
 						"url": "https://www.custompodautoscaler.com",
 						"successCodes": [
 							200
@@ -348,23 +356,25 @@ func TestLoadConfig(t *testing.T) {
 					CertFile: "test cert file",
 					KeyFile:  "test key file",
 				},
+				InitialReadinessDelay:   defaultInitialReadinessDelay,
+				CPUInitializationPeriod: defaultCPUInitializationPeriod,
 			},
 		},
 		{
 			"Partial YAML partial env",
 			[]byte(strings.Replace(`
-				evaluate: 
+				evaluate:
 				  type: shell
 				  timeout: 10
-				  shell: 
-				    command: 
+				  shell:
+				    command:
 				      - "testcommand"
 				      - "arg1"
 				    entrypoint: "testentry"
-				metric: 
+				metric:
 				  type: shell
 				  timeout: 10
-				  shell: 
+				  shell:
 				    command:
 				      - "testcommand"
 				    entrypoint: "testentry"
@@ -421,6 +431,8 @@ func TestLoadConfig(t *testing.T) {
 					Port:     7890,
 					Host:     "test host",
 				},
+				InitialReadinessDelay:   defaultInitialReadinessDelay,
+				CPUInitializationPeriod: defaultCPUInitializationPeriod,
 			},
 		},
 		{
@@ -429,16 +441,16 @@ func TestLoadConfig(t *testing.T) {
 				"evaluate": {
 					"type": "shell",
 					"timeout": 10,
-					"shell": { 
-						"command": ["testcommand", "arg1"], 
+					"shell": {
+						"command": ["testcommand", "arg1"],
 						"entrypoint": "testentry"
 					}
 				},
 				"metric": {
 					"type": "shell",
 					"timeout": 10,
-					"shell": { 
-						"command": ["testcommand"], 
+					"shell": {
+						"command": ["testcommand"],
 						"entrypoint": "testentry"
 					}
 				},
@@ -499,6 +511,8 @@ func TestLoadConfig(t *testing.T) {
 					Port:     7890,
 					Host:     "test host",
 				},
+				InitialReadinessDelay:   defaultInitialReadinessDelay,
+				CPUInitializationPeriod: defaultCPUInitializationPeriod,
 			},
 		},
 	}
