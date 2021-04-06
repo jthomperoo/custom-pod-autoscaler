@@ -18,6 +18,7 @@ nav:
   - Cooldown: 'user-guide/cooldown.md'
   - 'Rest API': 'user-guide/rest-api.md'
   - 'Zero Scaling': 'user-guide/scaling-to-and-from-zero.md'
+  - 'Kubernetes Metrics': 'user-guide/kubernetes-metrics.md'
 - Reference:
   - Configuration: 'reference/configuration.md'
   - 'Docker Images': 'reference/docker-images.md'

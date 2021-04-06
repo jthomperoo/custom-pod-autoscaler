@@ -17,6 +17,7 @@ limitations under the License.
 // Package value represents a computed value for a metric, can be either a raw value or an average value
 package value
 
+// MetricValue is a representation of a computed value for a metric, can be either a raw value or an average value
 type MetricValue struct {
 	Value        *int64 `json:"value,omitempty"`
 	AverageValue *int64 `json:"average_value,omitempty"`

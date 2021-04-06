@@ -33,7 +33,7 @@ type Gather struct {
 	GetMetricsReactor func(resource metav1.Object, specs []measure.MetricSpec, namespace string) ([]*measure.Metric, error)
 }
 
-// GetMetric calls the fake ExternalGatherer function
+// GetMetrics calls the fake Gather function
 func (f *Gather) GetMetrics(resource metav1.Object, specs []measure.MetricSpec, namespace string) ([]*measure.Metric, error) {
 	return f.GetMetricsReactor(resource, specs, namespace)
 }
