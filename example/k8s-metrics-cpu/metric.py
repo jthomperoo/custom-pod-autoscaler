@@ -59,14 +59,21 @@ def main():
     metric(spec)
 
 def metric(spec):
+    # Get the Kubernetes metrics value, there is only 1 expected, so it should be the first one
     cpu_metrics = spec["kubernetesMetrics"][0]
+    # Pull out the current replicas
     current_replicas = cpu_metrics["current_replicas"]
+    # Get the resource metric info
     resource = cpu_metrics["resource"]
+    # Get the list of pod metrics
     pod_metrics_info = resource["pod_metrics_info"]
+    # Total up all of the pod values
     total_utilization = 0
     for _, pod_info in pod_metrics_info.items():
         total_utilization += pod_info["Value"]
+    # Calculate the average utilization
     average_utilization = total_utilization / current_replicas
+    # Generate some JSON to pass to the evaluator
     sys.stdout.write(json.dumps(
         {
             "current_replicas": current_replicas,

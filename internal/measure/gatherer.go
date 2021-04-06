@@ -136,7 +136,8 @@ func (c *Gather) getMetric(currentReplicas int32, spec MetricSpec, namespace str
 			return nil, fmt.Errorf("failed to get object metric: %v", err)
 		}
 
-		if spec.Object.Target.Type == autoscaling.ValueMetricType {
+		switch spec.Object.Target.Type {
+		case autoscaling.ValueMetricType:
 			objectMetric, err := c.Object.GetMetric(spec.Object.Metric.Name, namespace, &spec.Object.DescribedObject, selector, metricSelector)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get object metric: %v", err)
@@ -146,9 +147,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec MetricSpec, namespace str
 				Spec:            spec,
 				Object:          objectMetric,
 			}, nil
-		}
-
-		if spec.Object.Target.Type == autoscaling.AverageValueMetricType {
+		case autoscaling.AverageValueMetricType:
 			objectMetric, err := c.Object.GetPerPodMetric(spec.Object.Metric.Name, namespace, &spec.Object.DescribedObject, selector)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get object metric: %v", err)
@@ -158,14 +157,17 @@ func (c *Gather) getMetric(currentReplicas int32, spec MetricSpec, namespace str
 				Spec:            spec,
 				Object:          objectMetric,
 			}, nil
+		default:
+			return nil, fmt.Errorf("invalid object metric source: must be either value or average value")
 		}
-
-		return nil, fmt.Errorf("invalid object metric source: neither a value target nor an average value target was set")
-
 	case autoscaling.PodsMetricSourceType:
 		metricSelector, err := metav1.LabelSelectorAsSelector(spec.Pods.Metric.Selector)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get pods metric: %v", err)
+		}
+
+		if spec.Pods.Target.Type != autoscaling.AverageValueMetricType {
+			return nil, fmt.Errorf("invalid pods metric source: must be average value")
 		}
 
 		podsMetric, err := c.Pods.GetMetric(spec.Pods.Metric.Name, namespace, selector, metricSelector)
@@ -215,7 +217,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec MetricSpec, namespace str
 				Spec:            spec,
 				External:        externalMetric,
 			}, nil
-		case autoscaling.UtilizationMetricType:
+		case autoscaling.ValueMetricType:
 			externalMetric, err := c.External.GetMetric(spec.External.Metric.Name, namespace, spec.External.Metric.Selector, selector)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get external metric: %v", err)
@@ -226,7 +228,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec MetricSpec, namespace str
 				External:        externalMetric,
 			}, nil
 		default:
-			return nil, fmt.Errorf("invalid external metric source: must be either average value or average utilization")
+			return nil, fmt.Errorf("invalid external metric source: must be either value or average value")
 		}
 
 	default:

@@ -29,6 +29,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/pods"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/podutil"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/resource"
+	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/value"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	v1 "k8s.io/api/core/v1"
@@ -137,7 +138,7 @@ func TestGetMetrics(t *testing.T) {
 		{
 			"Single object metric, invalid target",
 			nil,
-			errors.New(`invalid metrics (1 invalid out of 1), first error is: invalid object metric source: neither a value target nor an average value target was set`),
+			errors.New(`invalid metrics (1 invalid out of 1), first error is: invalid object metric source: must be either value or average value`),
 			nil,
 			nil,
 			nil,
@@ -202,7 +203,9 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Object: &object.Metric{
-						Utilization:   5,
+						Current: value.MetricValue{
+							Value: int64Ptr(5),
+						},
 						ReadyPodCount: int64Ptr(2),
 					},
 				},
@@ -212,7 +215,9 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ObjectGatherer{
 				GetMetricReactor: func(metricName, namespace string, objectRef *autoscaling.CrossVersionObjectReference, selector, metricSelector labels.Selector) (*object.Metric, error) {
 					return &object.Metric{
-						Utilization:   5,
+						Current: value.MetricValue{
+							Value: int64Ptr(5),
+						},
 						ReadyPodCount: int64Ptr(2),
 					}, nil
 				},
@@ -279,7 +284,9 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Object: &object.Metric{
-						Utilization:   17,
+						Current: value.MetricValue{
+							AverageValue: int64Ptr(17),
+						},
 						ReadyPodCount: int64Ptr(5),
 					},
 				},
@@ -289,7 +296,9 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ObjectGatherer{
 				GetPerPodMetricReactor: func(metricName, namespace string, objectRef *autoscaling.CrossVersionObjectReference, metricSelector labels.Selector) (*object.Metric, error) {
 					return &object.Metric{
-						Utilization:   17,
+						Current: value.MetricValue{
+							AverageValue: int64Ptr(17),
+						},
 						ReadyPodCount: int64Ptr(5),
 					}, nil
 				},
@@ -345,6 +354,34 @@ func TestGetMetrics(t *testing.T) {
 			"test-namespace",
 		},
 		{
+			"Single pods metric, fail to get metric, non average value",
+			nil,
+			errors.New(`invalid metrics (1 invalid out of 1), first error is: invalid pods metric source: must be average value`),
+			nil,
+			nil,
+			&fake.PodsGatherer{},
+			nil,
+			&appsv1.Deployment{
+				Spec: appsv1.DeploymentSpec{
+					Replicas: int32Ptr(1),
+				},
+			},
+			[]measure.MetricSpec{
+				{
+					Type: autoscaling.PodsMetricSourceType,
+					Pods: &measure.PodsMetricSource{
+						Metric: autoscaling.MetricIdentifier{
+							Selector: &metav1.LabelSelector{},
+						},
+						Target: measure.MetricTarget{
+							Type: autoscaling.UtilizationMetricType,
+						},
+					},
+				},
+			},
+			"test-namespace",
+		},
+		{
 			"Single pods metric, fail to get metric",
 			nil,
 			errors.New(`invalid metrics (1 invalid out of 1), first error is: failed to get pods metric: fail to get pods metric`),
@@ -368,6 +405,9 @@ func TestGetMetrics(t *testing.T) {
 						Metric: autoscaling.MetricIdentifier{
 							Selector: &metav1.LabelSelector{},
 						},
+						Target: measure.MetricTarget{
+							Type: autoscaling.AverageValueMetricType,
+						},
 					},
 				},
 			},
@@ -383,6 +423,9 @@ func TestGetMetrics(t *testing.T) {
 						Pods: &measure.PodsMetricSource{
 							Metric: autoscaling.MetricIdentifier{
 								Selector: &metav1.LabelSelector{},
+							},
+							Target: measure.MetricTarget{
+								Type: autoscaling.AverageValueMetricType,
 							},
 						},
 					},
@@ -423,6 +466,9 @@ func TestGetMetrics(t *testing.T) {
 					Pods: &measure.PodsMetricSource{
 						Metric: autoscaling.MetricIdentifier{
 							Selector: &metav1.LabelSelector{},
+						},
+						Target: measure.MetricTarget{
+							Type: autoscaling.AverageValueMetricType,
 						},
 					},
 				},
@@ -652,7 +698,7 @@ func TestGetMetrics(t *testing.T) {
 		{
 			"Single external metric, invalid target",
 			nil,
-			errors.New(`invalid metrics (1 invalid out of 1), first error is: invalid external metric source: must be either average value or average utilization`),
+			errors.New(`invalid metrics (1 invalid out of 1), first error is: invalid external metric source: must be either value or average value`),
 			nil,
 			nil,
 			nil,
@@ -729,7 +775,9 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					External: &external.Metric{
-						Utilization:   5,
+						Current: value.MetricValue{
+							AverageValue: int64Ptr(5),
+						},
 						ReadyPodCount: int64Ptr(6),
 					},
 				},
@@ -741,7 +789,9 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ExternalGatherer{
 				GetPerPodMetricReactor: func(metricName, namespace string, metricSelector *metav1.LabelSelector) (*external.Metric, error) {
 					return &external.Metric{
-						Utilization:   5,
+						Current: value.MetricValue{
+							AverageValue: int64Ptr(5),
+						},
 						ReadyPodCount: int64Ptr(6),
 					}, nil
 				},
@@ -768,7 +818,7 @@ func TestGetMetrics(t *testing.T) {
 			"test-namespace",
 		},
 		{
-			"Single external metric, average utilisation, fail to get metric",
+			"Single external metric, value, fail to get metric",
 			nil,
 			errors.New(`invalid metrics (1 invalid out of 1), first error is: failed to get external metric: fail to get metric`),
 			nil,
@@ -793,7 +843,7 @@ func TestGetMetrics(t *testing.T) {
 							Selector: &metav1.LabelSelector{},
 						},
 						Target: measure.MetricTarget{
-							Type: autoscaling.UtilizationMetricType,
+							Type: autoscaling.ValueMetricType,
 						},
 					},
 				},
@@ -801,7 +851,7 @@ func TestGetMetrics(t *testing.T) {
 			"test-namespace",
 		},
 		{
-			"Single external metric, average utilisation, success",
+			"Single external metric, value, success",
 			[]*measure.Metric{
 				{
 					CurrentReplicas: 7,
@@ -813,12 +863,14 @@ func TestGetMetrics(t *testing.T) {
 								Selector: &metav1.LabelSelector{},
 							},
 							Target: measure.MetricTarget{
-								Type: autoscaling.UtilizationMetricType,
+								Type: autoscaling.ValueMetricType,
 							},
 						},
 					},
 					External: &external.Metric{
-						Utilization:   2,
+						Current: value.MetricValue{
+							Value: int64Ptr(2),
+						},
 						ReadyPodCount: int64Ptr(3),
 					},
 				},
@@ -830,7 +882,9 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ExternalGatherer{
 				GetMetricReactor: func(metricName, namespace string, metricSelector *metav1.LabelSelector, podSelector labels.Selector) (*external.Metric, error) {
 					return &external.Metric{
-						Utilization:   2,
+						Current: value.MetricValue{
+							Value: int64Ptr(2),
+						},
 						ReadyPodCount: int64Ptr(3),
 					}, nil
 				},
@@ -849,7 +903,7 @@ func TestGetMetrics(t *testing.T) {
 							Selector: &metav1.LabelSelector{},
 						},
 						Target: measure.MetricTarget{
-							Type: autoscaling.UtilizationMetricType,
+							Type: autoscaling.ValueMetricType,
 						},
 					},
 				},
@@ -894,7 +948,7 @@ func TestGetMetrics(t *testing.T) {
 							Selector: &metav1.LabelSelector{},
 						},
 						Target: measure.MetricTarget{
-							Type: autoscaling.UtilizationMetricType,
+							Type: autoscaling.ValueMetricType,
 						},
 					},
 				},
@@ -943,12 +997,14 @@ func TestGetMetrics(t *testing.T) {
 								Selector: &metav1.LabelSelector{},
 							},
 							Target: measure.MetricTarget{
-								Type: autoscaling.UtilizationMetricType,
+								Type: autoscaling.ValueMetricType,
 							},
 						},
 					},
 					External: &external.Metric{
-						Utilization:   2,
+						Current: value.MetricValue{
+							Value: int64Ptr(2),
+						},
 						ReadyPodCount: int64Ptr(3),
 					},
 				},
@@ -1008,7 +1064,9 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ExternalGatherer{
 				GetMetricReactor: func(metricName, namespace string, metricSelector *metav1.LabelSelector, podSelector labels.Selector) (*external.Metric, error) {
 					return &external.Metric{
-						Utilization:   2,
+						Current: value.MetricValue{
+							Value: int64Ptr(2),
+						},
 						ReadyPodCount: int64Ptr(3),
 					}, nil
 				},
@@ -1027,7 +1085,7 @@ func TestGetMetrics(t *testing.T) {
 							Selector: &metav1.LabelSelector{},
 						},
 						Target: measure.MetricTarget{
-							Type: autoscaling.UtilizationMetricType,
+							Type: autoscaling.ValueMetricType,
 						},
 					},
 				},
@@ -1076,12 +1134,14 @@ func TestGetMetrics(t *testing.T) {
 								Selector: &metav1.LabelSelector{},
 							},
 							Target: measure.MetricTarget{
-								Type: autoscaling.UtilizationMetricType,
+								Type: autoscaling.ValueMetricType,
 							},
 						},
 					},
 					External: &external.Metric{
-						Utilization:   2,
+						Current: value.MetricValue{
+							Value: int64Ptr(2),
+						},
 						ReadyPodCount: int64Ptr(3),
 					},
 				},
@@ -1122,7 +1182,9 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Object: &object.Metric{
-						Utilization:   2,
+						Current: value.MetricValue{
+							AverageValue: int64Ptr(2),
+						},
 						ReadyPodCount: int64Ptr(6),
 					},
 				},
@@ -1163,7 +1225,9 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ObjectGatherer{
 				GetPerPodMetricReactor: func(metricName, namespace string, objectRef *autoscaling.CrossVersionObjectReference, metricSelector labels.Selector) (*object.Metric, error) {
 					return &object.Metric{
-						Utilization:   2,
+						Current: value.MetricValue{
+							AverageValue: int64Ptr(2),
+						},
 						ReadyPodCount: int64Ptr(6),
 					}, nil
 				},
@@ -1186,7 +1250,9 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ExternalGatherer{
 				GetMetricReactor: func(metricName, namespace string, metricSelector *metav1.LabelSelector, podSelector labels.Selector) (*external.Metric, error) {
 					return &external.Metric{
-						Utilization:   2,
+						Current: value.MetricValue{
+							Value: int64Ptr(2),
+						},
 						ReadyPodCount: int64Ptr(3),
 					}, nil
 				},
@@ -1205,7 +1271,7 @@ func TestGetMetrics(t *testing.T) {
 							Selector: &metav1.LabelSelector{},
 						},
 						Target: measure.MetricTarget{
-							Type: autoscaling.UtilizationMetricType,
+							Type: autoscaling.ValueMetricType,
 						},
 					},
 				},

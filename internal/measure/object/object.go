@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/podutil"
+	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/value"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	"k8s.io/apimachinery/pkg/labels"
 	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
@@ -46,7 +47,7 @@ type Gatherer interface {
 // Metric (Object) is a metric describing a kubernetes object
 // (for example, hits-per-second on an Ingress object).
 type Metric struct {
-	Utilization   int64
+	Current       value.MetricValue
 	ReadyPodCount *int64
 	Timestamp     time.Time
 }
@@ -72,7 +73,9 @@ func (c *Gather) GetMetric(metricName string, namespace string, objectRef *autos
 	}
 
 	return &Metric{
-		Utilization:   utilization,
+		Current: value.MetricValue{
+			Value: &utilization,
+		},
 		ReadyPodCount: &readyPodCount,
 		Timestamp:     timestamp,
 	}, nil
@@ -87,7 +90,9 @@ func (c *Gather) GetPerPodMetric(metricName string, namespace string, objectRef 
 	}
 
 	return &Metric{
-		Utilization: utilization,
-		Timestamp:   timestamp,
+		Current: value.MetricValue{
+			AverageValue: &utilization,
+		},
+		Timestamp: timestamp,
 	}, nil
 }

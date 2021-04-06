@@ -37,12 +37,11 @@ import (
 
 // MetricSpec defines which metrics to query from the metrics server
 type MetricSpec struct {
-	Type              autoscaling.MetricSourceType   `json:"type"`
-	Object            *ObjectMetricSource            `json:"object,omitempty"`
-	Pods              *PodsMetricSource              `json:"pods,omitempty"`
-	Resource          *ResourceMetricSource          `json:"resource,omitempty"`
-	ContainerResource *ContainerResourceMetricSource `json:"containerResource,omitempty"`
-	External          *ExternalMetricSource          `json:"external,omitempty"`
+	Type     autoscaling.MetricSourceType `json:"type"`
+	Object   *ObjectMetricSource          `json:"object,omitempty"`
+	Pods     *PodsMetricSource            `json:"pods,omitempty"`
+	Resource *ResourceMetricSource        `json:"resource,omitempty"`
+	External *ExternalMetricSource        `json:"external,omitempty"`
 }
 
 // Metric is a metric that has been retrieved from the K8s metrics server
@@ -82,15 +81,6 @@ type PodsMetricSource struct {
 type ResourceMetricSource struct {
 	Name   v1.ResourceName `json:"name" protobuf:"bytes,1,name=name"`
 	Target MetricTarget    `json:"target"`
-}
-
-// ContainerResourceMetricSource defines gathering metrics for a resource metric known to Kubernetes, as specified in
-// requests and limits, describing each pod in the current scale target (e.g. CPU or memory). Such metrics are built in
-// to Kubernetes.
-type ContainerResourceMetricSource struct {
-	Name      v1.ResourceName `json:"name"`
-	Container string          `json:"container"`
-	Target    MetricTarget    `json:"target"`
 }
 
 // ExternalMetricSource defines gathering metrics for a metric not associated with any Kubernetes object (for example

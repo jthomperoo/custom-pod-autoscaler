@@ -25,6 +25,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/object"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/podutil"
+	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/value"
 	"k8s.io/api/autoscaling/v2beta2"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	"k8s.io/apimachinery/pkg/labels"
@@ -94,7 +95,9 @@ func TestGetMetric(t *testing.T) {
 		{
 			"Success",
 			&object.Metric{
-				Utilization:   5,
+				Current: value.MetricValue{
+					Value: int64Ptr(5),
+				},
 				ReadyPodCount: int64Ptr(2),
 			},
 			nil,
@@ -170,7 +173,9 @@ func TestGetPerPodMetric(t *testing.T) {
 		{
 			"Success",
 			&object.Metric{
-				Utilization: 5,
+				Current: value.MetricValue{
+					AverageValue: int64Ptr(5),
+				},
 			},
 			nil,
 			&fake.MetricClient{

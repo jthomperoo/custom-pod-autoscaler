@@ -17,6 +17,7 @@ limitations under the License.
 package fake
 
 import (
+	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/external"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/object"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/pods"
@@ -26,6 +27,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
+
+// Gather (fake) provides a way to insert functionality into a Gatherer
+type Gather struct {
+	GetMetricsReactor func(resource metav1.Object, specs []measure.MetricSpec, namespace string) ([]*measure.Metric, error)
+}
+
+// GetMetric calls the fake ExternalGatherer function
+func (f *Gather) GetMetrics(resource metav1.Object, specs []measure.MetricSpec, namespace string) ([]*measure.Metric, error) {
+	return f.GetMetricsReactor(resource, specs, namespace)
+}
 
 // ExternalGatherer (fake) provides a way to insert functionality into an ExternalGatherer
 type ExternalGatherer struct {

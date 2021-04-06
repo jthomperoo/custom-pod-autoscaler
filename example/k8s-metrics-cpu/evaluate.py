@@ -41,12 +41,17 @@ def evaluate(spec):
         sys.stderr.write("Expected 1 metric")
         exit(1)
 
+    # Get the metric value, there should only be 1
     metric_value = json.loads(spec["metrics"][0]["value"])
+
+    # Get the current replicas from the metric
     current_replicas = metric_value["current_replicas"]
+    # Get the average utilization from the metric
     average_utilization = metric_value["average_utilization"]
 
+    # Calculate target replicas, increase by 1 if utilization is above target, decrease by 1 if utilization is below
+    # target
     target_replicas = current_replicas
-
     if average_utilization > target_average_utilization:
         target_replicas += 1
     else:

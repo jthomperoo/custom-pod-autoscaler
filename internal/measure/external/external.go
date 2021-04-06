@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/podutil"
+	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure/value"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/labels"
@@ -50,7 +51,7 @@ type Gatherer interface {
 // (for example length of queue in cloud messaging service, or
 // QPS from loadbalancer running outside of cluster).
 type Metric struct {
-	Utilization   int64
+	Current       value.MetricValue
 	ReadyPodCount *int64
 	Timestamp     time.Time
 }
@@ -86,7 +87,9 @@ func (c *Gather) GetMetric(metricName, namespace string, metricSelector *metav1.
 	}
 
 	return &Metric{
-		Utilization:   utilization,
+		Current: value.MetricValue{
+			Value: &utilization,
+		},
 		ReadyPodCount: &readyPodCount,
 		Timestamp:     timestamp,
 	}, nil
@@ -113,7 +116,9 @@ func (c *Gather) GetPerPodMetric(metricName, namespace string, metricSelector *m
 	}
 
 	return &Metric{
-		Utilization: utilization,
-		Timestamp:   timestamp,
+		Current: value.MetricValue{
+			AverageValue: &utilization,
+		},
+		Timestamp: timestamp,
 	}, nil
 }
