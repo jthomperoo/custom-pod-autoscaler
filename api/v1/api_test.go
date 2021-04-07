@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Custom Pod Autoscaler Authors.
+Copyright 2021 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ type successGetMetrics struct{}
 
 func (s *successGetMetrics) GetMetrics(spec metric.Spec) ([]*metric.Metric, error) {
 	return []*metric.Metric{
-		&metric.Metric{
+		{
 			Value:    "SUCCESS",
 			Resource: "SUCCESS_POD",
 		},

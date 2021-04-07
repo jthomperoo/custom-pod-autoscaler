@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Custom Pod Autoscaler Authors.
+Copyright 2021 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,14 +17,16 @@ limitations under the License.
 package resourceclient
 
 import (
+	"context"
 	"fmt"
+
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes/scheme"
-	"strings"
 )
 
 // Client provides methods for retrieving arbitrary Kubernetes resources, returned as generalised metav1.Object, which can be converted
@@ -64,7 +66,7 @@ func (u *UnstructuredClient) Get(apiVersion string, kind string, name string, na
 	}
 
 	// Get resource
-	resource, err := u.Dynamic.Resource(resourceGVR).Namespace(namespace).Get(name, metav1.GetOptions{})
+	resource, err := u.Dynamic.Resource(resourceGVR).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

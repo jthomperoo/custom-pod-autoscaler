@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Custom Pod Autoscaler Authors.
+Copyright 2021 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ limitations under the License.
 package scale
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -164,7 +165,7 @@ func (s *Scale) Scale(spec Spec) (*evaluate.Evaluation, error) {
 		}
 
 		glog.V(3).Infoln("Attempting to get scale subresource for managed resource")
-		scale, err := s.Scaler.Scales(spec.Namespace).Get(targetGR, spec.ScaleTargetRef.Name)
+		scale, err := s.Scaler.Scales(spec.Namespace).Get(context.Background(), targetGR, spec.ScaleTargetRef.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -172,7 +173,7 @@ func (s *Scale) Scale(spec Spec) (*evaluate.Evaluation, error) {
 
 		glog.V(3).Infoln("Attempting to apply scaling changes to resource")
 		scale.Spec.Replicas = targetReplicas
-		_, err = s.Scaler.Scales(spec.Namespace).Update(targetGR, scale)
+		_, err = s.Scaler.Scales(spec.Namespace).Update(context.Background(), targetGR, scale, metav1.UpdateOptions{})
 		if err != nil {
 			return nil, err
 		}

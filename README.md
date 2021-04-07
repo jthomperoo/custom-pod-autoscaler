@@ -18,8 +18,6 @@ Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=la
 
 This is the Custom Pod Autoscaler (CPA) code and base images.
 
-The CPA is part of the [Custom Pod Autoscaler Framework](https://custom-pod-autoscaler.readthedocs.io/en/stable).
-
 ## What is it?
 
 A Custom Pod Autoscaler is a Kubernetes autoscaler that is customised and user created. Custom Pod Autoscalers are
@@ -41,8 +39,11 @@ or HTTP request.
 - Configuration at build time or deploy time.
 - Allows scaling to and from zero.
 - Can be configured without master node access, can be configured on managed providers such as EKS or GKE.
+- Supports Kubernetes metrics that the Horizontal Pod Autoscaler uses, can be configured using a similar syntax and
+used in custom scaling decisions.
 
 ## How does it work?
+
 A Custom Pod Autoscaler has a base program (defined in this repository) that handles interacting with user logic, for
 example by using shell commands and piping data into them.
 When developing a Custom Pod Autoscaler you define logic for two stages:
@@ -68,19 +69,41 @@ references](https://custom-pod-autoscaler.readthedocs.io/en/stable/).
 ### Environment
 Developing this project requires these dependencies:
 
-* [Go](https://golang.org/doc/install) >= `1.13`
-* [Golint](https://github.com/golang/lint)
+* [Go](https://golang.org/doc/install) >= `1.16`
+* [Golint](https://github.com/golang/lint) == `v0.0.0-20201208152925-83fdc39ff7b5`
 * [Docker](https://docs.docker.com/install/)
 
-To view docs locally, requires:
+To view the docs, you need Python 3 installed:
 
-* [mkdocs](https://www.mkdocs.org/)
+* [Python](https://www.python.org/downloads/) == `3.8.5`
+
+To view docs locally you need some Python dependencies, run:
+
+```bash
+pip install -r docs/requirements.txt
+```
+
+It is recommended to test locally using a local Kubernetes managment system, such as
+[k3d](https://github.com/rancher/k3d) (allows running a small Kubernetes cluster locally using Docker).
+
+Once you have a cluster available, you should install the [Custom Pod Autoscaler Operator
+(CPAO)](https://github.com/jthomperoo/custom-pod-autoscaler-operator/blob/master/INSTALL.md)
+onto the cluster to let you install Custom Pod Autoscalers.
+
+With the CPAO installed you can install your development builds of the CPA onto the cluster by building the image
+locally, and then build CPAs using the new development image.
+
+Finally you can build a CPA example (see the [`example/` directory](./example) for choices), and then
+push the image to the K8s cluster's registry (to do that with k3d you can use the `k3d image import` command). Once
+the autoscaler's image is available in the registry it can be deployed using `kubectl`.
 
 ### Commands
 
 * `make` - builds the CPA binary.
 * `make docker` - builds the CPA base images.
 * `make lint` - lints the code.
+* `make beautify` - beautifies the code, must be run to pass the CI.
 * `make unittest` - runs the unit tests.
 * `make vendor` - generates a vendor folder.
 * `make doc` - hosts the documentation locally, at `127.0.0.1:8000`.
+* `make view_coverage` - opens up any generated coverage reports in the browser.

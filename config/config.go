@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Custom Pod Autoscaler Authors.
+Copyright 2021 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure"
 	autoscaling "k8s.io/api/autoscaling/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
@@ -39,14 +40,16 @@ const (
 )
 
 const (
-	defaultInterval               = 15000
-	defaultNamespace              = "default"
-	defaultMinReplicas            = 1
-	defaultMaxReplicas            = 10
-	defaultStartTime              = 1
-	defaultRunMode                = PerPodRunMode
-	defaultLogVerbosity           = 0
-	defaultDownscaleStabilization = 0
+	defaultInterval                = 15000
+	defaultNamespace               = "default"
+	defaultMinReplicas             = 1
+	defaultMaxReplicas             = 10
+	defaultStartTime               = 1
+	defaultRunMode                 = PerPodRunMode
+	defaultLogVerbosity            = 0
+	defaultDownscaleStabilization  = 0
+	defaultCPUInitializationPeriod = 300
+	defaultInitialReadinessDelay   = 30
 )
 
 const (
@@ -62,24 +65,28 @@ const jsonStructTag = "json"
 
 // Config is the configuration options for the CPA
 type Config struct {
-	ScaleTargetRef         *autoscaling.CrossVersionObjectReference `json:"scaleTargetRef"`
-	PreMetric              *Method                                  `json:"preMetric"`
-	PostMetric             *Method                                  `json:"postMetric"`
-	PreEvaluate            *Method                                  `json:"preEvaluate"`
-	PostEvaluate           *Method                                  `json:"postEvaluate"`
-	PreScale               *Method                                  `json:"preScale"`
-	PostScale              *Method                                  `json:"postScale"`
-	Evaluate               *Method                                  `json:"evaluate"`
-	Metric                 *Method                                  `json:"metric"`
-	Interval               int                                      `json:"interval"`
-	Namespace              string                                   `json:"namespace"`
-	MinReplicas            int32                                    `json:"minReplicas"`
-	MaxReplicas            int32                                    `json:"maxReplicas"`
-	RunMode                string                                   `json:"runMode"`
-	StartTime              int64                                    `json:"startTime"`
-	LogVerbosity           int32                                    `json:"logVerbosity"`
-	DownscaleStabilization int                                      `json:"downscaleStabilization"`
-	APIConfig              *APIConfig                               `json:"apiConfig"`
+	ScaleTargetRef           *autoscaling.CrossVersionObjectReference `json:"scaleTargetRef"`
+	PreMetric                *Method                                  `json:"preMetric"`
+	PostMetric               *Method                                  `json:"postMetric"`
+	PreEvaluate              *Method                                  `json:"preEvaluate"`
+	PostEvaluate             *Method                                  `json:"postEvaluate"`
+	PreScale                 *Method                                  `json:"preScale"`
+	PostScale                *Method                                  `json:"postScale"`
+	Evaluate                 *Method                                  `json:"evaluate"`
+	Metric                   *Method                                  `json:"metric"`
+	Interval                 int                                      `json:"interval"`
+	Namespace                string                                   `json:"namespace"`
+	MinReplicas              int32                                    `json:"minReplicas"`
+	MaxReplicas              int32                                    `json:"maxReplicas"`
+	RunMode                  string                                   `json:"runMode"`
+	StartTime                int64                                    `json:"startTime"`
+	LogVerbosity             int32                                    `json:"logVerbosity"`
+	DownscaleStabilization   int                                      `json:"downscaleStabilization"`
+	APIConfig                *APIConfig                               `json:"apiConfig"`
+	KubernetesMetricSpecs    []measure.MetricSpec                     `json:"kubernetesMetricSpecs"`
+	RequireKubernetesMetrics bool                                     `json:"requireKubernetesMetrics"`
+	InitialReadinessDelay    int64                                    `json:"initialReadinessDelay"`
+	CPUInitializationPeriod  int64                                    `json:"cpuInitializationPeriod"`
 }
 
 // APIConfig is configuration options specifically for the API exposed by the CPA
@@ -210,5 +217,9 @@ func newDefaultConfig() *Config {
 			CertFile: defaultCertFile,
 			KeyFile:  defaultKeyFile,
 		},
+		KubernetesMetricSpecs:    nil,
+		RequireKubernetesMetrics: false,
+		InitialReadinessDelay:    defaultInitialReadinessDelay,
+		CPUInitializationPeriod:  defaultCPUInitializationPeriod,
 	}
 }

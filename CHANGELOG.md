@@ -6,6 +6,14 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Feature to provide standard K8s metrics to the metric gathering stage of the autoscaler
+  - Can now provide a list of Metric Specs (similar to the Horizontal Pod Autoscaler) to choose which metrics to
+  include in the data sent to the metric gathering stage with the `kubernetesMetricSpecs` configuration option.
+  - Can provide the `requireKubernetesMetrics` option to fail if the metrics server query fails.
+  - Can provide `initialReadinessDelay` and `cpuInitializationPeriod` values for use when querying the metrics server.
+### Changed
+- Switched docs theme to material theme.
 
 ## [v1.0.1] - 2020-09-12
 ### Added

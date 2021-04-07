@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Custom Pod Autoscaler Authors.
+Copyright 2021 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -46,15 +46,22 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute/http"
 	"github.com/jthomperoo/custom-pod-autoscaler/execute/shell"
+	"github.com/jthomperoo/custom-pod-autoscaler/internal/measure"
+	"github.com/jthomperoo/custom-pod-autoscaler/internal/podclient"
 	"github.com/jthomperoo/custom-pod-autoscaler/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/resourceclient"
 	"github.com/jthomperoo/custom-pod-autoscaler/scale"
 	"k8s.io/apimachinery/pkg/runtime"
+	cacheddiscovery "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	k8sscale "k8s.io/client-go/scale"
+	"k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
+	k8sresourceclient "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
+	customclient "k8s.io/metrics/pkg/client/custom_metrics"
+	externalclient "k8s.io/metrics/pkg/client/external_metrics"
 )
 
 const configEnvName = "configPath"
@@ -151,6 +158,19 @@ func main() {
 		),
 	)
 
+	// Create K8s metric gatherer, with required clients and configuration
+	gatherer := measure.NewGather(metrics.NewRESTMetricsClient(
+		k8sresourceclient.NewForConfigOrDie(clusterConfig),
+		customclient.NewForConfig(
+			clusterConfig,
+			restmapper.NewDeferredDiscoveryRESTMapper(cacheddiscovery.NewMemCacheClient(clientset.Discovery())),
+			customclient.NewAvailableAPIsGetter(clientset.Discovery()),
+		),
+		externalclient.NewForConfigOrDie(clusterConfig),
+	), &podclient.OnDemandPodLister{
+		Clientset: clientset,
+	}, time.Duration(config.CPUInitializationPeriod)*time.Second, time.Duration(config.InitialReadinessDelay)*time.Second)
+
 	// Set up shell executer
 	shellExec := &shell.Execute{
 		Command: exec.Command,
@@ -175,9 +195,10 @@ func main() {
 
 	// Set up metric gathering
 	metricGatherer := &metric.Gatherer{
-		Clientset: clientset,
-		Config:    config,
-		Execute:   combinedExecute,
+		Clientset:         clientset,
+		Config:            config,
+		Execute:           combinedExecute,
+		K8sMetricGatherer: gatherer,
 	}
 
 	// Set up evaluator
