@@ -158,6 +158,19 @@ func main() {
 		),
 	)
 
+	// Create K8s metric gatherer, with required clients and configuration
+	gatherer := measure.NewGather(metrics.NewRESTMetricsClient(
+		k8sresourceclient.NewForConfigOrDie(clusterConfig),
+		customclient.NewForConfig(
+			clusterConfig,
+			restmapper.NewDeferredDiscoveryRESTMapper(cacheddiscovery.NewMemCacheClient(clientset.Discovery())),
+			customclient.NewAvailableAPIsGetter(clientset.Discovery()),
+		),
+		externalclient.NewForConfigOrDie(clusterConfig),
+	), &podclient.OnDemandPodLister{
+		Clientset: clientset,
+	}, time.Duration(config.CPUInitializationPeriod)*time.Second, time.Duration(config.InitialReadinessDelay)*time.Second)
+
 	// Set up shell executer
 	shellExec := &shell.Execute{
 		Command: exec.Command,
@@ -182,9 +195,10 @@ func main() {
 
 	// Set up metric gathering
 	metricGatherer := &metric.Gatherer{
-		Clientset: clientset,
-		Config:    config,
-		Execute:   combinedExecute,
+		Clientset:         clientset,
+		Config:            config,
+		Execute:           combinedExecute,
+		K8sMetricGatherer: gatherer,
 	}
 
 	// Set up evaluator
@@ -192,19 +206,6 @@ func main() {
 		Config:  config,
 		Execute: combinedExecute,
 	}
-
-	// Create K8s metric gatherer, with required clients and configuration
-	gatherer := measure.NewGather(metrics.NewRESTMetricsClient(
-		k8sresourceclient.NewForConfigOrDie(clusterConfig),
-		customclient.NewForConfig(
-			clusterConfig,
-			restmapper.NewDeferredDiscoveryRESTMapper(cacheddiscovery.NewMemCacheClient(clientset.Discovery())),
-			customclient.NewAvailableAPIsGetter(clientset.Discovery()),
-		),
-		externalclient.NewForConfigOrDie(clusterConfig),
-	), &podclient.OnDemandPodLister{
-		Clientset: clientset,
-	}, time.Duration(config.CPUInitializationPeriod)*time.Second, time.Duration(config.InitialReadinessDelay)*time.Second)
 
 	glog.V(1).Infoln("Setting up REST API")
 
@@ -243,12 +244,11 @@ func main() {
 
 		// Set up scaler
 		autoscaler := &autoscaler.Scaler{
-			Client:            resourceClient,
-			Config:            config,
-			GetMetricer:       metricGatherer,
-			GetEvaluationer:   evaluator,
-			Scaler:            scaler,
-			K8sMetricGatherer: gatherer,
+			Client:          resourceClient,
+			Config:          config,
+			GetMetricer:     metricGatherer,
+			GetEvaluationer: evaluator,
+			Scaler:          scaler,
 		}
 
 		// Run the scaler in a goroutine, triggered by the ticker

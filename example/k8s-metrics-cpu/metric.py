@@ -14,7 +14,6 @@
 
 import json
 import sys
-import requests
 
 # JSON piped into this script example:
 # {

@@ -49,9 +49,10 @@ type Metric struct {
 
 // Gatherer handles triggering the metric gathering logic to gather metrics for a resource
 type Gatherer struct {
-	Clientset kubernetes.Interface
-	Config    *config.Config
-	Execute   execute.Executer
+	Clientset         kubernetes.Interface
+	Config            *config.Config
+	Execute           execute.Executer
+	K8sMetricGatherer measure.Gatherer
 }
 
 // Spec defines information fed into a gatherer to retrieve metrics, contains an optional
@@ -65,6 +66,22 @@ type Spec struct {
 
 // GetMetrics gathers metrics for the resource supplied
 func (m *Gatherer) GetMetrics(spec Spec) ([]*Metric, error) {
+
+	// Query metrics server if requested
+	if m.Config.KubernetesMetricSpecs != nil {
+		glog.V(3).Infoln("K8s Metrics specs provided, attempting to query the K8s metrics server")
+		k8sMetricSpec, err := m.K8sMetricGatherer.GetMetrics(spec.Resource, m.Config.KubernetesMetricSpecs, m.Config.Namespace)
+		if err != nil {
+			if m.Config.RequireKubernetesMetrics {
+				return nil, err
+			}
+			glog.Errorf("Failed to retrieve K8s metrics, not required so continuing: %+v", err)
+		} else {
+			glog.V(3).Infof("Successfully retrieved K8s metrics: %+v", k8sMetricSpec)
+		}
+		spec.KubernetesMetrics = k8sMetricSpec
+		glog.V(3).Infoln("Finished querying the K8s metrics server")
+	}
 
 	switch m.Config.RunMode {
 	case config.PerPodRunMode:

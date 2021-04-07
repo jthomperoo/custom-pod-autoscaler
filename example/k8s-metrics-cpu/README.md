@@ -64,11 +64,38 @@ You need to deploy an app for the CPA to manage:
 `kubectl apply -f deployment.yaml`
 Now you have an app running to manage scaling for.
 
-### Build CPA image
+### Build and deploy CPA image
 
 Once CPAs have been enabled on your cluster, you need to build this example, run these commands to build the example:
 * Build the example image.
-`docker build -t cpu-scaler .`
+`docker build -t k8s-metrics-cpu .`
 * Deploy the CPA using the image just built.
 `kubectl apply -f cpa.yaml`
 Now the CPA should be running on your cluster, managing the app we previously deployed.
+
+### Increase CPU load
+
+Increase the CPU load with:
+
+```bash
+kubectl run -it --rm load-generator --image=busybox -- /bin/sh
+```
+
+Once it has loaded, run this command to create load :
+
+```bash
+while true; do wget -q -O- http://php-apache.default.svc.cluster.local; done
+```
+
+Watch as the number of replicas increases.
+
+The autoscaler image contains some debug aliases, you can do:
+
+```bash
+kubectl exec -it k8s-metrics-cpu -- bash
+```
+
+Once you are inside the autoscaler, you can execute the following aliases:
+
+- `metrics` - calls the metric gathering stage through the API, will display the gathered average CPU utilization value.
+- `evaluation` - forces an evaluation to be calculated through the API.
