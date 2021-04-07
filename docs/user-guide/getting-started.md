@@ -216,7 +216,7 @@ creating our autoscaler, lets see how it works.
 
 # Test the autoscaler
 First we should enable custom autoscalers on our cluster by installing the Custom Pod Autoscaler
-Operator, for this guide we are using `v1.0.1`, but check out the latest version from the
+Operator, for this guide we are using `v1.1.0`, but check out the latest version from the
 [Custom Pod Autoscaler Operator
 releases](https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases)
 and see the [install
@@ -224,11 +224,11 @@ guide](https://github.com/jthomperoo/custom-pod-autoscaler-operator/blob/master/
 for the latest install information.
 
 ```
-VERSION=v1.0.1
+VERSION=v1.1.0
 kubectl apply -f https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases/download/${VERSION}/cluster.yaml
 ```
 
-This will do a cluster-wide install of `v1.0.1` of the Custom Pod Autoscaler Operator.
+This will do a cluster-wide install of `v1.1.0` of the Custom Pod Autoscaler Operator.
 
 Now we should create a deployment for the autoscaler to manage, create a deployment YAML file
 called `deployment.yaml`:

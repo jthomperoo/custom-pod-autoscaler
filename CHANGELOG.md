@@ -6,6 +6,8 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v1.1.0] - 2021-04-08
 ### Added
 - Feature to provide standard K8s metrics to the metric gathering stage of the autoscaler
   - Can now provide a list of Metric Specs (similar to the Horizontal Pod Autoscaler) to choose which metrics to
@@ -190,7 +192,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v1.0.1...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v1.1.0...HEAD
+[v1.1.0]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v1.0.1...v1.1.0
 [v1.0.1]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v1.0.0...v1.0.1
 [v1.0.0]:
