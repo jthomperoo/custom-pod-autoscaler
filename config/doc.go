@@ -14,10 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
-
-// Error is an error response from the API, with the status code and an error message
-type Error struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
-}
+/*
+Package config contains the definitions for any configuration that the Custom Pod Autoscaler supports.
+This configuration defines any option that can be configured on a Custom Pod Autoscaler.
+*/
+package config

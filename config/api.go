@@ -14,10 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package config
 
-// Error is an error response from the API, with the status code and an error message
-type Error struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+// APIConfig is configuration options specifically for the API exposed by the CPA
+type APIConfig struct {
+	Enabled  bool   `json:"enabled"`
+	UseHTTPS bool   `json:"useHTTPS"`
+	Port     int    `json:"port"`
+	Host     string `json:"host"`
+	CertFile string `json:"certFile"`
+	KeyFile  string `json:"keyFile"`
 }

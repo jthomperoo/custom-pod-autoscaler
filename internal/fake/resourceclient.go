@@ -14,10 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package fake
 
-// Error is an error response from the API, with the status code and an error message
-type Error struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+// ResourceClient (fake) allows inserting logic into a resource client for testing
+type ResourceClient struct {
+	GetReactor func(apiVersion string, kind string, name string, namespace string) (metav1.Object, error)
+}
+
+// Get calls the fake ResourceClient reactor method provided
+func (u *ResourceClient) Get(apiVersion string, kind string, name string, namespace string) (metav1.Object, error) {
+	return u.GetReactor(apiVersion, kind, name, namespace)
 }

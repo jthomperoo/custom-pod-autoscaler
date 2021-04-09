@@ -14,10 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
-
-// Error is an error response from the API, with the status code and an error message
-type Error struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
-}
+// Package fake provides stubs for testing relevant to the Custom Pod Autoscaler packages
+package fake

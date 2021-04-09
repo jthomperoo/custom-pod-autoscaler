@@ -374,7 +374,7 @@ kubectl delete -f cpa.yaml
 ```
 Removes our custom autoscaler.
 ```
-VERSION=v0.5.0
+VERSION=v1.1.0
 curl -L "https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases/download/${VERSION}/cluster.tar.gz" | tar xvz --to-command 'kubectl delete -f -'
 ```
 Removes the custom autoscaler operator.

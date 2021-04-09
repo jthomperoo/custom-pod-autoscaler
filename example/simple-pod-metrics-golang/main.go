@@ -38,7 +38,7 @@ import (
 
 // EvaluateSpec represents the information fed to the evaluator
 type EvaluateSpec struct {
-	Metrics              []*metric.Metric          `json:"metrics"`
+	Metrics              []*metric.ResourceMetric  `json:"metrics"`
 	UnstructuredResource unstructured.Unstructured `json:"resource"`
 	Resource             metav1.Object             `json:"-"`
 	RunType              string                    `json:"runType"`

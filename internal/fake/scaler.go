@@ -14,10 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package fake
 
-// Error is an error response from the API, with the status code and an error message
-type Error struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+import (
+	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/scale"
+)
+
+// Scaler (fake) allows inserting logic into a scaler for testing
+type Scaler struct {
+	ScaleReactor func(info scale.Info) (*evaluate.Evaluation, error)
+}
+
+// Scale calls the fake Scaler reactor method provided
+func (s *Scaler) Scale(info scale.Info) (*evaluate.Evaluation, error) {
+	return s.ScaleReactor(info)
 }

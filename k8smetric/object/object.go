@@ -14,10 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package object
 
-// Error is an error response from the API, with the status code and an error message
-type Error struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+import (
+	"time"
+
+	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/value"
+)
+
+// Metric (Object) is a metric describing a kubernetes object (for example, hits-per-second on an Ingress object).
+type Metric struct {
+	Current       value.MetricValue `json:"current,omitempty"`
+	ReadyPodCount *int64            `json:"ready_pod_count,omitempty"`
+	Timestamp     time.Time         `json:"timestamp,omitempty"`
 }
