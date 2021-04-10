@@ -26,7 +26,6 @@ import (
 
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/evaluatecalc"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/fake"
@@ -60,7 +59,7 @@ func TestGetEvaluation(t *testing.T) {
 						Value:    "test value",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			&config.Config{
 				PreEvaluate: &config.Method{
@@ -86,7 +85,7 @@ func TestGetEvaluation(t *testing.T) {
 						Value:    "test value",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{
@@ -117,7 +116,7 @@ func TestGetEvaluation(t *testing.T) {
 						Value:    "test value",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{
@@ -156,7 +155,7 @@ func TestGetEvaluation(t *testing.T) {
 						Value:    "test value",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{
@@ -199,7 +198,7 @@ func TestGetEvaluation(t *testing.T) {
 						Value:    "test value",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{
@@ -242,7 +241,7 @@ func TestGetEvaluation(t *testing.T) {
 						Value:    "test value",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{
@@ -280,7 +279,7 @@ func TestGetEvaluation(t *testing.T) {
 						Value:    "test value",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			&config.Config{
 				Evaluate: &config.Method{

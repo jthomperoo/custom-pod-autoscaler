@@ -24,7 +24,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/scaling"
 	"github.com/jthomperoo/custom-pod-autoscaler/scale"
@@ -73,7 +72,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -107,7 +106,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "/invalid/",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -153,7 +152,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -214,7 +213,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -259,7 +258,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -304,7 +303,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -343,7 +342,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -405,7 +404,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -467,7 +466,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -514,7 +513,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -553,7 +552,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -615,7 +614,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -677,7 +676,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -739,7 +738,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -809,7 +808,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -882,7 +881,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -944,7 +943,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -1006,7 +1005,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -1068,7 +1067,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -1163,7 +1162,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 		{
@@ -1258,7 +1257,7 @@ func TestScale_Scale(t *testing.T) {
 					APIVersion: "apps/v1",
 				},
 				Namespace: "test",
-				RunType:   autoscaler.RunType,
+				RunType:   config.ScalerRunType,
 			},
 		},
 	}

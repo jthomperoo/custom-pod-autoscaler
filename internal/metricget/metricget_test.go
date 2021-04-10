@@ -23,7 +23,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/autoscaler"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/internal/metricget"
 	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric"
@@ -65,7 +64,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -92,7 +91,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -121,7 +120,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -150,7 +149,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -179,7 +178,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -199,7 +198,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -233,7 +232,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -279,7 +278,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -310,7 +309,7 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			metric.Info{
 				Resource: &appsv1.Deployment{},
-				RunType:  autoscaler.RunType,
+				RunType:  config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -345,7 +344,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -397,7 +396,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -440,7 +439,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -488,7 +487,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -536,7 +535,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -590,7 +589,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -644,7 +643,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -692,7 +691,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -738,7 +737,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -790,7 +789,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -833,7 +832,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -861,7 +860,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -892,7 +891,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -934,7 +933,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -967,7 +966,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -1003,7 +1002,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -1039,7 +1038,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -1095,7 +1094,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
@@ -1143,7 +1142,7 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 				},
-				RunType: autoscaler.RunType,
+				RunType: config.ScalerRunType,
 			},
 			metricget.Gatherer{
 				Config: &config.Config{
