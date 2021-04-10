@@ -101,9 +101,8 @@ the autoscaler's image is available in the registry it can be deployed using `ku
 
 * `make` - builds the CPA binary.
 * `make docker` - builds the CPA base images.
+* `make test` - runs the unit tests.
 * `make lint` - lints the code.
 * `make beautify` - beautifies the code, must be run to pass the CI.
-* `make test` - runs the unit tests.
-* `make vendor` - generates a vendor folder.
-* `make doc` - hosts the documentation locally, at `127.0.0.1:8000`.
 * `make view_coverage` - opens up any generated coverage reports in the browser.
+* `make doc` - hosts the documentation locally, at `127.0.0.1:8000`.
