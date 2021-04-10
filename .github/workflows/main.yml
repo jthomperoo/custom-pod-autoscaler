@@ -30,7 +30,7 @@ jobs:
         # Exit if after beautification there are any code differences
         git diff --exit-code
 
-        make unittest
+        make test
 
         # Build
         if [ ${{ github.event_name }} == "release" ]; then
