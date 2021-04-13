@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jthomperoo/custom-pod-autoscaler/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 

@@ -30,8 +30,8 @@ package podsget
 import (
 	"fmt"
 
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/k8smetricget/podutil"
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/pods"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/pods"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	corelisters "k8s.io/client-go/listers/core/v1"

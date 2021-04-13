@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/jthomperoo/custom-pod-autoscaler/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 )
 
 // Type shell represents a shell command

@@ -23,8 +23,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/confload"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/confload"
 	autoscaling "k8s.io/api/autoscaling/v1"
 )
 

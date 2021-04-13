@@ -24,12 +24,12 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/evaluatecalc"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/execute"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/fake"
-	"github.com/jthomperoo/custom-pod-autoscaler/metric"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/evaluatecalc"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
 )
 
 func TestGetEvaluation(t *testing.T) {

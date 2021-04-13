@@ -28,8 +28,8 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/execute/http"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute/http"
 )
 
 type testHTTPClient struct {

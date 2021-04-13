@@ -17,7 +17,7 @@ limitations under the License.
 package evaluate
 
 import (
-	"github.com/jthomperoo/custom-pod-autoscaler/metric"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

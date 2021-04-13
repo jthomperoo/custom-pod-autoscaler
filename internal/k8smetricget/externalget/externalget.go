@@ -30,9 +30,9 @@ package externalget
 import (
 	"fmt"
 
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/k8smetricget/podutil"
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/external"
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/value"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/external"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/value"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/labels"

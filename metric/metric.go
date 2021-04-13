@@ -17,7 +17,7 @@ limitations under the License.
 package metric
 
 import (
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

@@ -10,6 +10,9 @@ any issues.
 
 If your Go code does rely on this project, the breaking changes to the Go codebase are:
 
+The Go package that should be imported is `github.com/jthomperoo/custom-pod-autoscaler/v2` instead of
+`github.com/jthomperoo/custom-pod-autoscaler`.
+
 - Packages no longer exported:
   - `autoscaler`
   - `execute`

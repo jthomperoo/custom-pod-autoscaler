@@ -1,4 +1,4 @@
-module github.com/jthomperoo/custom-pod-autoscaler
+module github.com/jthomperoo/custom-pod-autoscaler/v2
 
 go 1.16
 

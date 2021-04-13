@@ -21,14 +21,14 @@ package autoscaler
 
 import (
 	"github.com/golang/glog"
-	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/evaluatecalc"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/metricget"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/resourceclient"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/scaling"
-	"github.com/jthomperoo/custom-pod-autoscaler/metric"
-	"github.com/jthomperoo/custom-pod-autoscaler/scale"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/evaluatecalc"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/metricget"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/resourceclient"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/scaling"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
 )
 
 // Scaler handles scaling up/down the resource being managed; triggering metric gathering and

@@ -16,7 +16,7 @@ limitations under the License.
 
 package fake
 
-import "github.com/jthomperoo/custom-pod-autoscaler/config"
+import "github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 
 // Execute (fake) allows inserting logic into an executer for testing
 type Execute struct {

@@ -22,9 +22,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/execute"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/fake"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
 )
 
 func TestCombinedExecute_ExecuteWithValue(t *testing.T) {

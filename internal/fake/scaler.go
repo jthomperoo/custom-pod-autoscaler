@@ -17,8 +17,8 @@ limitations under the License.
 package fake
 
 import (
-	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
-	"github.com/jthomperoo/custom-pod-autoscaler/scale"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
 )
 
 // Scaler (fake) allows inserting logic into a scaler for testing

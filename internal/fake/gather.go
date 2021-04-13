@@ -17,12 +17,12 @@ limitations under the License.
 package fake
 
 import (
-	"github.com/jthomperoo/custom-pod-autoscaler/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric"
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/external"
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/object"
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/pods"
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/resource"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/external"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/object"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/pods"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/resource"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -3,14 +3,14 @@ module github.com/jthomperoo/custom-pod-autoscaler/example/simple-pod-metrics-go
 go 1.13
 
 require (
-	github.com/jthomperoo/custom-pod-autoscaler v0.0.0
+	github.com/jthomperoo/custom-pod-autoscaler/v2 v2.0.0
 	k8s.io/api v0.20.5
 	k8s.io/apimachinery v0.20.5
 	k8s.io/client-go v11.0.0+incompatible
 )
 
 replace (
-	github.com/jthomperoo/custom-pod-autoscaler => ../../
+	github.com/jthomperoo/custom-pod-autoscaler/v2 => ../../
 	k8s.io/api => k8s.io/api v0.20.5
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.20.5
 	k8s.io/apimachinery => k8s.io/apimachinery v0.20.6-rc.0

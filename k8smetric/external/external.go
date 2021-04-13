@@ -3,7 +3,7 @@ package external
 import (
 	"time"
 
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/value"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/value"
 )
 
 // Metric (Resource) is a global metric that is not associated with any Kubernetes object. It allows autoscaling based

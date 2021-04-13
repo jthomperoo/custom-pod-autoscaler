@@ -22,9 +22,9 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/fake"
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/k8smetricget/podsget"
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/pods"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podsget"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/pods"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"

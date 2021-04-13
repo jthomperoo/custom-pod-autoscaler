@@ -21,7 +21,7 @@ package execute
 import (
 	"fmt"
 
-	"github.com/jthomperoo/custom-pod-autoscaler/config"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 )
 
 // Executer interface provides methods for executing user logic with a value passed through to it

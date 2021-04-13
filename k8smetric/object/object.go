@@ -19,7 +19,7 @@ package object
 import (
 	"time"
 
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/value"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/value"
 )
 
 // Metric (Object) is a metric describing a kubernetes object (for example, hits-per-second on an Ingress object).

@@ -31,8 +31,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jthomperoo/custom-pod-autoscaler/internal/k8smetricget/podutil"
-	"github.com/jthomperoo/custom-pod-autoscaler/k8smetric/resource"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/resource"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	corelisters "k8s.io/client-go/listers/core/v1"
