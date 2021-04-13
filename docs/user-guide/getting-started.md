@@ -190,11 +190,13 @@ This is simply the metric value, in this case `5` from the previous step but wra
 object, with additional information such as run type and deployment name.
 
 The JSON value output by this step would look like this:
+
 ```json
 {
   "targetReplicas": 5
 }
 ```
+
 The Custom Pod Autoscaler program expects the response to be in this JSON serialised form, with
 `targetReplicas` defined as an integer.
 
@@ -223,7 +225,7 @@ and see the [install
 guide](https://github.com/jthomperoo/custom-pod-autoscaler-operator/blob/master/INSTALL.md)
 for the latest install information.
 
-```
+```bash
 VERSION=v1.1.0
 kubectl apply -f https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases/download/${VERSION}/cluster.yaml
 ```
@@ -365,18 +367,24 @@ once an autoscale has occurred, check the number of pods for the managed resourc
 
 # Clean up
 Run these commands to remove any resouces created during this guide:
-```
+
+```bash
 kubectl delete -f deployment.yaml
 ```
+
 Removes our managed deployment.
-```
+
+```bash
 kubectl delete -f cpa.yaml
 ```
+
 Removes our custom autoscaler.
-```
+
+```bash
 VERSION=v1.1.0
-curl -L "https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases/download/${VERSION}/cluster.tar.gz" | tar xvz --to-command 'kubectl delete -f -'
+kubectl delete -f https://github.com/jthomperoo/custom-pod-autoscaler-operator/releases/download/${VERSION}/cluster.yaml
 ```
+
 Removes the custom autoscaler operator.
 
 # Conclusion
