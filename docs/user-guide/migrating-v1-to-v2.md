@@ -50,3 +50,5 @@ The Go package that should be imported is `github.com/jthomperoo/custom-pod-auto
     - `RunTypeDryRun` -> `config.APIDryRunRunType`
   - `autoscaler`
      - `RunType` -> `config.ScalerRunType`
+- The `config` package now has a new function `NewConfig` which returns an instance of the config with the default
+values set.

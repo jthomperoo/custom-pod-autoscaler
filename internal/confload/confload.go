@@ -29,33 +29,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-const (
-	defaultInterval                = 15000
-	defaultNamespace               = "default"
-	defaultMinReplicas             = 1
-	defaultMaxReplicas             = 10
-	defaultStartTime               = 1
-	defaultRunMode                 = config.PerPodRunMode
-	defaultLogVerbosity            = 0
-	defaultDownscaleStabilization  = 0
-	defaultCPUInitializationPeriod = 300
-	defaultInitialReadinessDelay   = 30
-)
-
-const (
-	defaultAPIEnabled = true
-	defaultUseHTTPS   = false
-	defaultHost       = "0.0.0.0"
-	defaultPort       = 5000
-	defaultCertFile   = ""
-	defaultKeyFile    = ""
-)
-
 const jsonStructTag = "json"
 
 // Load loads in the default configuration, then overrides it from the config file, then any env vars set.
 func Load(configFileData []byte, envVars map[string]string) (*config.Config, error) {
-	config := newDefaultConfig()
+	config := config.NewConfig()
 	err := loadFromBytes(configFileData, config)
 	if err != nil {
 		return nil, err
@@ -127,28 +105,4 @@ func loadFromEnv(config *config.Config, envVars map[string]string) error {
 		continue
 	}
 	return nil
-}
-
-func newDefaultConfig() *config.Config {
-	return &config.Config{
-		Interval:               defaultInterval,
-		Namespace:              defaultNamespace,
-		MinReplicas:            defaultMinReplicas,
-		MaxReplicas:            defaultMaxReplicas,
-		StartTime:              defaultStartTime,
-		RunMode:                defaultRunMode,
-		DownscaleStabilization: defaultDownscaleStabilization,
-		APIConfig: &config.APIConfig{
-			Enabled:  defaultAPIEnabled,
-			UseHTTPS: defaultUseHTTPS,
-			Port:     defaultPort,
-			Host:     defaultHost,
-			CertFile: defaultCertFile,
-			KeyFile:  defaultKeyFile,
-		},
-		KubernetesMetricSpecs:    nil,
-		RequireKubernetesMetrics: false,
-		InitialReadinessDelay:    defaultInitialReadinessDelay,
-		CPUInitializationPeriod:  defaultCPUInitializationPeriod,
-	}
 }
