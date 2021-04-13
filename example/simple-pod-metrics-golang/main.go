@@ -26,8 +26,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/jthomperoo/custom-pod-autoscaler/evaluate"
-	"github.com/jthomperoo/custom-pod-autoscaler/metric"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/evaluate"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -38,7 +38,7 @@ import (
 
 // EvaluateSpec represents the information fed to the evaluator
 type EvaluateSpec struct {
-	Metrics              []*metric.Metric          `json:"metrics"`
+	Metrics              []*metric.ResourceMetric  `json:"metrics"`
 	UnstructuredResource unstructured.Unstructured `json:"resource"`
 	Resource             metav1.Object             `json:"-"`
 	RunType              string                    `json:"runType"`

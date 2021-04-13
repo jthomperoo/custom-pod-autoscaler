@@ -19,6 +19,7 @@ nav:
   - 'Rest API': 'user-guide/rest-api.md'
   - 'Zero Scaling': 'user-guide/scaling-to-and-from-zero.md'
   - 'Kubernetes Metrics': 'user-guide/kubernetes-metrics.md'
+  - 'Migrating v1 to v2': 'user-guide/migrating-v1-to-v2.md'
 - Reference:
   - Configuration: 'reference/configuration.md'
   - 'Docker Images': 'reference/docker-images.md'

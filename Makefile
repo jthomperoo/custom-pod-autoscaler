@@ -4,10 +4,10 @@ VERSION = latest
 
 default: vendor_modules
 	@echo "=============Building============="
-	CGO_ENABLED=0 GOOS=linux go build -mod vendor -o dist/$(NAME) ./cmd/custom-pod-autoscaler
+	CGO_ENABLED=0 GOOS=linux go build -mod vendor -o dist/$(NAME) main.go
 	cp LICENSE dist/LICENSE
 
-unittest: vendor_modules
+test: vendor_modules
 	@echo "=============Running unit tests============="
 	CGO_ENABLED=0 GOOS=linux go test -mod vendor ./... -cover -coverprofile unit_cover.out --tags=unit
 

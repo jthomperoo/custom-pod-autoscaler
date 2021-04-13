@@ -6,6 +6,10 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- **BREAKING CHANGE** Project's Go code restructured, limited exposed packages. See [the migration
+guide](./docs/v1-to-v2-migration.md) for full details.
+- `k8smetric` package now exposed to allow easy Go dependency marshal/unmarshal of K8s metrics.
 
 ## [v1.1.0] - 2021-04-08
 ### Added
