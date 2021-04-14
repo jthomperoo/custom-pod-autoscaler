@@ -13,6 +13,8 @@ guide](./docs/v1-to-v2-migration.md) for full details.
 - `k8smetric` package now exposed to allow easy Go dependency marshal/unmarshal of K8s metrics.
 ### Fixed
 - `targetReplicas` value now set properly, set to the pre-stabilized target replica value.
+### Added
+- The Custom Pod Autoscaler version is now printed to the log on autoscaler startup.
 
 ## [v1.1.0] - 2021-04-08
 ### Added

@@ -4,9 +4,10 @@ The breaking changes when moving from Custom Pod Autoscaler `v1` to `v2` are:
 
 - The Go package structure has been adjusted.
 - The Go data structs have been renamed.
+- The pre-scaling hook has been moved to after the downscale stabilization value has been calculated.
 
-Therefore if your autoscaler does not rely directly on the Go code in this project then you can safely upgrade without
-any issues.
+Therefore if your autoscaler does not rely directly on the Go code in this project, and you did not use the pre-scaling
+hook/are unaffected by this behaviour change then you can safely upgrade without any issues.
 
 If your Go code does rely on this project, the breaking changes to the Go codebase are:
 
