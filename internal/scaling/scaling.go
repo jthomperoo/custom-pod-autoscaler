@@ -82,22 +82,6 @@ func (s *Scale) Scale(info scale.Info) (*evaluate.Evaluation, error) {
 		targetReplicas = info.Evaluation.TargetReplicas
 	}
 
-	// Convert scaling hook input to JSON
-	specJSON, err := json.Marshal(info)
-	if err != nil {
-		// Should not occur, panic
-		panic(err)
-	}
-
-	if s.Config.PreScale != nil {
-		glog.V(3).Infoln("Attempting to run pre-scaling hook")
-		hookResult, err := s.Execute.ExecuteWithValue(s.Config.PreScale, string(specJSON))
-		if err != nil {
-			return nil, err
-		}
-		glog.V(3).Infof("Pre-scaling hook response: %+v", hookResult)
-	}
-
 	if currentReplicas == 0 && info.MinReplicas != 0 {
 		glog.V(0).Infof("No scaling, autoscaling disabled on resource %s", info.Resource.GetName())
 		info.Evaluation.TargetReplicas = 0
@@ -134,6 +118,22 @@ func (s *Scale) Scale(info scale.Info) (*evaluate.Evaluation, error) {
 	glog.V(0).Infof("Picked max evaluation over stabilization window of %d seconds; replicas %d", s.Config.DownscaleStabilization, targetReplicas)
 
 	info.Evaluation.TargetReplicas = targetReplicas
+
+	// Convert scaling hook input to JSON
+	specJSON, err := json.Marshal(info)
+	if err != nil {
+		// Should not occur, panic
+		panic(err)
+	}
+
+	if s.Config.PreScale != nil {
+		glog.V(3).Infoln("Attempting to run pre-scaling hook")
+		hookResult, err := s.Execute.ExecuteWithValue(s.Config.PreScale, string(specJSON))
+		if err != nil {
+			return nil, err
+		}
+		glog.V(3).Infof("Pre-scaling hook response: %+v", hookResult)
+	}
 
 	// Check if evaluation requires an action
 	// If the resource needs scaled up/down
