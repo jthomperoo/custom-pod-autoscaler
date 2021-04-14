@@ -6,9 +6,11 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v2.0.0] - 2021-04-15
 ### Changed
 - **BREAKING CHANGE** Project's Go code restructured, limited exposed packages. See [the migration
-guide](./docs/v1-to-v2-migration.md) for full details.
+guide](./docs/user-guide/migrating-v1-to-v2.md) for full details.
 - **BREAKING CHANGE** Pre-scaling hook moved to after the downscale stabilization value has been calculated.
 - `k8smetric` package now exposed to allow easy Go dependency marshal/unmarshal of K8s metrics.
 ### Fixed
@@ -201,7 +203,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v1.1.0...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.0.0...HEAD
+[v2.0.0]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v1.1.0...v2.0.0
 [v1.1.0]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v1.0.1...v1.1.0
 [v1.0.1]:
