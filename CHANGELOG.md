@@ -10,7 +10,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ## [v2.0.0] - 2021-04-15
 ### Changed
 - **BREAKING CHANGE** Project's Go code restructured, limited exposed packages. See [the migration
-guide](./docs/user-guide/v1-to-v2-migration.md) for full details.
+guide](./docs/user-guide/migrating-v1-to-v2.md) for full details.
 - **BREAKING CHANGE** Pre-scaling hook moved to after the downscale stabilization value has been calculated.
 - `k8smetric` package now exposed to allow easy Go dependency marshal/unmarshal of K8s metrics.
 ### Fixed
