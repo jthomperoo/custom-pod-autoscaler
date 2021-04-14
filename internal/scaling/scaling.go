@@ -117,7 +117,6 @@ func (s *Scale) Scale(info scale.Info) (*evaluate.Evaluation, error) {
 	}
 	glog.V(0).Infof("Picked max evaluation over stabilization window of %d seconds; replicas %d", s.Config.DownscaleStabilization, targetReplicas)
 
-	info.TargetReplicas = info.Evaluation.TargetReplicas
 	info.Evaluation.TargetReplicas = targetReplicas
 
 	// Convert scaling hook input to JSON
