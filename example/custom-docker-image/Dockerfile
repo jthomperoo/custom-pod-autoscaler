@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install wget -y
 # Install CPA
 RUN wget                                                                                                      \
     -qO-                                                                                                      \
-    https://github.com/jthomperoo/custom-pod-autoscaler/releases/download/v1.1.0/custom-pod-autoscaler.tar.gz \
+    https://github.com/jthomperoo/custom-pod-autoscaler/releases/download/v2.0.0/custom-pod-autoscaler.tar.gz \
     | tar xvz                                                                                                 \
     && mv dist/* /app/
 
