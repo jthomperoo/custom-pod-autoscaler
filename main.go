@@ -64,6 +64,9 @@ import (
 	externalclient "k8s.io/metrics/pkg/client/external_metrics"
 )
 
+// Version is the version of the Custom Pod Autoscaler, injected in at build time
+var Version = "development"
+
 const configEnvName = "configPath"
 
 const defaultConfig = "/config.yaml"
@@ -138,6 +141,7 @@ func main() {
 		glog.Fatalf("Fail to set log verbosity: %s", err)
 	}
 
+	glog.V(0).Infof("Custom Pod Autoscaler version: %s", Version)
 	glog.V(1).Infoln("Setting up resources and clients")
 
 	// Unstructured converter
