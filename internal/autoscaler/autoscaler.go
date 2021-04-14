@@ -79,6 +79,7 @@ func (s *Scaler) Scale() error {
 		Resource:       resource,
 		MinReplicas:    s.Config.MinReplicas,
 		MaxReplicas:    s.Config.MaxReplicas,
+		TargetReplicas: evaluation.TargetReplicas,
 		Namespace:      s.Config.Namespace,
 		ScaleTargetRef: s.Config.ScaleTargetRef,
 		RunType:        config.ScalerRunType,

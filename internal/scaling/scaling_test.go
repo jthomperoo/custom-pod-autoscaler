@@ -239,7 +239,7 @@ func TestScale_Scale(t *testing.T) {
 					TargetReplicas: int32(3),
 				},
 				Resource: func() *appsv1.Deployment {
-					replicas := int32(0)
+					replicas := int32(2)
 					return &appsv1.Deployment{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
