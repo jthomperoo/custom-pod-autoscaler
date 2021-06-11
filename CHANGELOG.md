@@ -1,12 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
+### Added
+- New `logStderr` option for `shell` methods, intended to help debugging by printing out the stderr of a successful
+`shell` method execution - default value `false`.
 ## [v2.0.0] - 2021-04-15
 ### Changed
 - **BREAKING CHANGE** Project's Go code restructured, limited exposed packages. See [the migration

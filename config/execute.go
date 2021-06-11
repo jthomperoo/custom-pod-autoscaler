@@ -29,6 +29,7 @@ type Method struct {
 type Shell struct {
 	Command    []string `json:"command"`
 	Entrypoint string   `json:"entrypoint"`
+	LogStderr  *bool    `json:"logStderr,omitempty"`
 }
 
 // HTTP describes configuration options for an HTTP request method

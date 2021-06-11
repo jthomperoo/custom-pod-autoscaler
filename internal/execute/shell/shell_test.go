@@ -32,6 +32,10 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute/shell"
 )
 
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 type command func(name string, arg ...string) *exec.Cmd
 
 type process func(t *testing.T)
@@ -114,6 +118,100 @@ func TestMain(m *testing.M) {
 				Shell: &config.Shell{
 					Command:    []string{"command"},
 					Entrypoint: "/bin/sh",
+				},
+			},
+			"pipe value",
+			fakeExecCommand("success", func(t *testing.T) {
+				stdinb, err := ioutil.ReadAll(os.Stdin)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, err.Error())
+					os.Exit(1)
+				}
+
+				stdin := string(stdinb)
+				entrypoint := strings.TrimSpace(os.Args[4])
+				command := strings.TrimSpace(os.Args[5])
+
+				// Check entrypoint is correct
+				if !cmp.Equal(entrypoint, "/bin/sh") {
+					fmt.Fprintf(os.Stderr, "entrypoint mismatch (-want +got):\n%s", cmp.Diff("/bin/sh", entrypoint))
+					os.Exit(1)
+				}
+
+				// Check command is correct
+				if !cmp.Equal(command, "command") {
+					fmt.Fprintf(os.Stderr, "command mismatch (-want +got):\n%s", cmp.Diff("command", command))
+					os.Exit(1)
+				}
+
+				// Check piped value in is correct
+				if !cmp.Equal(stdin, "pipe value") {
+					fmt.Fprintf(os.Stderr, "stdin mismatch (-want +got):\n%s", cmp.Diff("pipe value", stdin))
+					os.Exit(1)
+				}
+
+				fmt.Fprint(os.Stdout, "test std out")
+				os.Exit(0)
+			}),
+		},
+		{
+			"Successful shell command, log stderr",
+			nil,
+			"test std out",
+			&config.Method{
+				Type:    shell.Type,
+				Timeout: 100,
+				Shell: &config.Shell{
+					Command:    []string{"command"},
+					Entrypoint: "/bin/sh",
+					LogStderr:  boolPtr(true),
+				},
+			},
+			"pipe value",
+			fakeExecCommand("success", func(t *testing.T) {
+				stdinb, err := ioutil.ReadAll(os.Stdin)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, err.Error())
+					os.Exit(1)
+				}
+
+				stdin := string(stdinb)
+				entrypoint := strings.TrimSpace(os.Args[4])
+				command := strings.TrimSpace(os.Args[5])
+
+				// Check entrypoint is correct
+				if !cmp.Equal(entrypoint, "/bin/sh") {
+					fmt.Fprintf(os.Stderr, "entrypoint mismatch (-want +got):\n%s", cmp.Diff("/bin/sh", entrypoint))
+					os.Exit(1)
+				}
+
+				// Check command is correct
+				if !cmp.Equal(command, "command") {
+					fmt.Fprintf(os.Stderr, "command mismatch (-want +got):\n%s", cmp.Diff("command", command))
+					os.Exit(1)
+				}
+
+				// Check piped value in is correct
+				if !cmp.Equal(stdin, "pipe value") {
+					fmt.Fprintf(os.Stderr, "stdin mismatch (-want +got):\n%s", cmp.Diff("pipe value", stdin))
+					os.Exit(1)
+				}
+
+				fmt.Fprint(os.Stdout, "test std out")
+				os.Exit(0)
+			}),
+		},
+		{
+			"Successful shell command, don't log stderr",
+			nil,
+			"test std out",
+			&config.Method{
+				Type:    shell.Type,
+				Timeout: 100,
+				Shell: &config.Shell{
+					Command:    []string{"command"},
+					Entrypoint: "/bin/sh",
+					LogStderr:  boolPtr(false),
 				},
 			},
 			"pipe value",

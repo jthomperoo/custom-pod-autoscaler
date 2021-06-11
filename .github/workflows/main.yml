@@ -40,13 +40,6 @@ jobs:
           VERSION=$(git rev-parse --short ${{ github.sha }})
         fi
         make docker VERSION=${VERSION}
-    - uses: codecov/codecov-action@v1.0.3
-      if: github.repository == 'jthomperoo/custom-pod-autoscaler'
-      with:
-        token: ${{secrets.CODECOV_TOKEN}}
-        file: ./unit_cover.out
-        flags: unittests
-        name: custom-pod-autoscaler-unittests
     - name: Deploy
       env:
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
