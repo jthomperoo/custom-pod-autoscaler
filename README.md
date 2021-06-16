@@ -24,7 +24,7 @@ designed to be similar to the Kubernetes Horizontal Pod Autoscaler. The Custom P
 and faster development of Kubernetes autoscalers.
 A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting
 your own logic; see the
-[examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v2.0.0/example).
+[examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v2.1.0/example).
 
 ## Features
 
