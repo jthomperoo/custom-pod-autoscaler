@@ -1,17 +1,19 @@
 evaluate:
   type: "shell"
   timeout: 2500
-  shell: 
+  shell:
     entrypoint: "/bin/sh"
-    command: 
+    logStderr: true
+    command:
       - "-c"
       - "/simple-pod-metrics-golang -mode=evaluate"
 metric:
   type: "shell"
   timeout: 2500
-  shell: 
+  shell:
     entrypoint: "/bin/sh"
-    command: 
+    logStderr: true
+    command:
       - "-c"
       - "/simple-pod-metrics-golang -mode=metric"
 runMode: "per-pod"
