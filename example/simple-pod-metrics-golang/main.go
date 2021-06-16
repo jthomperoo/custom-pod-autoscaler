@@ -72,8 +72,10 @@ func main() {
 
 	switch *modePtr {
 	case "metric":
+		log.Println("gathering metrics")
 		getMetrics(stdin)
 	case "evaluate":
+		log.Println("evaluating metrics")
 		getEvaluation(stdin)
 	default:
 		log.Fatalf("Unknown command mode: %s", *modePtr)
@@ -82,6 +84,7 @@ func main() {
 }
 
 func getMetrics(stdin []byte) {
+	log.Println("parsing spec")
 	var spec MetricSpec
 	err := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(stdin), 10).Decode(&spec)
 	if err != nil {
@@ -89,6 +92,7 @@ func getMetrics(stdin []byte) {
 		os.Exit(1)
 	}
 
+	log.Println("sending HTTP request to gather pod metrics")
 	// Make a HTTP request to the pod's '/metric' endpoint
 	client := http.Client{}
 	resp, err := client.Get(fmt.Sprintf("http://%s:5000/metric", spec.Pod.Status.PodIP))
@@ -107,10 +111,13 @@ func getMetrics(stdin []byte) {
 		log.Fatalf("Error occurred, non 200 response code, code %d: %s", resp.StatusCode, string(body))
 	}
 
+	log.Printf("recieved pod metrics: %s\n", string(body))
+
 	fmt.Print(string(body))
 }
 
 func getEvaluation(stdin []byte) {
+	log.Println("parsing spec")
 	var spec EvaluateSpec
 	err := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(stdin), 10).Decode(&spec)
 	if err != nil {
@@ -134,6 +141,7 @@ func getEvaluation(stdin []byte) {
 	}
 	spec.Resource = resourceRuntime.(metav1.Object)
 
+	log.Println("calculating total available")
 	// Count total available
 	totalAvailable := 0
 	for _, metric := range spec.Metrics {
@@ -149,13 +157,17 @@ func getEvaluation(stdin []byte) {
 	// Get current replica count
 	targetReplicaCount := len(spec.Metrics)
 
+	log.Printf("initial replica count: %d\n", targetReplicaCount)
+
 	// Decrease target rpelicas if more than 5 available
 	if totalAvailable > 5 {
+		log.Printf("decreasing target replica count since >5 available to: %d\n", targetReplicaCount)
 		targetReplicaCount--
 	}
 
 	// Increase target replicas if none available
 	if totalAvailable <= 0 {
+		log.Printf("increasing target replica count since 0 available to: %d\n", targetReplicaCount)
 		targetReplicaCount++
 	}
 

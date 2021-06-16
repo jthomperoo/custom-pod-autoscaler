@@ -47,6 +47,12 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 		return "", fmt.Errorf("Missing required 'shell' configuration on method")
 	}
 
+	// Config to enable/disable logging stderr output
+	logStderr := false
+	if method.Shell.LogStderr != nil {
+		logStderr = *method.Shell.LogStderr
+	}
+
 	glog.V(4).Infof("Running shell command, entrypoint: '%s', command '%s'", method.Shell.Entrypoint, method.Shell.Command)
 	// Build command string with value piped into it
 	cmd := e.Command(method.Shell.Entrypoint, method.Shell.Command...)
@@ -84,6 +90,10 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 			glog.V(0).Infof("Shell command failed, stderr: %s", errb.String())
 			return "", err
 		}
+	}
+
+	if logStderr {
+		glog.V(0).Infof("Standard error returned from shell:\n%s", errb.String())
 	}
 	return outb.String(), nil
 }
