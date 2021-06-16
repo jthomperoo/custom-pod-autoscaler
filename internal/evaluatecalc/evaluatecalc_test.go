@@ -270,7 +270,7 @@ func TestGetEvaluation(t *testing.T) {
 		},
 		{
 			"Execute success with invalid JSON",
-			errors.New(`invalid character 'i' looking for beginning of value`),
+			errors.New(`failed to parse JSON evaluation, got 'invalid', err: invalid character 'i' looking for beginning of value`),
 			nil,
 			evaluate.Info{
 				Metrics: []*metric.ResourceMetric{

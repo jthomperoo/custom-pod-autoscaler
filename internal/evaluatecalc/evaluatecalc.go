@@ -21,6 +21,7 @@ package evaluatecalc
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
@@ -71,7 +72,7 @@ func (e *Evaluator) GetEvaluation(info evaluate.Info) (*evaluate.Evaluation, err
 	evaluation := &evaluate.Evaluation{}
 	err = json.Unmarshal([]byte(gathered), evaluation)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse JSON evaluation, got '%s', err: %v", gathered, err)
 	}
 	glog.V(3).Infof("Evaluation parsed: %+v", evaluation)
 

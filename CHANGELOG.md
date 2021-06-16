@@ -8,6 +8,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 - New `logStderr` option for `shell` methods, intended to help debugging by printing out the stderr of a successful
 `shell` method execution - default value `false`.
+### Changed
+- Error returned when parsing invalid JSON for an evaluation improved to help debugging.
 ## [v2.0.0] - 2021-04-15
 ### Changed
 - **BREAKING CHANGE** Project's Go code restructured, limited exposed packages. See [the migration
