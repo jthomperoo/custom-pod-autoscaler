@@ -1,10 +1,12 @@
-# Python Simple Pod Metrics Example
-This example shows how to make a Custom Pod Autoscaler (CPA) using Python.
-The example extends the Python CPA base image (custompodautoscaler/python) and sets up an environment to allow python scripts to be used to determine metrics and evaluate how to scale.
+# Java Simple Pod Metrics Example
+This example shows how to make a Custom Pod Autoscaler (CPA) using Java.
+The example extends the OpenJDK 11 CPA base image (custompodautoscaler/openjdk-11) and sets up an environment to allow
+Java to be used to determine metrics and evaluate how to scale.
 The code is verbosely commented and designed to be read and understood for building your own CPAs.
 
 ## Overview
-This example contains a docker image of the example Python Custom Pod Autoscaler, alongside using the `flask-metric` sample application ([../flask-metric/README.md](../flask-metric/README.md)) as a target to scale up and down.
+This example contains a docker image of the example Java Custom Pod Autoscaler, alongside using the `flask-metric`
+sample application ([../flask-metric/README.md](../flask-metric/README.md)) as a target to scale up and down.
 
 ### Example Custom Pod Autoscaler
 
@@ -22,7 +24,8 @@ The CPA exposes two endpoints:
 Trying out this example requires a kubernetes cluster to try it out on, this guide will assume you are using Minikube.
 
 ### Enable CPAs
-Using this CPA requires CPAs to be enabled on your kubernetes cluster, [follow this guide to set up CPAs on your cluster](https://github.com/jthomperoo/custom-pod-autoscaler-operator#installation).
+Using this CPA requires CPAs to be enabled on your kubernetes cluster, [follow this guide to set up CPAs on your
+cluster](https://github.com/jthomperoo/custom-pod-autoscaler-operator#installation).
 
 ### Switch to target the Minikube registry
 Target the Minikube registry for building the image:
@@ -39,7 +42,7 @@ Now you have an app running to manage scaling for.
 ### Build CPA image
 Once CPAs have been enabled on your cluster, you need to build this example, run these commands to build the example:
 * Build the example image.
-`docker build -t simple-pod-metrics-python .`
+`docker build -t simple-pod-metrics-java .`
 * Deploy the CPA using the image just built.
 `kubectl apply -f cpa.yaml`
 Now the CPA should be running on your cluster, managing the app we previously deployed.
