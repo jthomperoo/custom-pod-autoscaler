@@ -1,14 +1,37 @@
+/*
+Copyright 2021 The Custom Pod Autoscaler Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package simple.pod.metrics.java;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
 
-import org.apache.commons.cli.*;
-import com.google.gson.*;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
 
 public class EvaluatorAndMetricGatherer {
     public static void main(String[] args) throws Exception {
@@ -20,7 +43,6 @@ public class EvaluatorAndMetricGatherer {
         options.addOption(input);
 
         CommandLineParser parser = new DefaultParser();
-        HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd = parser.parse(options, args);
 
         // Get execution mode
@@ -35,7 +57,7 @@ public class EvaluatorAndMetricGatherer {
         }
 
         // Convert stdin into a JSON object
-        JsonObject jsonInput = new JsonParser().parse(stdinBuilder.toString()).getAsJsonObject();
+        JsonObject jsonInput = JsonParser.parseString(stdinBuilder.toString()).getAsJsonObject();
 
         // Handle execution differently based on the mode provided, either metric gathering or evaluation
         switch(mode) {
@@ -56,7 +78,7 @@ public class EvaluatorAndMetricGatherer {
         JsonArray metrics = input.get("metrics").getAsJsonArray();
         for (int i = 0; i < metrics.size(); i++) {
             JsonObject metric = metrics.get(i).getAsJsonObject();
-            JsonObject value = new JsonParser().parse(metric.get("value").getAsString()).getAsJsonObject();
+            JsonObject value = JsonParser.parseString(metric.get("value").getAsString()).getAsJsonObject();
             int available = value.get("available").getAsInt();
             totalAvailable += available;
         }
