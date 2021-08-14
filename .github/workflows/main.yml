@@ -47,7 +47,7 @@ jobs:
       if: github.event_name != 'pull_request' && github.repository == 'jthomperoo/custom-pod-autoscaler'
       run: |
         # Array of images to publish
-        declare -a IMAGES=(python python-3-6 python-3-7 python-3-8 alpine)
+        declare -a IMAGES=(python python-3-6 python-3-7 python-3-8 alpine openjdk-11)
         echo "$DOCKER_PASS" | docker login --username=$DOCKER_USER --password-stdin
         if [ ${{ github.event_name }} == "release" ]; then
           # This needs to be determined again, due to env vars not being shared between steps

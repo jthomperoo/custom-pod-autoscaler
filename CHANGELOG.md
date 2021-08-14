@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- New `openjdk-11` image which includes Java 11 runtime.
 
 ## [v2.1.0] - 2021-06-16
 ### Added
