@@ -35,3 +35,9 @@ FROM alpine:3.10 AS alpine
 WORKDIR /app
 COPY dist /app/
 CMD [ "/app/custom-pod-autoscaler" ]
+
+# OpenJDK build
+FROM openjdk:11-jre-slim AS openjdk-11
+WORKDIR /app
+COPY dist /app/
+CMD [ "/app/custom-pod-autoscaler" ]

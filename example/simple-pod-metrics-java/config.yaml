@@ -1,0 +1,17 @@
+evaluate:
+  type: "shell"
+  timeout: 2500
+  shell:
+    entrypoint: "/bin/sh"
+    command:
+      - "-c"
+      - "/app/simple-pod-metrics-java/bin/simple-pod-metrics-java -m evaluate"
+metric:
+  type: "shell"
+  timeout: 2500
+  shell:
+    entrypoint: "/bin/sh"
+    command:
+      - "-c"
+      - "/app/simple-pod-metrics-java/bin/simple-pod-metrics-java -m metric"
+runMode: "per-pod"

@@ -1,0 +1,18 @@
+apiVersion: custompodautoscaler.com/v1
+kind: CustomPodAutoscaler
+metadata:
+  name: simple-pod-metrics-java
+spec:
+  template:
+    spec:
+      containers:
+      - name: simple-pod-metrics-java
+        image: simple-pod-metrics-java:latest
+        imagePullPolicy: IfNotPresent
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: flask-metric
+  config:
+    - name: interval
+      value: "10000"
