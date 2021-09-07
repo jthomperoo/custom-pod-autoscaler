@@ -9,7 +9,7 @@ require (
 	k8s.io/api v0.20.5
 	k8s.io/apimachinery v0.20.5
 	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/kubernetes v1.20.5
+	k8s.io/kubernetes v1.20.7
 	k8s.io/metrics v0.20.5
 )
 
