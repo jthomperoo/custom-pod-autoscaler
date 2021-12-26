@@ -28,7 +28,8 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/scaling"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscaling "k8s.io/api/autoscaling/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1" // Client-go uses the autoscaling/v1 api for its scaling client
+	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -66,7 +67,7 @@ func TestScale_Scale(t *testing.T) {
 				Resource:    &appsv1.DaemonSet{},
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "daemonset",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -100,7 +101,7 @@ func TestScale_Scale(t *testing.T) {
 				},
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "/invalid/",
@@ -146,7 +147,7 @@ func TestScale_Scale(t *testing.T) {
 				},
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -168,8 +169,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 3,
 										},
 									}, nil
@@ -207,7 +208,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -252,7 +253,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -297,7 +298,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -336,7 +337,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -359,8 +360,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 0,
 										},
 									}, nil
@@ -370,7 +371,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -398,7 +399,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 0,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -421,8 +422,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 3,
 										},
 									}, nil
@@ -432,7 +433,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -460,7 +461,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 0,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -507,7 +508,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -546,7 +547,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -569,8 +570,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 3,
 										},
 									}, nil
@@ -580,7 +581,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -608,7 +609,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 5,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -631,8 +632,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 2,
 										},
 									}, nil
@@ -642,7 +643,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -670,7 +671,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 2,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -693,8 +694,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 7,
 										},
 									}, nil
@@ -704,7 +705,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -732,7 +733,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -755,8 +756,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 7,
 										},
 									}, nil
@@ -766,7 +767,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -802,7 +803,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -825,8 +826,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 7,
 										},
 									}, nil
@@ -836,7 +837,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -875,7 +876,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -898,8 +899,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "replicaset",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 4,
 										},
 									}, nil
@@ -909,7 +910,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "replicaset",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -937,7 +938,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "replicaset",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -960,8 +961,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "replicationcontroller",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 4,
 										},
 									}, nil
@@ -971,7 +972,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "replicationcontroller",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -999,7 +1000,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "replicationcontroller",
 					Name:       "test",
 					APIVersion: "v1",
@@ -1022,8 +1023,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "statefulset",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 10,
 										},
 									}, nil
@@ -1033,7 +1034,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "statefulset",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -1061,7 +1062,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "statefulset",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -1084,8 +1085,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 5,
 										},
 									}, nil
@@ -1095,7 +1096,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -1156,7 +1157,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -1179,8 +1180,8 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "get",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{
-										Spec: autoscaling.ScaleSpec{
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
 											Replicas: 5,
 										},
 									}, nil
@@ -1190,7 +1191,7 @@ func TestScale_Scale(t *testing.T) {
 								Resource: "deployment",
 								Verb:     "update",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, &autoscaling.Scale{}, nil
+									return true, &autoscalingv1.Scale{}, nil
 								},
 							},
 						},
@@ -1251,7 +1252,7 @@ func TestScale_Scale(t *testing.T) {
 				}(),
 				MinReplicas: 1,
 				MaxReplicas: 10,
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",

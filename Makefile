@@ -9,7 +9,7 @@ default: vendor_modules
 
 test: vendor_modules
 	@echo "=============Running unit tests============="
-	CGO_ENABLED=0 GOOS=linux go test -mod vendor ./... -cover -coverprofile unit_cover.out --tags=unit
+	go test -mod vendor ./... -cover -coverprofile unit_cover.out --tags=unit
 
 lint: vendor_modules
 	@echo "=============Linting============="

@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 /*
 Copyright 2021 The Custom Pod Autoscaler Authors.
 
@@ -13,7 +16,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-// +build unit
 
 package v1_test
 
@@ -39,7 +41,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
 
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/autoscaling/v1"
+	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -95,7 +97,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -118,7 +120,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -157,7 +159,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -184,7 +186,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics?dry_run=false",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -211,7 +213,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics?dry_run=true",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -250,7 +252,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -273,7 +275,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -300,7 +302,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -327,7 +329,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -362,7 +364,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -395,7 +397,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation?dry_run=false",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -428,7 +430,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation?dry_run=true",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -455,7 +457,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/non_existent",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -474,7 +476,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -493,7 +495,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &v1.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
