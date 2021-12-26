@@ -6,7 +6,10 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 ### Changed
-- Distinguish between `autoscaling/v1` and `autoscaling/v2beta2` APIs more clearly, no breaking changes.
+- Add clarity between `autoscaling/v1` and `autoscaling/v2beta2` APIs, no breaking changes.
+### Security
+- Updated k8s client libraries to `v1.22.5` to resolve
+[GHSA-f5f7-6478-qm6p](https://github.com/advisories/GHSA-f5f7-6478-qm6p).
 
 ## [v2.2.0] - 2021-08-14
 ### Added
