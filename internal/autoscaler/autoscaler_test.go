@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 /*
 Copyright 2021 The Custom Pod Autoscaler Authors.
 
@@ -13,7 +16,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-// +build unit
 
 package autoscaler_test
 
@@ -29,7 +31,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscaling "k8s.io/api/autoscaling/v1"
+	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

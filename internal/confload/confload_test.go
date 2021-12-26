@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 /*
 Copyright 2021 The Custom Pod Autoscaler Authors.
 
@@ -13,7 +16,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-// +build unit
 
 package confload_test
 
@@ -25,7 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/confload"
-	autoscaling "k8s.io/api/autoscaling/v1"
+	autoscaling "k8s.io/api/autoscaling/v2beta2"
 )
 
 const (
@@ -96,7 +98,7 @@ func TestLoadConfig(t *testing.T) {
 			map[string]string{
 				"scaleTargetRef": "invalid JSON",
 			},
-			errors.New("error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type v1.CrossVersionObjectReference"),
+			errors.New("error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type v2beta2.CrossVersionObjectReference"),
 			nil,
 		},
 		{

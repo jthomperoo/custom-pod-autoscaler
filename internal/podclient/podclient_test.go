@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 /*
 Copyright 2021 The Custom Pod Autoscaler Authors.
 

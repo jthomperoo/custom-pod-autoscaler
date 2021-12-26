@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Distinguish between `autoscaling/v1` and `autoscaling/v2beta2` APIs more clearly, no breaking changes.
 
 ## [v2.2.0] - 2021-08-14
 ### Added
