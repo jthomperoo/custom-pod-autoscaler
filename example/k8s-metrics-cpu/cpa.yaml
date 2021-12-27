@@ -10,10 +10,9 @@ spec:
         image: k8s-metrics-cpu:latest
         imagePullPolicy: IfNotPresent
   scaleTargetRef:
-    apiVersion: argoproj.io/v1alpha1
-    kind: Rollout
+    apiVersion: apps/v1
+    kind: Deployment
     name: php-apache
-  roleRequiresArgoRollouts: true
   roleRequiresMetricsServer: true
   config:
     - name: interval
