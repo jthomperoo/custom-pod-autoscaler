@@ -33,6 +33,7 @@ import (
 	"fmt"
 	"time"
 
+	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/externalget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/objectget"
@@ -247,6 +248,8 @@ func (c *Gather) getReplicaCount(resource metav1.Object) (*int32, error) {
 	case *appsv1.StatefulSet:
 		return v.Spec.Replicas, nil
 	case *corev1.ReplicationController:
+		return v.Spec.Replicas, nil
+	case *argov1alpha1.Rollout:
 		return v.Spec.Replicas, nil
 	default:
 		return nil, fmt.Errorf("Unsupported resource of type %T", v)
