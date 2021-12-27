@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 /*
 Copyright 2021 The Custom Pod Autoscaler Authors.
 
@@ -21,16 +18,20 @@ package resourceclient_test
 
 import (
 	"errors"
+	"fmt"
+	"runtime"
 	"testing"
 
+	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/resourceclient"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/fake"
+	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
 	k8stesting "k8s.io/client-go/testing"
 )
 
@@ -47,7 +48,23 @@ func (f *fakeUnstructuredConverter) FromUnstructured(u map[string]interface{}, o
 	return f.FromUnstructuredReactor(u, obj)
 }
 
+func defaultScheme() *k8sruntime.Scheme {
+	scheme := k8sruntime.NewScheme()
+	schemeBuilder := k8sruntime.NewSchemeBuilder(argov1alpha1.AddToScheme)
+	schemeBuilder.Register(clientsetscheme.AddToScheme)
+	err := schemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		panic(err)
+	}
+	return scheme
+}
+
+// This is a little bit hacky, but the scheme errors print the line of the scheme that was used to create it, in these
+// tests it's the function above, so line 51, but if this is changed this number will need manually updated
+const schemeLineNumber = 52
+
 func TestClient_Get(t *testing.T) {
+	_, filename, _, _ := runtime.Caller(0)
 	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
 		if x == nil || y == nil {
 			return x == nil && y == nil
@@ -59,8 +76,9 @@ func TestClient_Get(t *testing.T) {
 		description           string
 		expected              metav1.Object
 		expectedErr           error
+		scheme                *k8sruntime.Scheme
 		dynamic               dynamic.Interface
-		unstructuredConverter runtime.UnstructuredConverter
+		unstructuredConverter k8sruntime.UnstructuredConverter
 		apiVersion            string
 		kind                  string
 		name                  string
@@ -72,6 +90,7 @@ func TestClient_Get(t *testing.T) {
 			errors.New(`unexpected GroupVersion string: /invalid/`),
 			nil,
 			nil,
+			nil,
 			"/invalid/",
 			"",
 			"",
@@ -81,9 +100,10 @@ func TestClient_Get(t *testing.T) {
 			"Fail to get resource",
 			nil,
 			errors.New(`fail to get resource`),
+			defaultScheme(),
 			func() *fake.FakeDynamicClient {
-				client := fake.NewSimpleDynamicClient(runtime.NewScheme())
-				client.PrependReactor("get", "tests", func(action k8stesting.Action) (bool, runtime.Object, error) {
+				client := fake.NewSimpleDynamicClient(k8sruntime.NewScheme())
+				client.PrependReactor("get", "tests", func(action k8stesting.Action) (bool, k8sruntime.Object, error) {
 					return true, nil, errors.New("fail to get resource")
 				})
 				return client
@@ -97,12 +117,13 @@ func TestClient_Get(t *testing.T) {
 		{
 			"Fail to create new object using schema",
 			nil,
-			errors.New(`no kind "test" is registered for version "test/v1" in scheme "k8s.io/client-go/kubernetes/scheme/register.go:72"`),
-			fake.NewSimpleDynamicClient(runtime.NewScheme(),
+			fmt.Errorf(`no kind "unknown" is registered for version "unknown/v1" in scheme "%s:%d"`, filename, schemeLineNumber),
+			defaultScheme(),
+			fake.NewSimpleDynamicClient(k8sruntime.NewScheme(),
 				&unstructured.Unstructured{
 					Object: map[string]interface{}{
-						"apiVersion": "test/v1",
-						"kind":       "test",
+						"apiVersion": "unknown/v1",
+						"kind":       "unknown",
 						"metadata": map[string]interface{}{
 							"namespace": "testnamespace",
 							"name":      "testname",
@@ -111,8 +132,8 @@ func TestClient_Get(t *testing.T) {
 				},
 			),
 			nil,
-			"test/v1",
-			"test",
+			"unknown/v1",
+			"unknown",
 			"testname",
 			"testnamespace",
 		},
@@ -120,7 +141,8 @@ func TestClient_Get(t *testing.T) {
 			"Fail to convert from unstructured to object",
 			nil,
 			errors.New(`fail to convert from unstructured`),
-			fake.NewSimpleDynamicClient(runtime.NewScheme(),
+			defaultScheme(),
+			fake.NewSimpleDynamicClient(k8sruntime.NewScheme(),
 				&unstructured.Unstructured{
 					Object: map[string]interface{}{
 						"apiVersion": "apps/v1",
@@ -143,7 +165,7 @@ func TestClient_Get(t *testing.T) {
 			"testnamespace",
 		},
 		{
-			"Success",
+			"Success, Deployment",
 			&appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testname",
@@ -155,7 +177,8 @@ func TestClient_Get(t *testing.T) {
 				},
 			},
 			nil,
-			fake.NewSimpleDynamicClient(runtime.NewScheme(),
+			defaultScheme(),
+			fake.NewSimpleDynamicClient(k8sruntime.NewScheme(),
 				&unstructured.Unstructured{
 					Object: map[string]interface{}{
 						"apiVersion": "apps/v1",
@@ -167,9 +190,41 @@ func TestClient_Get(t *testing.T) {
 					},
 				},
 			),
-			runtime.DefaultUnstructuredConverter,
+			k8sruntime.DefaultUnstructuredConverter,
 			"apps/v1",
 			"Deployment",
+			"testname",
+			"testnamespace",
+		},
+		{
+			"Success, Argo Rollout",
+			&argov1alpha1.Rollout{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testname",
+					Namespace: "testnamespace",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Rollout",
+					APIVersion: "argoproj.io/v1alpha1",
+				},
+			},
+			nil,
+			defaultScheme(),
+			fake.NewSimpleDynamicClient(k8sruntime.NewScheme(),
+				&unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"apiVersion": "argoproj.io/v1alpha1",
+						"kind":       "Rollout",
+						"metadata": map[string]interface{}{
+							"namespace": "testnamespace",
+							"name":      "testname",
+						},
+					},
+				},
+			),
+			k8sruntime.DefaultUnstructuredConverter,
+			"argoproj.io/v1alpha1",
+			"Rollout",
 			"testname",
 			"testnamespace",
 		},
@@ -178,6 +233,7 @@ func TestClient_Get(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			scaler := &resourceclient.UnstructuredClient{
+				Scheme:                test.scheme,
 				Dynamic:               test.dynamic,
 				UnstructuredConverter: test.unstructuredConverter,
 			}

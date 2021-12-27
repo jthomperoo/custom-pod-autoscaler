@@ -40,6 +40,7 @@ or HTTP request.
 - Can be configured without master node access, can be configured on managed providers such as EKS or GKE.
 - Supports Kubernetes metrics that the Horizontal Pod Autoscaler uses, can be configured using a similar syntax and
 used in custom scaling decisions.
+- Supports [Argo Rollouts](https://argoproj.github.io/argo-rollouts/).
 
 ## How does it work?
 

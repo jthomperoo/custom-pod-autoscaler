@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 /*
 Copyright 2021 The Custom Pod Autoscaler Authors.
 
@@ -24,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
@@ -251,6 +249,58 @@ func TestGetMetrics(t *testing.T) {
 			"test-namespace",
 		},
 		{
+			"Single object metric, argo rollout, value metric, success",
+			[]*k8smetric.Metric{
+				{
+					CurrentReplicas: 1,
+					Spec: config.K8sMetricSpec{
+						Type: autoscaling.ObjectMetricSourceType,
+						Object: &config.K8sObjectMetricSource{
+							Target: config.K8sMetricTarget{
+								Type: autoscaling.ValueMetricType,
+							},
+						},
+					},
+					Object: &object.Metric{
+						Current: value.MetricValue{
+							Value: int64Ptr(5),
+						},
+						ReadyPodCount: int64Ptr(2),
+					},
+				},
+			},
+			nil,
+			nil,
+			&fake.ObjectGatherer{
+				GetMetricReactor: func(metricName, namespace string, objectRef *autoscaling.CrossVersionObjectReference, selector, metricSelector labels.Selector) (*object.Metric, error) {
+					return &object.Metric{
+						Current: value.MetricValue{
+							Value: int64Ptr(5),
+						},
+						ReadyPodCount: int64Ptr(2),
+					}, nil
+				},
+			},
+			nil,
+			nil,
+			&argov1alpha1.Rollout{
+				Spec: argov1alpha1.RolloutSpec{
+					Replicas: int32Ptr(1),
+				},
+			},
+			[]config.K8sMetricSpec{
+				{
+					Type: autoscaling.ObjectMetricSourceType,
+					Object: &config.K8sObjectMetricSource{
+						Target: config.K8sMetricTarget{
+							Type: autoscaling.ValueMetricType,
+						},
+					},
+				},
+			},
+			"test-namespace",
+		},
+		{
 			"Single object metric, replicaset, average value metric, fail to get metric",
 			nil,
 			errors.New("invalid metrics (1 invalid out of 1), first error is: failed to get object metric: fail to get object metric"),
@@ -331,6 +381,7 @@ func TestGetMetrics(t *testing.T) {
 			},
 			"test-namespace",
 		},
+
 		{
 			"Single pods metric, fail to convert label",
 			nil,

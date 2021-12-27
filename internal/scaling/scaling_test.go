@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/evaluate"
@@ -942,6 +943,68 @@ func TestScale_Scale(t *testing.T) {
 					Kind:       "replicaset",
 					Name:       "test",
 					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   config.ScalerRunType,
+			},
+		},
+		{
+			"Success, argo rollout, evaluation within min-max bounds, scale to evaluation",
+			&evaluate.Evaluation{
+				TargetReplicas: int32(7),
+			},
+			nil,
+			&scaling.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "rollout",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
+											Replicas: 4,
+										},
+									}, nil
+								},
+							},
+							&k8stesting.SimpleReactor{
+								Resource: "rollout",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscalingv1.Scale{}, nil
+								},
+							},
+						},
+					},
+				},
+				&config.Config{},
+				nil,
+				nil,
+			},
+			scale.Info{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(7),
+				},
+				Resource: func() *argov1alpha1.Rollout {
+					replicas := int32(3)
+					return &argov1alpha1.Rollout{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+						Spec: argov1alpha1.RolloutSpec{
+							Replicas: &replicas,
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
+					Kind:       "rollout",
+					Name:       "test",
+					APIVersion: "argoproj.io/v1alpha1",
 				},
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
