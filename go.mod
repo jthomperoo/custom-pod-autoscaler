@@ -3,7 +3,9 @@ module github.com/jthomperoo/custom-pod-autoscaler/v2
 go 1.16
 
 require (
+	github.com/argoproj/argo-rollouts v1.0.7
 	github.com/go-chi/chi v4.0.2+incompatible
+	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/golang/glog v1.0.0
 	github.com/google/go-cmp v0.5.5
 	k8s.io/api v0.22.5

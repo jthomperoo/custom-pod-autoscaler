@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Support for `argoproj.io/v1alpha1` `Rollout` resource.
 ### Changed
 - Add clarity between `autoscaling/v1` and `autoscaling/v2beta2` APIs, no breaking changes.
 ### Security

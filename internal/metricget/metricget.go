@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute"
@@ -230,6 +231,12 @@ func (m *Gatherer) getPodSelectorForResource(resource metav1.Object) (string, er
 		return labels.SelectorFromSet(selector).String(), nil
 	case *corev1.ReplicationController:
 		return labels.SelectorFromSet(v.Spec.Selector).String(), nil
+	case *argov1alpha1.Rollout:
+		selector, err := metav1.LabelSelectorAsMap(v.Spec.Selector)
+		if err != nil {
+			return "", err
+		}
+		return labels.SelectorFromSet(selector).String(), nil
 	default:
 		return "", fmt.Errorf("Unsupported resource of type %T", v)
 	}
