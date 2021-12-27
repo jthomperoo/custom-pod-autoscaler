@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v2.3.0] - 2021-12-27
 ### Added
 - Support for `argoproj.io/v1alpha1` `Rollout` resource.
 ### Changed
@@ -220,7 +222,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.2.0...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.3.0...HEAD
+[v2.3.0]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.2.0...v2.3.0
 [v2.2.0]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.1.0...v2.2.0
 [v2.1.0]:
