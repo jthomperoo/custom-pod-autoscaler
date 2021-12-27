@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes/scheme"
 )
 
 // Client provides methods for retrieving arbitrary Kubernetes resources, returned as generalised metav1.Object, which can be converted
@@ -38,6 +37,7 @@ type Client interface {
 // UnstructuredClient is an implementation of the arbitrary resource client that uses a dynamic Kubernetes interface, retrieving
 // unstructured k8s objects and converting them to metav1.Object
 type UnstructuredClient struct {
+	Scheme                *runtime.Scheme
 	Dynamic               dynamic.Interface
 	UnstructuredConverter runtime.UnstructuredConverter
 }
@@ -71,7 +71,7 @@ func (u *UnstructuredClient) Get(apiVersion string, kind string, name string, na
 		return nil, err
 	}
 
-	resourceMeta, err := scheme.Scheme.New(resourceGVK)
+	resourceMeta, err := u.Scheme.New(resourceGVK)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 /*
 Copyright 2021 The Custom Pod Autoscaler Authors.
 
@@ -23,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
@@ -171,6 +169,35 @@ func TestGetMetrics(t *testing.T) {
 						Namespace: "test namespace",
 					},
 					Spec: appsv1.StatefulSetSpec{
+						Selector: &metav1.LabelSelector{
+							MatchExpressions: []metav1.LabelSelectorRequirement{
+								{
+									Operator: "invalid",
+								},
+							},
+						},
+					},
+				},
+				RunType: config.ScalerRunType,
+			},
+			metricget.Gatherer{
+				Config: &config.Config{
+					Namespace: "test namespace",
+					RunMode:   config.PerPodRunMode,
+				},
+			},
+		},
+		{
+			"Per pod fail to get argo rollout selector",
+			errors.New(`"invalid" is not a valid selector operator`),
+			nil,
+			metric.Info{
+				Resource: &argov1alpha1.Rollout{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: argov1alpha1.RolloutSpec{
 						Selector: &metav1.LabelSelector{
 							MatchExpressions: []metav1.LabelSelectorRequirement{
 								{
@@ -1179,6 +1206,54 @@ func TestGetMetrics(t *testing.T) {
 						return nil, errors.New("fail to get K8s metrics!")
 					},
 				},
+			},
+		},
+		{
+			"Per pod single pod, single Argo Rollout success",
+			nil,
+			[]*metric.ResourceMetric{
+				{
+					Resource: "test pod",
+					Value:    "test value",
+				},
+			},
+			metric.Info{
+				Resource: &argov1alpha1.Rollout{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+					Spec: argov1alpha1.RolloutSpec{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "test",
+							},
+						},
+					},
+				},
+				RunType: config.ScalerRunType,
+			},
+			metricget.Gatherer{
+				Config: &config.Config{
+					Namespace: "test namespace",
+					RunMode:   config.PerPodRunMode,
+				},
+				Clientset: k8sfake.NewSimpleClientset(
+					&v1.Pod{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test pod",
+							Namespace: "test namespace",
+							Labels:    map[string]string{"app": "test"},
+						},
+					},
+				),
+				Execute: func() *fake.Execute {
+					execute := fake.Execute{}
+					execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+						return "test value", nil
+					}
+					return &execute
+				}(),
 			},
 		},
 	}
