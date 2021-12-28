@@ -70,14 +70,12 @@ components/versions (Make sure that you have read the
 want to check [this section](#i-have-a-question)).
 - To see if other users have experienced (and potentially already solved) the same issue you are having, check if there
 is not already a bug report existing for your bug or error in the
-[bug tracker](https://github.com/jthomperoo/custom-pod-autoscaler/issues?q=label%3Abug).
+[bug tracker](https://github.com/jthomperoo/custom-pod-autoscaler/issues).
 - Also make sure to search the internet (including Stack Overflow) to see if users outside of the GitHub community have
 discussed the issue.
 - Collect information about the bug:
-- Stack trace (Traceback)
-- OS, Platform and Version (Windows, Linux, macOS, x86, ARM)
-- Version of the interpreter, compiler, SDK, runtime environment, package manager, depending on what seems relevant.
-- Possibly your input and the output
+- Kubernetes version.
+- Any libraries/tooling that you are using that may affect it.
 - Can you reliably reproduce the issue? And can you also reproduce it with older versions?
 
 <!-- omit in toc -->
@@ -95,9 +93,9 @@ and create a reduced test case.
 
 Once it's filed:
 
-- A team member will try to reproduce the issue with your provided steps.
-- If the team is able to reproduce the issue the issue will be left to be
-[implemented by someone](#your-first-code-contribution).
+- Someone will try to reproduce the issue with your provided steps.
+- If someone is able to reproduce the issue the issue will be left to be [implemented by
+someone](#your-first-code-contribution).
 
 ### Suggesting Enhancements
 
@@ -129,6 +127,50 @@ Enhancement suggestions are tracked as [GitHub issues](https://github.com/jthomp
 you can also tell which alternatives do not work for you.
 - **Explain why this enhancement would be useful** to most Custom Pod Autoscaler users. You may also want to point out
 the other projects that solved it better and which could serve as inspiration.
+
+## Developing
+
+### Environment
+
+Developing this project requires these dependencies:
+
+* [Go](https://golang.org/doc/install) >= `1.16`
+* [Golint](https://github.com/golang/lint) == `v0.0.0-20201208152925-83fdc39ff7b5`
+* [Docker](https://docs.docker.com/install/)
+
+To view the docs, you need Python 3 installed:
+
+* [Python](https://www.python.org/downloads/) == `3.8.5`
+
+To view docs locally you need some Python dependencies, run:
+
+```bash
+pip install -r docs/requirements.txt
+```
+
+It is recommended to test locally using a local Kubernetes managment system, such as
+[k3d](https://github.com/rancher/k3d) (allows running a small Kubernetes cluster locally using Docker).
+
+Once you have a cluster available, you should install the [Custom Pod Autoscaler Operator
+(CPAO)](https://github.com/jthomperoo/custom-pod-autoscaler-operator/blob/master/INSTALL.md)
+onto the cluster to let you install Custom Pod Autoscalers.
+
+With the CPAO installed you can install your development builds of the CPA onto the cluster by building the image
+locally, and then build CPAs using the new development image.
+
+Finally you can build a CPA example (see the [`example/` directory](./example) for choices), and then
+push the image to the K8s cluster's registry (to do that with k3d you can use the `k3d image import` command). Once
+the autoscaler's image is available in the registry it can be deployed using `kubectl`.
+
+### Commands
+
+* `make` - builds the CPA binary.
+* `make docker` - builds the CPA base images.
+* `make test` - runs the unit tests.
+* `make lint` - lints the code.
+* `make beautify` - beautifies the code, must be run to pass the CI.
+* `make view_coverage` - opens up any generated coverage reports in the browser.
+* `make doc` - hosts the documentation locally, at `127.0.0.1:8000`.
 
 ## Styleguides
 
