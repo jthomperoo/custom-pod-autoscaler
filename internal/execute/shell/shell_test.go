@@ -99,7 +99,7 @@ func TestMain(m *testing.M) {
 	tests = []test{
 		{
 			"Missing shell method configuration",
-			errors.New(`Missing required 'shell' configuration on method`),
+			errors.New(`missing required 'shell' configuration on method`),
 			"",
 			&config.Method{
 				Type: "shell",
@@ -313,7 +313,7 @@ func TestMain(m *testing.M) {
 		},
 		{
 			"Failed shell command timeout",
-			errors.New("Entrypoint '/bin/sh', command '[command]' timed out"),
+			errors.New("entrypoint '/bin/sh', command '[command]' timed out"),
 			"",
 			&config.Method{
 				Type:    shell.Type,
@@ -332,7 +332,7 @@ func TestMain(m *testing.M) {
 		},
 		{
 			"Failed shell command timeout, multiple args",
-			errors.New("Entrypoint '/bin/sh', command '[command arg1]' timed out"),
+			errors.New("entrypoint '/bin/sh', command '[command arg1]' timed out"),
 			"",
 			&config.Method{
 				Type:    shell.Type,

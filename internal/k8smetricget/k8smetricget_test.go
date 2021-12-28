@@ -78,7 +78,7 @@ func TestGetMetrics(t *testing.T) {
 		{
 			"Single invalid resource type",
 			nil,
-			errors.New(`Unsupported resource of type *v1.DaemonSet`),
+			errors.New(`failed to get replica count for resource: unsupported resource of type *v1.DaemonSet`),
 			nil,
 			nil,
 			nil,

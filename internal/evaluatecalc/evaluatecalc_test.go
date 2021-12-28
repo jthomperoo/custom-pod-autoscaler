@@ -49,7 +49,7 @@ func TestGetEvaluation(t *testing.T) {
 	}{
 		{
 			"Pre-evaluate hook fail",
-			errors.New("pre-evaluate hook fail"),
+			errors.New("failed run pre-evaluate hook: pre-evaluate hook fail"),
 			nil,
 			evaluate.Info{
 				Metrics: []*metric.ResourceMetric{
@@ -75,7 +75,7 @@ func TestGetEvaluation(t *testing.T) {
 		},
 		{
 			"Execute fail",
-			errors.New("fail to evaluate"),
+			errors.New("failed to get evaluation: fail to evaluate"),
 			nil,
 			evaluate.Info{
 				Metrics: []*metric.ResourceMetric{
@@ -106,7 +106,7 @@ func TestGetEvaluation(t *testing.T) {
 		},
 		{
 			"Post-evaluate hook fail",
-			errors.New("post-evaluate hook fail"),
+			errors.New("failed run post-evaluate hook: post-evaluate hook fail"),
 			nil,
 			evaluate.Info{
 				Metrics: []*metric.ResourceMetric{
@@ -269,7 +269,7 @@ func TestGetEvaluation(t *testing.T) {
 		},
 		{
 			"Execute success with invalid JSON",
-			errors.New(`failed to parse JSON evaluation, got 'invalid', err: invalid character 'i' looking for beginning of value`),
+			errors.New(`failed to parse JSON evaluation, got 'invalid': invalid character 'i' looking for beginning of value`),
 			nil,
 			evaluate.Info{
 				Metrics: []*metric.ResourceMetric{

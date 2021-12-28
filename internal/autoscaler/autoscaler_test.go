@@ -63,7 +63,7 @@ func TestScaler(t *testing.T) {
 	}{
 		{
 			"Get resource fail",
-			errors.New(`fail to get resource`),
+			errors.New(`failed to get managed resource: fail to get resource`),
 			autoscaler.Scaler{
 				Client: &fake.ResourceClient{
 					GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
@@ -82,7 +82,7 @@ func TestScaler(t *testing.T) {
 		},
 		{
 			"Gather metric fail",
-			errors.New("fail to get metric"),
+			errors.New("failed to get metrics: fail to get metric"),
 			autoscaler.Scaler{
 				Client: &fake.ResourceClient{
 					GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
@@ -113,7 +113,7 @@ func TestScaler(t *testing.T) {
 		},
 		{
 			"Evaluate fail",
-			errors.New("fail to evaluate"),
+			errors.New("failed get evaluation: fail to evaluate"),
 			autoscaler.Scaler{
 				Client: &fake.ResourceClient{
 					GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
@@ -151,7 +151,7 @@ func TestScaler(t *testing.T) {
 		},
 		{
 			"Scale fail",
-			errors.New("fail to scale"),
+			errors.New("failed to scale resource: fail to scale"),
 			autoscaler.Scaler{
 				Client: &fake.ResourceClient{
 					GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {

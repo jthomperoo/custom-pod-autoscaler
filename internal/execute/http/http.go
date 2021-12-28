@@ -56,7 +56,7 @@ type Execute struct {
 // parameter, configurable to be either in the body or query string
 func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string, error) {
 	if method.HTTP == nil {
-		return "", fmt.Errorf("Missing required 'http' configuration on method")
+		return "", fmt.Errorf("missing required 'http' configuration on method")
 	}
 
 	glog.V(4).Infof("Making HTTP request, method: '%s', URL: '%s'", method.HTTP.Method, method.HTTP.URL)
@@ -78,7 +78,7 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 		query.Add(QueryParameterKey, value)
 		req.URL.RawQuery = query.Encode()
 	default:
-		return "", fmt.Errorf("Unknown parameter mode '%s'", method.HTTP.ParameterMode)
+		return "", fmt.Errorf("unknown parameter mode '%s'", method.HTTP.ParameterMode)
 	}
 
 	// Add headers

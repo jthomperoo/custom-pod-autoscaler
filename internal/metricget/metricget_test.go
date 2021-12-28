@@ -82,7 +82,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per pod unsupported resource selector",
-			errors.New("Unsupported resource of type *v1.DaemonSet"),
+			errors.New("failed to get pod selector of managed resource: unsupported resource of type *v1.DaemonSet"),
 			nil,
 			metric.Info{
 				Resource: &appsv1.DaemonSet{
@@ -102,7 +102,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per pod fail to get deployment selector",
-			errors.New(`"invalid" is not a valid selector operator`),
+			errors.New(`failed to get pod selector of managed resource: "invalid" is not a valid selector operator`),
 			nil,
 			metric.Info{
 				Resource: &appsv1.Deployment{
@@ -131,7 +131,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per pod fail to get replicaset selector",
-			errors.New(`"invalid" is not a valid selector operator`),
+			errors.New(`failed to get pod selector of managed resource: "invalid" is not a valid selector operator`),
 			nil,
 			metric.Info{
 				Resource: &appsv1.ReplicaSet{
@@ -160,7 +160,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per pod fail to get statefulset selector",
-			errors.New(`"invalid" is not a valid selector operator`),
+			errors.New(`failed to get pod selector of managed resource: "invalid" is not a valid selector operator`),
 			nil,
 			metric.Info{
 				Resource: &appsv1.StatefulSet{
@@ -189,7 +189,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per pod fail to get argo rollout selector",
-			errors.New(`"invalid" is not a valid selector operator`),
+			errors.New(`failed to get pod selector of managed resource: "invalid" is not a valid selector operator`),
 			nil,
 			metric.Info{
 				Resource: &argov1alpha1.Rollout{
@@ -218,7 +218,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per pod error when listing pods",
-			errors.New("fail to list pods"),
+			errors.New("failed to get pods being managed: fail to list pods"),
 			nil,
 			metric.Info{
 				Resource: &appsv1.Deployment{
@@ -245,7 +245,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per pod pre-metric hook fail",
-			errors.New("pre-metric hook fail"),
+			errors.New("failed to run pre-metric hook: pre-metric hook fail"),
 			nil,
 			metric.Info{
 				Resource: &appsv1.Deployment{
@@ -291,7 +291,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per pod single pod single deployment shell execute fail",
-			errors.New("fail to get metric"),
+			errors.New("failed to gather metrics: fail to get metric"),
 			nil,
 			metric.Info{
 				Resource: &appsv1.Deployment{
@@ -357,7 +357,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per pod post-metric hook fail",
-			errors.New("post-metric hook fail"),
+			errors.New("failed to run post-metric hook: post-metric hook fail"),
 			nil,
 			metric.Info{
 				Resource: &appsv1.Deployment{
@@ -852,7 +852,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per resource shell execute fail",
-			errors.New("fail to get metric"),
+			errors.New("failed to gather metrics: fail to get metric"),
 			nil,
 			metric.Info{
 				Resource: &appsv1.Deployment{
@@ -880,7 +880,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per resource pre-metric hook fail",
-			errors.New("pre-metric hook fail"),
+			errors.New("failed to run pre-metric hook: pre-metric hook fail"),
 			nil,
 			metric.Info{
 				Resource: &appsv1.Deployment{
@@ -911,7 +911,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per resource post-metric hook fail",
-			errors.New("post-metric hook fail"),
+			errors.New("failed to run post-metric hook: post-metric hook fail"),
 			nil,
 			metric.Info{
 				Resource: &appsv1.Deployment{
@@ -1162,7 +1162,7 @@ func TestGetMetrics(t *testing.T) {
 		},
 		{
 			"Per resource shell execute failure, fail to get K8s metrics, RequireKubernetesMetrics: true",
-			errors.New("fail to get K8s metrics!"),
+			errors.New("failed to get required Kubernetes metrics: fail to get K8s metrics!"),
 			nil,
 			metric.Info{
 				Resource: &appsv1.Deployment{

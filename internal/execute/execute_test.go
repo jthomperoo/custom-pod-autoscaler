@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Custom Pod Autoscaler Authors.
+Copyright 2021 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ func TestCombinedExecute_ExecuteWithValue(t *testing.T) {
 		{
 			"Fail, no executers provided",
 			"",
-			errors.New(`Unknown execution method: 'unknown'`),
+			errors.New(`unknown execution method: 'unknown'`),
 			&config.Method{
 				Type: "unknown",
 			},
@@ -54,7 +54,7 @@ func TestCombinedExecute_ExecuteWithValue(t *testing.T) {
 		{
 			"Fail, unknown execution method",
 			"",
-			errors.New(`Unknown execution method: 'unknown'`),
+			errors.New(`unknown execution method: 'unknown'`),
 			&config.Method{
 				Type: "unknown",
 			},

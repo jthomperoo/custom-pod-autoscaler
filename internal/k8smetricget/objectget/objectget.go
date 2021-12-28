@@ -55,13 +55,13 @@ func (c *Gather) GetMetric(metricName string, namespace string, objectRef *autos
 	// Get metrics
 	utilization, timestamp, err := c.MetricsClient.GetObjectMetric(metricName, namespace, objectRef, metricSelector)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get metric %s: %v on %s %s/%s", metricName, objectRef.Kind, namespace, objectRef.Name, err)
+		return nil, fmt.Errorf("unable to get metric %s: %s on %s %s: %w", metricName, objectRef.Kind, namespace, objectRef.Name, err)
 	}
 
 	// Calculate number of ready pods
 	readyPodCount, err := c.PodReadyCounter.GetReadyPodsCount(namespace, selector)
 	if err != nil {
-		return nil, fmt.Errorf("unable to calculate ready pods: %s", err)
+		return nil, fmt.Errorf("unable to calculate ready pods: %w", err)
 	}
 
 	return &object.Metric{
@@ -78,7 +78,7 @@ func (c *Gather) GetPerPodMetric(metricName string, namespace string, objectRef 
 	// Get metrics
 	utilization, timestamp, err := c.MetricsClient.GetObjectMetric(metricName, namespace, objectRef, metricSelector)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get metric %s: %v on %s %s/%s", metricName, objectRef.Kind, namespace, objectRef.Name, err)
+		return nil, fmt.Errorf("unable to get metric %s: %s on %s %s/%w", metricName, objectRef.Kind, namespace, objectRef.Name, err)
 	}
 
 	return &object.Metric{

@@ -64,7 +64,7 @@ func (s *Scale) Scale(info scale.Info) (*evaluate.Evaluation, error) {
 	currentReplicas := int32(1)
 	resourceReplicas, err := s.getReplicaCount(info.Resource)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get replica count for resource: %w", err)
 	}
 	if resourceReplicas != nil {
 		currentReplicas = *resourceReplicas
@@ -131,7 +131,7 @@ func (s *Scale) Scale(info scale.Info) (*evaluate.Evaluation, error) {
 		glog.V(3).Infoln("Attempting to run pre-scaling hook")
 		hookResult, err := s.Execute.ExecuteWithValue(s.Config.PreScale, string(specJSON))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed run pre-scaling hook: %w", err)
 		}
 		glog.V(3).Infof("Pre-scaling hook response: %+v", hookResult)
 	}
@@ -156,7 +156,7 @@ func (s *Scale) Scale(info scale.Info) (*evaluate.Evaluation, error) {
 		glog.V(3).Infoln("Attempting to get scale subresource for managed resource")
 		scale, err := s.Scaler.Scales(info.Namespace).Get(context.Background(), targetGR, info.ScaleTargetRef.Name, metav1.GetOptions{})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get scale subresource for resource: %w", err)
 		}
 		glog.V(3).Infof("Scale subresource retrieved: %+v", scale)
 
@@ -164,7 +164,7 @@ func (s *Scale) Scale(info scale.Info) (*evaluate.Evaluation, error) {
 		scale.Spec.Replicas = targetReplicas
 		_, err = s.Scaler.Scales(info.Namespace).Update(context.Background(), targetGR, scale, metav1.UpdateOptions{})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to apply scaling changes to resource: %w", err)
 		}
 		glog.V(3).Infoln("Application of scale successful")
 	} else {
@@ -175,7 +175,7 @@ func (s *Scale) Scale(info scale.Info) (*evaluate.Evaluation, error) {
 		glog.V(3).Infoln("Attempting to run post-scaling hook")
 		hookResult, err := s.Execute.ExecuteWithValue(s.Config.PostScale, string(specJSON))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to run post-scaling hook: %w", err)
 		}
 		glog.V(3).Infof("Post-scaling hook response: %+v", hookResult)
 	}
@@ -196,6 +196,6 @@ func (s *Scale) getReplicaCount(resource metav1.Object) (*int32, error) {
 	case *argov1alpha1.Rollout:
 		return v.Spec.Replicas, nil
 	default:
-		return nil, fmt.Errorf("Unsupported resource of type %T", v)
+		return nil, fmt.Errorf("unsupported resource of type %T", v)
 	}
 }

@@ -44,7 +44,7 @@ type Execute struct {
 // If the timeout is reached, an error is returned.
 func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string, error) {
 	if method.Shell == nil {
-		return "", fmt.Errorf("Missing required 'shell' configuration on method")
+		return "", fmt.Errorf("missing required 'shell' configuration on method")
 	}
 
 	// Config to enable/disable logging stderr output
@@ -84,7 +84,7 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 	select {
 	case <-timeoutListener:
 		cmd.Process.Kill()
-		return "", fmt.Errorf("Entrypoint '%s', command '%s' timed out", method.Shell.Entrypoint, method.Shell.Command)
+		return "", fmt.Errorf("entrypoint '%s', command '%s' timed out", method.Shell.Entrypoint, method.Shell.Command)
 	case err = <-done:
 		if err != nil {
 			glog.V(0).Infof("Shell command failed, stderr: %s", errb.String())

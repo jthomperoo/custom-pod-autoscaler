@@ -58,13 +58,13 @@ func (c *Gather) GetMetric(resourceName corev1.ResourceName, namespace string, s
 	// Get metrics
 	metrics, timestamp, err := c.MetricsClient.GetResourceMetric(resourceName, namespace, selector, "")
 	if err != nil {
-		return nil, fmt.Errorf("unable to get metrics for resource %s: %v", resourceName, err)
+		return nil, fmt.Errorf("unable to get metrics for resource %s: %w", resourceName, err)
 	}
 
 	// Get pods
 	podList, err := c.PodLister.Pods(namespace).List(selector)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get pods while calculating replica count: %v", err)
+		return nil, fmt.Errorf("unable to get pods while calculating replica count: %w", err)
 	}
 
 	totalPods := len(podList)
@@ -98,13 +98,13 @@ func (c *Gather) GetRawMetric(resourceName corev1.ResourceName, namespace string
 	// Get metrics
 	metrics, timestamp, err := c.MetricsClient.GetResourceMetric(resourceName, namespace, selector, "")
 	if err != nil {
-		return nil, fmt.Errorf("unable to get metrics for resource %s: %v", resourceName, err)
+		return nil, fmt.Errorf("unable to get metrics for resource %s: %w", resourceName, err)
 	}
 
 	// Get pods
 	podList, err := c.PodLister.Pods(namespace).List(selector)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get pods while calculating replica count: %v", err)
+		return nil, fmt.Errorf("unable to get pods while calculating replica count: %w", err)
 	}
 
 	totalPods := len(podList)

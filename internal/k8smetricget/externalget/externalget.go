@@ -62,7 +62,7 @@ func (c *Gather) GetMetric(metricName, namespace string, metricSelector *metav1.
 	// Get metrics
 	metrics, timestamp, err := c.MetricsClient.GetExternalMetric(metricName, namespace, metricLabelSelector)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get external metric %s/%s/%+v: %s", namespace, metricName, metricSelector, err)
+		return nil, fmt.Errorf("unable to get external metric %s/%s/%+v: %w", namespace, metricName, metricSelector, err)
 	}
 	utilization := int64(0)
 	for _, val := range metrics {
@@ -72,7 +72,7 @@ func (c *Gather) GetMetric(metricName, namespace string, metricSelector *metav1.
 	// Calculate number of ready pods
 	readyPodCount, err := c.PodReadyCounter.GetReadyPodsCount(namespace, podSelector)
 	if err != nil {
-		return nil, fmt.Errorf("unable to calculate ready pods: %s", err)
+		return nil, fmt.Errorf("unable to calculate ready pods: %w", err)
 	}
 
 	return &external.Metric{
@@ -95,7 +95,7 @@ func (c *Gather) GetPerPodMetric(metricName, namespace string, metricSelector *m
 	// Get metrics
 	metrics, timestamp, err := c.MetricsClient.GetExternalMetric(metricName, namespace, metricLabelSelector)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get external metric %s/%s/%+v: %s", namespace, metricName, metricSelector, err)
+		return nil, fmt.Errorf("unable to get external metric %s/%s/%+v: %w", namespace, metricName, metricSelector, err)
 	}
 
 	// Calculate utilization total for pods

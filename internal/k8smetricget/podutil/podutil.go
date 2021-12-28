@@ -54,7 +54,7 @@ func (c *PodReadyCount) GetReadyPodsCount(namespace string, selector labels.Sele
 	// Get pods
 	podList, err := c.PodLister.Pods(namespace).List(selector)
 	if err != nil {
-		return 0, fmt.Errorf("unable to get pods while calculating replica count: %v", err)
+		return 0, fmt.Errorf("unable to get pods while calculating replica count: %w", err)
 	}
 
 	// Count number of ready pods

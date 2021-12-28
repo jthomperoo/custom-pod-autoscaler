@@ -20,6 +20,8 @@ limitations under the License.
 package autoscaler
 
 import (
+	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/evaluate"
@@ -48,7 +50,7 @@ func (s *Scaler) Scale() error {
 	glog.V(2).Infoln("Attempting to get managed resource")
 	resource, err := s.Client.Get(s.Config.ScaleTargetRef.APIVersion, s.Config.ScaleTargetRef.Kind, s.Config.ScaleTargetRef.Name, s.Config.Namespace)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get managed resource: %w", err)
 	}
 	glog.V(2).Infof("Managed resource retrieved: %+v", resource)
 
@@ -58,7 +60,7 @@ func (s *Scaler) Scale() error {
 		RunType:  config.ScalerRunType,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get metrics: %w", err)
 	}
 	glog.V(2).Infof("Retrieved metrics: %+v", metrics)
 
@@ -69,7 +71,7 @@ func (s *Scaler) Scale() error {
 		RunType:  config.ScalerRunType,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed get evaluation: %w", err)
 	}
 	glog.V(2).Infof("Metrics evaluated: %+v", evaluation)
 
@@ -85,7 +87,7 @@ func (s *Scaler) Scale() error {
 		RunType:        config.ScalerRunType,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to scale resource: %w", err)
 	}
 	glog.V(2).Infoln("Scaled resource successfully")
 	return nil

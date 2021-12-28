@@ -52,7 +52,7 @@ func (e *CombinedExecute) ExecuteWithValue(method *config.Method, value string) 
 			return gathered, nil
 		}
 	}
-	return "", fmt.Errorf("Unknown execution method: '%s'", method.Type)
+	return "", fmt.Errorf("unknown execution method: '%s'", method.Type)
 }
 
 // GetType returns the CombinedExecute type

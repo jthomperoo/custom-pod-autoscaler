@@ -21,6 +21,7 @@ package confload
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -54,7 +55,7 @@ func loadFromBytes(data []byte, config *config.Config) error {
 	}
 	err := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(data), 10).Decode(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid format of YAML/JSON configuration: %w", err)
 	}
 	return nil
 }
@@ -87,7 +88,7 @@ func loadFromEnv(config *config.Config, envVars map[string]string) error {
 		if fieldValue.Kind() == reflect.Int {
 			intVal, err := strconv.ParseInt(value, 10, 64)
 			if err != nil {
-				return err
+				return fmt.Errorf("invalid format of integer field value: %w", err)
 			}
 			fieldValue.SetInt(intVal)
 			continue
@@ -98,7 +99,7 @@ func loadFromEnv(config *config.Config, envVars map[string]string) error {
 		fieldRef := reflect.New(fieldType.Type)
 		err := yaml.NewYAMLOrJSONDecoder(strings.NewReader(value), 10).Decode(fieldRef.Interface())
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid format of YAML/JSON field value: %w", err)
 		}
 
 		fieldValue.Set(fieldRef.Elem())

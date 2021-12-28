@@ -54,13 +54,13 @@ func (c *Gather) GetMetric(metricName string, namespace string, selector labels.
 	// Get metrics
 	metrics, timestamp, err := c.MetricsClient.GetRawMetric(metricName, namespace, selector, metricSelector)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get metric %s: %v", metricName, err)
+		return nil, fmt.Errorf("unable to get metric %s: %w", metricName, err)
 	}
 
 	// Get pods
 	podList, err := c.PodLister.Pods(namespace).List(selector)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get pods while calculating replica count: %v", err)
+		return nil, fmt.Errorf("unable to get pods while calculating replica count: %w", err)
 	}
 
 	totalPods := len(podList)
