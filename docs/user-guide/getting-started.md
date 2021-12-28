@@ -391,5 +391,5 @@ Removes the custom autoscaler operator.
 
 Congratulations! You have now successfully created a custom Kubernetes autoscaler, for further
 information as to configuration options see the
-[configuration reference](../../../reference/configuration), for more samples, check out the
+[configuration reference](../reference/configuration.md), for more samples, check out the
 [examples for some other language implementations](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example).

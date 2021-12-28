@@ -1,15 +1,15 @@
 # Installation
-The easiest way to install a Custom Pod Autoscaler is using the 
-[Custom Pod Autoscaler Operator](https://github.com/jthomperoo/custom-pod-autoscaler-operator), 
-follow the 
+The easiest way to install a Custom Pod Autoscaler is using the
+[Custom Pod Autoscaler Operator](https://github.com/jthomperoo/custom-pod-autoscaler-operator),
+follow the
 [installation guide for instructions for installing the operator](https://github.com/jthomperoo/custom-pod-autoscaler-operator/blob/master/INSTALL.md).
 
-Once the operator is installed, you can now use the new `CustomPodAutoscaler` Kubernetes Resource 
-to deploy autoscalers.  
+Once the operator is installed, you can now use the new `CustomPodAutoscaler` Kubernetes Resource
+to deploy autoscalers.
 
-For an example, taken from the 
-[getting started guide](../getting-started) 
-and the 
+For an example, taken from the
+[getting started guide](./getting-started.md)
+and the
 [example code](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example/python-custom-autoscaler)
 in a file called `cpa.yaml`:
 ```yaml
@@ -28,7 +28,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: hello-kubernetes
-  config: 
+  config:
     - name: interval
       value: "10000"
 ```

@@ -97,12 +97,12 @@ operation has failed and provide a timeout error.
 
 Defines a shell method, which is a simple string with the shell command to execute. Shell commands are configured with
 entrypoints and commands to execute, with values piped in through standard in. See the [methods section for more
-details](../../user-guide/methods/#shell)
+details](../user-guide/methods.md#shell)
 
 ### http
 
 Defines an http method, which configures how an HTTP request is made. See the [methods section for more
-details](../../user-guide/methods/#http)
+details](../user-guide/methods.md#http)
 
 ## configPath
 
@@ -370,7 +370,7 @@ Example of JSON provided to this hook:
 }
 ```
 
-[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
+[This is a `method`](#methods) that is running as part of a [`hook`](../user-guide/hooks.md).
 
 ## postMetric
 
@@ -414,7 +414,7 @@ Example of JSON provided to this hook:
 }
 ```
 
-[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
+[This is a `method`](#methods) that is running as part of a [`hook`](../user-guide/hooks.md).
 
 ## preEvaluate
 
@@ -457,7 +457,7 @@ Example of JSON provided to this hook:
 }
 ```
 
-[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
+[This is a `method`](#methods) that is running as part of a [`hook`](../user-guide/hooks.md).
 
 ## postEvaluate
 
@@ -504,7 +504,7 @@ Example of JSON provided to this hook:
 }
 ```
 
-[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
+[This is a `method`](#methods) that is running as part of a [`hook`](../user-guide/hooks.md).
 
 ## preScale
 
@@ -556,7 +556,7 @@ Example of JSON provided to this hook:
 }
 ```
 
-[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
+[This is a `method`](#methods) that is running as part of a [`hook`](../user-guide/hooks.md).
 
 ## postScale
 
@@ -610,7 +610,7 @@ Example of JSON provided to this hook:
 }
 ```
 
-[This is a `method`](#methods) that is running as part of a [`hook`](../../user-guide/hooks).
+[This is a `method`](#methods) that is running as part of a [`hook`](../user-guide/hooks.md).
 
 ## kubernetesMetricSpecs
 

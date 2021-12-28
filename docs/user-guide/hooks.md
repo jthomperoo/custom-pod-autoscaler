@@ -1,7 +1,7 @@
 # Hooks
 
 Hooks provide a way to inject user logic to different points in the autoscaler execution process through the [use of
-`methods`](../methods). Each  hook is provided with different data.
+`methods`](./methods.md). Each  hook is provided with different data.
 
 * `preMetric` - Runs before metric gathering, given metric gathering input.
 * `postMetric` - Runs after metric gathering, given metric gathering input and result.
@@ -13,4 +13,4 @@ resource being scaled.
 resource being scaled.
 
 For more detailed information on values provided into these hooks and when they are called, [check out the
-configuration reference](../../reference/configuration).
+configuration reference](../reference/configuration.md).
