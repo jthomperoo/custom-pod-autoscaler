@@ -1,8 +1,8 @@
 # Argo Rollouts
 
-> Note: this feature is not yet released.
+> Note: this feature is only available in the Custom Pod Autoscaler `v2.3.0` and above.
 
-> Note: this feature requires using a Custom Pod Autoscaler Operator `v1.2.0` and above.
+> Note: this example requires using a Custom Pod Autoscaler Operator `v1.2.0` and above.
 
 This is an autoscaler that targets an [Argo Rollout](https://argoproj.github.io/argo-rollouts/). This is based on the [getting started tutorial example autoscaler](../python-custom-autoscaler).
 

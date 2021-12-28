@@ -15,16 +15,19 @@ Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=la
 
 # Custom Pod Autoscaler
 
-This is the Custom Pod Autoscaler (CPA) code and base images.
+Custom Pod Autoscalers (CPAs) are custom Kubernetes autoscalers. This project is part of a framework that lets you
+quickly and easily build your own CPAs without having to deal with complex Kubernetes interactions using the tools and
+language of your choice.
 
-## What is it?
+## What is this project?
 
-A Custom Pod Autoscaler is a Kubernetes autoscaler that is customised and user created. Custom Pod Autoscalers are
-designed to be similar to the Kubernetes Horizontal Pod Autoscaler. The Custom Pod Autoscaler framework allows easier
-and faster development of Kubernetes autoscalers.
+This project is part of the Custom Pod Autoscaler Framework (CPAF) which is a set of tools to help you easily build
+your own CPAs. This project is the core of the CPAF, providing a program which runs inside your CPA to manage
+Kubernetes interactions and custom user logic interactions.
+
 A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting
-your own logic; see the
-[examples for more information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v2.3.0/example).
+your own logic; see the [examples for more
+information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v2.3.0/example).
 
 ## Features
 
@@ -42,17 +45,33 @@ or HTTP request.
 used in custom scaling decisions.
 - Supports [Argo Rollouts](https://argoproj.github.io/argo-rollouts/).
 
+## Why would I use it?
+
+Kubernetes provides the Horizontal Pod Autoscaler, which allows automatic scaling of the number of replicas in a
+resource (Deployment, ReplicationController, ReplicaSet, StatefulSet) based on metrics that you feed it. Mostly the
+metrics used are CPU/memory load, which is sufficient for most applications. You can specify custom metrics to feed
+into it through the metrics API also.
+
+The limitation in the Horizontal Pod Autoscaler is that it has a [hard-coded algorithm for assessing these
+metrics](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details):
+```
+desiredReplicas = ceil[currentReplicas * ( currentMetricValue / desiredMetricValue )]
+```
+If you need more flexibility in your scaling, beyond this algorithm, Horizontal Pod Autoscaler doesn't meet your needs,
+you need to write your own scaling logic.
+
 ## How does it work?
 
-A Custom Pod Autoscaler has a base program (defined in this repository) that handles interacting with user logic, for
-example by using shell commands and piping data into them.
+This project is a program that abstracts away complex Kubernetes interactions and handles interacting with custom
+user logic you can provide to determine how the autoscaler should operate.
+
 When developing a Custom Pod Autoscaler you define logic for two stages:
 
 * Metric gathering - collecting or generating metrics; can be calling metrics APIs, running calculations locally,
 making HTTP requests.
 * Evaluating metrics - taking these gathered metrics and using them to decide how many replicas a resource should have.
 
-These two pieces of logic are all the custom logic required to build a Custom Pod Autoscaler, the base program will
+These two pieces of logic are all the custom logic required to build a Custom Pod Autoscaler, the program will
 handle all Kubernetes API interactions for scaling/retrieving resources.
 
 ## Getting started
@@ -65,44 +84,12 @@ developers](https://custom-pod-autoscaler.readthedocs.io/en/stable/user-guide/ge
 See the [wiki for more information, such as guides and
 references](https://custom-pod-autoscaler.readthedocs.io/en/stable/).
 
+### What other projects are in the Custom Pod Autoscaler Framework?
+
+The [Custom Pod Autoscaler Operator](https://github.com/jthomperoo/custom-pod-autoscaler-operator) is the other part
+of the Custom Pod Autoscaler Framework, it is an operator that handles provisioning Kubernetes resources for your
+CPA.
+
 ## Developing this project
-### Environment
-Developing this project requires these dependencies:
 
-* [Go](https://golang.org/doc/install) >= `1.16`
-* [Golint](https://github.com/golang/lint) == `v0.0.0-20201208152925-83fdc39ff7b5`
-* [Docker](https://docs.docker.com/install/)
-
-To view the docs, you need Python 3 installed:
-
-* [Python](https://www.python.org/downloads/) == `3.8.5`
-
-To view docs locally you need some Python dependencies, run:
-
-```bash
-pip install -r docs/requirements.txt
-```
-
-It is recommended to test locally using a local Kubernetes managment system, such as
-[k3d](https://github.com/rancher/k3d) (allows running a small Kubernetes cluster locally using Docker).
-
-Once you have a cluster available, you should install the [Custom Pod Autoscaler Operator
-(CPAO)](https://github.com/jthomperoo/custom-pod-autoscaler-operator/blob/master/INSTALL.md)
-onto the cluster to let you install Custom Pod Autoscalers.
-
-With the CPAO installed you can install your development builds of the CPA onto the cluster by building the image
-locally, and then build CPAs using the new development image.
-
-Finally you can build a CPA example (see the [`example/` directory](./example) for choices), and then
-push the image to the K8s cluster's registry (to do that with k3d you can use the `k3d image import` command). Once
-the autoscaler's image is available in the registry it can be deployed using `kubectl`.
-
-### Commands
-
-* `make` - builds the CPA binary.
-* `make docker` - builds the CPA base images.
-* `make test` - runs the unit tests.
-* `make lint` - lints the code.
-* `make beautify` - beautifies the code, must be run to pass the CI.
-* `make view_coverage` - opens up any generated coverage reports in the browser.
-* `make doc` - hosts the documentation locally, at `127.0.0.1:8000`.
+See the [contribution guidelines](./CONTRIBUTING.md).
