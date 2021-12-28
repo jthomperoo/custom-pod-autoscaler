@@ -8,7 +8,7 @@ information that the scaling decision will be based on. The autoscaler base prog
 
 The `runMode` specifies how often the metric gathering is run, and the information supplied to the metric gatherer. How
 the information is provided depends on the method used, e.g. if it is a shell command method the information will be
-provided through standard in and piped to the script, see the [methods section for more information](../methods).
+provided through standard in and piped to the script, see the [methods section for more information](./methods.md).
 
 ## per-pod
 
@@ -100,4 +100,4 @@ alongside surfacing any error information.
 How the metric gatherer returns information/errors is dependent on the method used for the metric
 gatherer, for example if it is a shell command method, information is returned by writing to
 standard out, and an error is signified by a non-zero exit code - with further error information
-stored to standard error and standard out, see the [methods section for more information](../methods).
+stored to standard error and standard out, see the [methods section for more information](./methods.md).

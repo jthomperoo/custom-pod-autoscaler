@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [v2.4.0] - 2021-12-28
 ### Changed
 - Error messages now include more context about when they occured, rather than simply outputting the minimum error
 information.
@@ -225,7 +226,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.3.0...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.4.0...HEAD
+[v2.4.0]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.3.0...v2.4.0
 [v2.3.0]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.2.0...v2.3.0
 [v2.2.0]:
