@@ -106,7 +106,7 @@ func (c *Gather) GetMetrics(resource metav1.Object, specs []config.K8sMetricSpec
 	currentReplicas := int32(0)
 	resourceReplicas, err := c.getReplicaCount(resource)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get replica count for resource: %w", err)
 	}
 	if resourceReplicas != nil {
 		currentReplicas = *resourceReplicas
@@ -125,7 +125,7 @@ func (c *Gather) GetMetrics(resource metav1.Object, specs []config.K8sMetricSpec
 
 	// If all metrics are invalid return error and set condition on hpa based on first invalid metric.
 	if invalidMetricsCount >= len(specs) {
-		return nil, fmt.Errorf("invalid metrics (%v invalid out of %v), first error is: %v", invalidMetricsCount, len(specs), invalidMetricError)
+		return nil, fmt.Errorf("invalid metrics (%d invalid out of %d), first error is: %w", invalidMetricsCount, len(specs), invalidMetricError)
 	}
 
 	return combinedMetrics, nil
@@ -136,14 +136,14 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 	case autoscaling.ObjectMetricSourceType:
 		metricSelector, err := metav1.LabelSelectorAsSelector(spec.Object.Metric.Selector)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get object metric: %v", err)
+			return nil, fmt.Errorf("failed to get object metric: %w", err)
 		}
 
 		switch spec.Object.Target.Type {
 		case autoscaling.ValueMetricType:
 			objectMetric, err := c.Object.GetMetric(spec.Object.Metric.Name, namespace, &spec.Object.DescribedObject, selector, metricSelector)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get object metric: %v", err)
+				return nil, fmt.Errorf("failed to get object metric: %w", err)
 			}
 			return &k8smetric.Metric{
 				CurrentReplicas: currentReplicas,
@@ -153,7 +153,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 		case autoscaling.AverageValueMetricType:
 			objectMetric, err := c.Object.GetPerPodMetric(spec.Object.Metric.Name, namespace, &spec.Object.DescribedObject, selector)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get object metric: %v", err)
+				return nil, fmt.Errorf("failed to get object metric: %w", err)
 			}
 			return &k8smetric.Metric{
 				CurrentReplicas: currentReplicas,
@@ -166,7 +166,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 	case autoscaling.PodsMetricSourceType:
 		metricSelector, err := metav1.LabelSelectorAsSelector(spec.Pods.Metric.Selector)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get pods metric: %v", err)
+			return nil, fmt.Errorf("failed to get pods metric: %w", err)
 		}
 
 		if spec.Pods.Target.Type != autoscaling.AverageValueMetricType {
@@ -175,7 +175,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 
 		podsMetric, err := c.Pods.GetMetric(spec.Pods.Metric.Name, namespace, selector, metricSelector)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get pods metric: %v", err)
+			return nil, fmt.Errorf("failed to get pods metric: %w", err)
 		}
 		return &k8smetric.Metric{
 			CurrentReplicas: currentReplicas,
@@ -187,7 +187,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 		case autoscaling.AverageValueMetricType:
 			resourceMetric, err := c.Resource.GetRawMetric(spec.Resource.Name, namespace, selector)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get resource metric: %v", err)
+				return nil, fmt.Errorf("failed to get resource metric: %w", err)
 			}
 			return &k8smetric.Metric{
 				CurrentReplicas: currentReplicas,
@@ -197,7 +197,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 		case autoscaling.UtilizationMetricType:
 			resourceMetric, err := c.Resource.GetMetric(spec.Resource.Name, namespace, selector)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get resource metric: %v", err)
+				return nil, fmt.Errorf("failed to get resource metric: %w", err)
 			}
 			return &k8smetric.Metric{
 				CurrentReplicas: currentReplicas,
@@ -213,7 +213,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 		case autoscaling.AverageValueMetricType:
 			externalMetric, err := c.External.GetPerPodMetric(spec.External.Metric.Name, namespace, spec.External.Metric.Selector)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get external metric: %v", err)
+				return nil, fmt.Errorf("failed to get external metric: %w", err)
 			}
 			return &k8smetric.Metric{
 				CurrentReplicas: currentReplicas,
@@ -223,7 +223,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 		case autoscaling.ValueMetricType:
 			externalMetric, err := c.External.GetMetric(spec.External.Metric.Name, namespace, spec.External.Metric.Selector, selector)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get external metric: %v", err)
+				return nil, fmt.Errorf("failed to get external metric: %w", err)
 			}
 			return &k8smetric.Metric{
 				CurrentReplicas: currentReplicas,
@@ -252,6 +252,6 @@ func (c *Gather) getReplicaCount(resource metav1.Object) (*int32, error) {
 	case *argov1alpha1.Rollout:
 		return v.Spec.Replicas, nil
 	default:
-		return nil, fmt.Errorf("Unsupported resource of type %T", v)
+		return nil, fmt.Errorf("unsupported resource of type %T", v)
 	}
 }

@@ -60,7 +60,7 @@ func TestGetMetric(t *testing.T) {
 		{
 			"Fail to get metric",
 			nil,
-			errors.New("unable to get metric test-metric:  on test-namespace /fail to get metric"),
+			errors.New("unable to get metric test-metric:  on test-namespace : fail to get metric"),
 			&fake.MetricClient{
 				GetObjectMetricReactor: func(metricName string, namespace string, objectRef *autoscaling.CrossVersionObjectReference, metricSelector labels.Selector) (int64, time.Time, error) {
 					return 0, time.Time{}, errors.New("fail to get metric")

@@ -58,7 +58,7 @@ func (m *Gatherer) GetMetrics(info metric.Info) ([]*metric.ResourceMetric, error
 		k8sMetricSpec, err := m.K8sMetricGatherer.GetMetrics(info.Resource, m.Config.KubernetesMetricSpecs, m.Config.Namespace)
 		if err != nil {
 			if m.Config.RequireKubernetesMetrics {
-				return nil, err
+				return nil, fmt.Errorf("failed to get required Kubernetes metrics: %w", err)
 			}
 			glog.Errorf("Failed to retrieve K8s metrics, not required so continuing: %+v", err)
 		} else {
@@ -92,7 +92,7 @@ func (m *Gatherer) getMetricsForResource(info metric.Info) ([]*metric.ResourceMe
 		glog.V(3).Infoln("Attempting to run pre-metric hook")
 		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PreMetric, string(specJSON))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to run pre-metric hook: %w", err)
 		}
 		glog.V(3).Infof("Pre-metric hook response: %+v", hookResult)
 	}
@@ -100,7 +100,7 @@ func (m *Gatherer) getMetricsForResource(info metric.Info) ([]*metric.ResourceMe
 	glog.V(3).Infoln("Attempting to run metric gathering logic")
 	gathered, err := m.Execute.ExecuteWithValue(m.Config.Metric, string(specJSON))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to gather metrics: %w", err)
 	}
 	info.Metrics = []*metric.ResourceMetric{
 		{
@@ -120,7 +120,7 @@ func (m *Gatherer) getMetricsForResource(info metric.Info) ([]*metric.ResourceMe
 		}
 		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PostMetric, string(postSpecJSON))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to run post-metric hook: %w", err)
 		}
 		glog.V(3).Infof("Post-metric hook response: %+v", hookResult)
 	}
@@ -134,14 +134,14 @@ func (m *Gatherer) getMetricsForPods(info metric.Info) ([]*metric.ResourceMetric
 	glog.V(3).Infoln("Attempting to get pod selector from managed resource")
 	labels, err := m.getPodSelectorForResource(info.Resource)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get pod selector of managed resource: %w", err)
 	}
 	glog.V(3).Infof("Label selector retrieved: %+v", labels)
 
 	glog.V(3).Infoln("Attempting to get pods being managed")
 	pods, err := m.Clientset.CoreV1().Pods(m.Config.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: labels})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get pods being managed: %w", err)
 	}
 	glog.V(3).Infof("Pods retrieved: %+v", pods)
 
@@ -156,7 +156,7 @@ func (m *Gatherer) getMetricsForPods(info metric.Info) ([]*metric.ResourceMetric
 		glog.V(3).Infoln("Attempting to run pre-metric hook")
 		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PreMetric, string(specJSON))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to run pre-metric hook: %w", err)
 		}
 		glog.V(3).Infof("Pre-metric hook response: %+v", hookResult)
 	}
@@ -178,7 +178,7 @@ func (m *Gatherer) getMetricsForPods(info metric.Info) ([]*metric.ResourceMetric
 		glog.V(3).Infof("Running metric gathering for pod: %s", pod.Name)
 		gathered, err := m.Execute.ExecuteWithValue(m.Config.Metric, string(podSpecJSON))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to gather metrics: %w", err)
 		}
 		glog.V(3).Infof("Metric gathered: %+v", gathered)
 
@@ -201,7 +201,7 @@ func (m *Gatherer) getMetricsForPods(info metric.Info) ([]*metric.ResourceMetric
 		}
 		hookResult, err := m.Execute.ExecuteWithValue(m.Config.PostMetric, string(postSpecJSON))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to run post-metric hook: %w", err)
 		}
 		glog.V(3).Infof("Post-metric hook response: %+v", hookResult)
 	}
@@ -238,6 +238,6 @@ func (m *Gatherer) getPodSelectorForResource(resource metav1.Object) (string, er
 		}
 		return labels.SelectorFromSet(selector).String(), nil
 	default:
-		return "", fmt.Errorf("Unsupported resource of type %T", v)
+		return "", fmt.Errorf("unsupported resource of type %T", v)
 	}
 }

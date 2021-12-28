@@ -286,7 +286,7 @@ func main() {
 					glog.V(2).Infoln("Running autoscaler")
 					err := autoscaler.Scale()
 					if err != nil {
-						glog.Errorln(err)
+						glog.Errorf("Error while autoscaling: %s", err)
 					}
 				}
 			}

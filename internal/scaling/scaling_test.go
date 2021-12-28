@@ -56,7 +56,7 @@ func TestScale_Scale(t *testing.T) {
 		{
 			"Unsupported resource",
 			nil,
-			errors.New(`Unsupported resource of type *v1.DaemonSet`),
+			errors.New(`failed to get replica count for resource: unsupported resource of type *v1.DaemonSet`),
 			&scaling.Scale{
 				nil,
 				&config.Config{},
@@ -114,7 +114,7 @@ func TestScale_Scale(t *testing.T) {
 		{
 			"Fail to get scale for resource",
 			nil,
-			errors.New("fail to get resource"),
+			errors.New("failed to get scale subresource for resource: fail to get resource"),
 			&scaling.Scale{
 				&scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
@@ -160,7 +160,7 @@ func TestScale_Scale(t *testing.T) {
 		{
 			"Fail to update scale for resource",
 			nil,
-			errors.New("fail to update resource"),
+			errors.New("failed to apply scaling changes to resource: fail to update resource"),
 			&scaling.Scale{
 
 				&scaleFake.FakeScaleClient{
@@ -221,7 +221,7 @@ func TestScale_Scale(t *testing.T) {
 		{
 			"Fail to run pre-scaling hook",
 			nil,
-			errors.New("fail to run pre-scaling hook"),
+			errors.New("failed run pre-scaling hook: fail to run pre-scaling hook"),
 			&scaling.Scale{
 				nil,
 				&config.Config{
@@ -266,7 +266,7 @@ func TestScale_Scale(t *testing.T) {
 		{
 			"Fail to run post-scaling hook",
 			nil,
-			errors.New("fail to run post-scaling hook"),
+			errors.New("failed to run post-scaling hook: fail to run post-scaling hook"),
 			&scaling.Scale{
 				nil,
 				&config.Config{

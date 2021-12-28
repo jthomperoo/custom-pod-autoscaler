@@ -70,14 +70,14 @@ func TestLoadConfig(t *testing.T) {
 			"Invalid JSON or YAML",
 			[]byte("invalid"),
 			nil,
-			errors.New("error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type config.Config"),
+			errors.New("invalid format of YAML/JSON configuration: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type config.Config"),
 			nil,
 		},
 		{
 			"Invalid int JSON or YAML config",
 			[]byte("interval: \"invalid\""),
 			nil,
-			errors.New("error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go struct field Config.interval of type int"),
+			errors.New("invalid format of YAML/JSON configuration: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go struct field Config.interval of type int"),
 			nil,
 		},
 		{
@@ -86,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 			map[string]string{
 				"interval": "invalid",
 			},
-			errors.New("strconv.ParseInt: parsing \"invalid\": invalid syntax"),
+			errors.New("invalid format of integer field value: strconv.ParseInt: parsing \"invalid\": invalid syntax"),
 			nil,
 		},
 		{
@@ -95,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 			map[string]string{
 				"scaleTargetRef": "invalid JSON",
 			},
-			errors.New("error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type v2beta2.CrossVersionObjectReference"),
+			errors.New("invalid format of YAML/JSON field value: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type v2beta2.CrossVersionObjectReference"),
 			nil,
 		},
 		{

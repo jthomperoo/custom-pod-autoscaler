@@ -29,8 +29,6 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute"
 )
 
-const invalidEvaluationMessage = "Invalid evaluation returned by evaluator: %s"
-
 // GetEvaluationer provides methods for retrieving an evaluation
 type GetEvaluationer interface {
 	GetEvaluation(info evaluate.Info) (*evaluate.Evaluation, error)
@@ -56,7 +54,7 @@ func (e *Evaluator) GetEvaluation(info evaluate.Info) (*evaluate.Evaluation, err
 		glog.V(3).Infoln("Attempting to run pre-evaluate hook")
 		hookResult, err := e.Execute.ExecuteWithValue(e.Config.PreEvaluate, string(specJSON))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed run pre-evaluate hook: %w", err)
 		}
 		glog.V(3).Infof("Pre-evaluate hook response: %+v", hookResult)
 	}
@@ -64,7 +62,7 @@ func (e *Evaluator) GetEvaluation(info evaluate.Info) (*evaluate.Evaluation, err
 	glog.V(3).Infoln("Attempting to run evaluation logic")
 	gathered, err := e.Execute.ExecuteWithValue(e.Config.Evaluate, string(specJSON))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get evaluation: %w", err)
 	}
 	glog.V(3).Infof("Evaluation determined: %s", gathered)
 
@@ -72,7 +70,7 @@ func (e *Evaluator) GetEvaluation(info evaluate.Info) (*evaluate.Evaluation, err
 	evaluation := &evaluate.Evaluation{}
 	err = json.Unmarshal([]byte(gathered), evaluation)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse JSON evaluation, got '%s', err: %v", gathered, err)
+		return nil, fmt.Errorf("failed to parse JSON evaluation, got '%s': %w", gathered, err)
 	}
 	glog.V(3).Infof("Evaluation parsed: %+v", evaluation)
 
@@ -89,7 +87,7 @@ func (e *Evaluator) GetEvaluation(info evaluate.Info) (*evaluate.Evaluation, err
 		}
 		hookResult, err := e.Execute.ExecuteWithValue(e.Config.PostEvaluate, string(postSpecJSON))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed run post-evaluate hook: %w", err)
 		}
 		glog.V(3).Infof("Post-evaluate hook response: %+v", hookResult)
 	}

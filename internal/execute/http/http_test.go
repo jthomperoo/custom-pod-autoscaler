@@ -70,7 +70,7 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 		{
 			"Fail, missing HTTP method configuration",
 			"",
-			errors.New(`Missing required 'http' configuration on method`),
+			errors.New(`missing required 'http' configuration on method`),
 			&config.Method{
 				Type: "http",
 			},
@@ -94,7 +94,7 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 		{
 			"Fail, unknown parameter mode",
 			"",
-			errors.New(`Unknown parameter mode 'unknown'`),
+			errors.New(`unknown parameter mode 'unknown'`),
 			&config.Method{
 				Type: "http",
 				HTTP: &config.HTTP{
@@ -159,7 +159,7 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 		{
 			"Fail, invalid response body",
 			"",
-			errors.New(`Fail to read body!`),
+			errors.New(`fail to read body!`),
 			&config.Method{
 				Type: "http",
 				HTTP: &config.HTTP{
@@ -176,7 +176,7 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 							resp := &gohttp.Response{
 								Body: &testReader{
 									ReadReactor: func(p []byte) (n int, err error) {
-										return 0, errors.New("Fail to read body!")
+										return 0, errors.New("fail to read body!")
 									},
 								},
 								Header: gohttp.Header{},
