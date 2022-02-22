@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -233,6 +233,11 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			&appsv1.Deployment{
 				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"test": "test",
+						},
+					},
 					Replicas: int32Ptr(1),
 				},
 			},
@@ -285,6 +290,11 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			&argov1alpha1.Rollout{
 				Spec: argov1alpha1.RolloutSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"test": "test",
+						},
+					},
 					Replicas: int32Ptr(1),
 				},
 			},
@@ -366,6 +376,11 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			&appsv1.StatefulSet{
 				Spec: appsv1.StatefulSetSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"test": "test",
+						},
+					},
 					Replicas: int32Ptr(3),
 				},
 			},
@@ -517,6 +532,9 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			&v1.ReplicationController{
 				Spec: v1.ReplicationControllerSpec{
+					Selector: map[string]string{
+						"test": "test",
+					},
 					Replicas: int32Ptr(8),
 				},
 			},
@@ -739,6 +757,11 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			&appsv1.Deployment{
 				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"test": "test",
+						},
+					},
 					Replicas: int32Ptr(9),
 				},
 			},
@@ -858,6 +881,11 @@ func TestGetMetrics(t *testing.T) {
 			},
 			&appsv1.Deployment{
 				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"test": "test",
+						},
+					},
 					Replicas: int32Ptr(2),
 				},
 			},
@@ -951,6 +979,11 @@ func TestGetMetrics(t *testing.T) {
 			},
 			&appsv1.Deployment{
 				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"test": "test",
+						},
+					},
 					Replicas: int32Ptr(7),
 				},
 			},

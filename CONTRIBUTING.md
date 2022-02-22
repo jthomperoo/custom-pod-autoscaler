@@ -140,7 +140,7 @@ Developing this project requires these dependencies:
 
 To view the docs, you need Python 3 installed:
 
-* [Python](https://www.python.org/downloads/) == `3.8.5`
+* [Python](https://www.python.org/downloads/) >= `3.8`
 
 To view docs locally you need some Python dependencies, run:
 

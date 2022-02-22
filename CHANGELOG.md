@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- K8s metrics now use the Spec.Selector to select resources from the metrics server, rather than incorrectly using
+the labels of the resource being scaled.
+- K8s metrics now support [match
+expressions](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements)
+where available (`Deployment`, `ReplicaSet`, `StatefulSet`, `Rollout`).
+
 ## [v2.4.0] - 2021-12-28
 ### Changed
 - Error messages now include more context about when they occured, rather than simply outputting the minimum error

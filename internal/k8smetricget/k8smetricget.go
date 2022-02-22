@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Modifications Copyright 2021 The Custom Pod Autoscaler Authors.
+Modifications Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ func (c *Gather) GetMetrics(resource metav1.Object, specs []config.K8sMetricSpec
 	var invalidMetricError error
 	invalidMetricsCount := 0
 	currentReplicas := int32(0)
-	resourceReplicas, err := c.getReplicaCount(resource)
+	resourceReplicas, err := getReplicaCount(resource)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get replica count for resource: %w", err)
 	}
@@ -112,7 +112,16 @@ func (c *Gather) GetMetrics(resource metav1.Object, specs []config.K8sMetricSpec
 		currentReplicas = *resourceReplicas
 	}
 	for _, spec := range specs {
-		metric, err := c.getMetric(currentReplicas, spec, namespace, labels.Set(resource.GetLabels()).AsSelector())
+		specSelector, err := getSelector(resource)
+		if err != nil {
+			if invalidMetricsCount <= 0 {
+				invalidMetricError = err
+			}
+			invalidMetricsCount++
+			continue
+		}
+
+		metric, err := c.getMetric(currentReplicas, spec, namespace, specSelector)
 		if err != nil {
 			if invalidMetricsCount <= 0 {
 				invalidMetricError = err
@@ -239,7 +248,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 	}
 }
 
-func (c *Gather) getReplicaCount(resource metav1.Object) (*int32, error) {
+func getReplicaCount(resource metav1.Object) (*int32, error) {
 	switch v := resource.(type) {
 	case *appsv1.Deployment:
 		return v.Spec.Replicas, nil
@@ -251,6 +260,23 @@ func (c *Gather) getReplicaCount(resource metav1.Object) (*int32, error) {
 		return v.Spec.Replicas, nil
 	case *argov1alpha1.Rollout:
 		return v.Spec.Replicas, nil
+	default:
+		return nil, fmt.Errorf("unsupported resource of type %T", v)
+	}
+}
+
+func getSelector(resource metav1.Object) (labels.Selector, error) {
+	switch v := resource.(type) {
+	case *appsv1.Deployment:
+		return metav1.LabelSelectorAsSelector(v.Spec.Selector)
+	case *appsv1.ReplicaSet:
+		return metav1.LabelSelectorAsSelector(v.Spec.Selector)
+	case *appsv1.StatefulSet:
+		return metav1.LabelSelectorAsSelector(v.Spec.Selector)
+	case *corev1.ReplicationController:
+		return labels.Set(v.Spec.Selector).AsSelector(), nil
+	case *argov1alpha1.Rollout:
+		return metav1.LabelSelectorAsSelector(v.Spec.Selector)
 	default:
 		return nil, fmt.Errorf("unsupported resource of type %T", v)
 	}
