@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v2.4.1] - 2022-02-22
 ### Fixed
 - K8s metrics now use the Spec.Selector to select resources from the metrics server, rather than incorrectly using
 the labels of the resource being scaled.
@@ -233,7 +235,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.4.0...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.4.1...HEAD
+[v2.4.1]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.4.0...v2.4.1
 [v2.4.0]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.3.0...v2.4.0
 [v2.3.0]:
