@@ -1,4 +1,4 @@
-# Copyright 2019 The Custom Pod Autoscaler Authors.
+# Copyright 2022 The Custom Pod Autoscaler Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,19 +13,19 @@
 # limitations under the License.
 
 # Python 3.6 build
-FROM python:3.8-slim AS python-3-8
+FROM python:3.8-slim-buster AS python-3-8
 WORKDIR /app
 COPY dist /app/
 CMD [ "/app/custom-pod-autoscaler" ]
 
 # Python 3.7 build
-FROM python:3.7-slim AS python-3-7
+FROM python:3.7-slim-buster AS python-3-7
 WORKDIR /app
 COPY dist /app/
 CMD [ "/app/custom-pod-autoscaler" ]
 
 # Python 3.6 build
-FROM python:3.6-slim AS python-3-6
+FROM python:3.6-slim-buster AS python-3-6
 WORKDIR /app
 COPY dist /app/
 CMD [ "/app/custom-pod-autoscaler" ]
@@ -37,7 +37,7 @@ COPY dist /app/
 CMD [ "/app/custom-pod-autoscaler" ]
 
 # OpenJDK build
-FROM openjdk:11-jre-slim AS openjdk-11
+FROM openjdk:11-jre-slim-buster AS openjdk-11
 WORKDIR /app
 COPY dist /app/
 CMD [ "/app/custom-pod-autoscaler" ]

@@ -1,0 +1,19 @@
+apiVersion: custompodautoscaler.com/v1
+kind: CustomPodAutoscaler
+metadata:
+  name: k8s-metrics-cpu-match-expressions
+spec:
+  template:
+    spec:
+      containers:
+      - name: k8s-metrics-cpu-match-expressions
+        image: k8s-metrics-cpu-match-expressions:latest
+        imagePullPolicy: IfNotPresent
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: php-apache
+  roleRequiresMetricsServer: true
+  config:
+    - name: interval
+      value: "10000"
