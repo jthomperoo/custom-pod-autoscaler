@@ -37,7 +37,6 @@ import (
 	"syscall"
 	"time"
 
-	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/go-chi/chi"
 	"github.com/golang/glog"
 	v1 "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/api/v1"
@@ -52,11 +51,9 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/podclient"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/resourceclient"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/scaling"
-	"k8s.io/apimachinery/pkg/runtime"
 	cacheddiscovery "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	k8sscale "k8s.io/client-go/scale"
@@ -113,15 +110,6 @@ func main() {
 		glog.Fatalf("Fail to parse configuration: %s", err)
 	}
 
-	// Set up Kubernetes resource scheme
-	scheme := runtime.NewScheme()
-	schemeBuilder := runtime.NewSchemeBuilder(argov1alpha1.AddToScheme)
-	schemeBuilder.Register(clientsetscheme.AddToScheme)
-	err = schemeBuilder.AddToScheme(scheme)
-	if err != nil {
-		glog.Fatalf("Fail to create Kubernetes resource scheme config: %s", err)
-	}
-
 	// Create the in-cluster Kubernetes config
 	clusterConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -155,14 +143,9 @@ func main() {
 	glog.V(0).Infof("Custom Pod Autoscaler version: %s", Version)
 	glog.V(1).Infoln("Setting up resources and clients")
 
-	// Unstructured converter
-	unstructuredConverted := runtime.DefaultUnstructuredConverter
-
 	// Set up resource client
 	resourceClient := &resourceclient.UnstructuredClient{
-		Scheme:                scheme,
-		Dynamic:               dynamicClient,
-		UnstructuredConverter: unstructuredConverted,
+		Dynamic: dynamicClient,
 	}
 
 	scaleClient := k8sscale.New(

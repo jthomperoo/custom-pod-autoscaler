@@ -90,6 +90,15 @@ func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	scaleResource, err := api.Scaler.GetScaleSubResource(api.Config.ScaleTargetRef.APIVersion, api.Config.ScaleTargetRef.Kind, api.Config.Namespace, api.Config.ScaleTargetRef.Name)
+	if err != nil {
+		apiError(w, &apiv1.Error{
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
 	// Set run type
 	runType := config.APIRunType
 	if dryRun {
@@ -100,7 +109,7 @@ func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 	metrics, err := api.GetMetricer.GetMetrics(metric.Info{
 		Resource: resource,
 		RunType:  runType,
-	})
+	}, scaleResource)
 	if err != nil {
 		apiError(w, &apiv1.Error{
 			Message: err.Error(),
@@ -147,6 +156,15 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	scaleResource, err := api.Scaler.GetScaleSubResource(api.Config.ScaleTargetRef.APIVersion, api.Config.ScaleTargetRef.Kind, api.Config.Namespace, api.Config.ScaleTargetRef.Name)
+	if err != nil {
+		apiError(w, &apiv1.Error{
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
 	// Set run type
 	runType := config.APIRunType
 	if dryRun {
@@ -157,7 +175,7 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 	metrics, err := api.GetMetricer.GetMetrics(metric.Info{
 		Resource: resource,
 		RunType:  runType,
-	})
+	}, scaleResource)
 	if err != nil {
 		apiError(w, &apiv1.Error{
 			Message: err.Error(),
@@ -190,7 +208,7 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 			Namespace:      api.Config.Namespace,
 			ScaleTargetRef: api.Config.ScaleTargetRef,
 			RunType:        runType,
-		})
+		}, scaleResource)
 		if err != nil {
 			apiError(w, &apiv1.Error{
 				Message: err.Error(),

@@ -233,9 +233,8 @@ func TestClient_Get(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			scaler := &resourceclient.UnstructuredClient{
-				Scheme:                test.scheme,
-				Dynamic:               test.dynamic,
-				UnstructuredConverter: test.unstructuredConverter,
+				Scheme:  test.scheme,
+				Dynamic: test.dynamic,
 			}
 			result, err := scaler.Get(test.apiVersion, test.kind, test.name, test.namespace)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
