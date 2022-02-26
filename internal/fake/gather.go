@@ -23,6 +23,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/object"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/pods"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/resource"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,12 +32,12 @@ import (
 
 // Gather (fake) provides a way to insert functionality into a Gatherer
 type Gather struct {
-	GetMetricsReactor func(resource metav1.Object, specs []config.K8sMetricSpec, namespace string) ([]*k8smetric.Metric, error)
+	GetMetricsReactor func(resource metav1.Object, specs []config.K8sMetricSpec, namespace string, scaleResource *autoscalingv1.Scale) ([]*k8smetric.Metric, error)
 }
 
 // GetMetrics calls the fake Gather function
-func (f *Gather) GetMetrics(resource metav1.Object, specs []config.K8sMetricSpec, namespace string) ([]*k8smetric.Metric, error) {
-	return f.GetMetricsReactor(resource, specs, namespace)
+func (f *Gather) GetMetrics(resource metav1.Object, specs []config.K8sMetricSpec, namespace string, scaleResource *autoscalingv1.Scale) ([]*k8smetric.Metric, error) {
+	return f.GetMetricsReactor(resource, specs, namespace, scaleResource)
 }
 
 // ExternalGatherer (fake) provides a way to insert functionality into an ExternalGatherer

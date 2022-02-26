@@ -28,20 +28,20 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
-// Client provides methods for retrieving arbitrary Kubernetes resources, returned as generalised metav1.Object, which can be converted
-// to concrete types, and allows for retrieving common and shared data (namespaces, names etc.)
+// Client provides methods for retrieving arbitrary Kubernetes resources, returned as generalised metav1.Object, which
+// can be converted to concrete types, and allows for retrieving common and shared data (namespaces, names etc.)
 type Client interface {
 	Get(apiVersion string, kind string, name string, namespace string) (*unstructured.Unstructured, error)
 }
 
-// UnstructuredClient is an implementation of the arbitrary resource client that uses a dynamic Kubernetes interface, retrieving
-// unstructured k8s objects and converting them to metav1.Object
+// UnstructuredClient is an implementation of the arbitrary resource client that uses a dynamic Kubernetes interface,
+// retrieving unstructured k8s objects and converting them to metav1.Object
 type UnstructuredClient struct {
 	Dynamic dynamic.Interface
 }
 
-// Get takes descriptors of a Kubernetes object (api version, kind, name, namespace) and fetches the matching object, returning it
-// as a metav1.Object
+// Get takes descriptors of a Kubernetes object (api version, kind, name, namespace) and fetches the matching object,
+// returning it as an unstructured Kubernetes resource
 func (u *UnstructuredClient) Get(apiVersion string, kind string, name string, namespace string) (*unstructured.Unstructured, error) {
 	// TODO: update this to be less hacky
 	// Convert to plural and lowercase

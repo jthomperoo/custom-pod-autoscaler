@@ -37,20 +37,20 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
 
-	appsv1 "k8s.io/api/apps/v1"
-	autoscaling "k8s.io/api/autoscaling/v2beta2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type failGetMetrics struct{}
 
-func (f *failGetMetrics) GetMetrics(info metric.Info) ([]*metric.ResourceMetric, error) {
+func (f *failGetMetrics) GetMetrics(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
 	return nil, errors.New("FAIL GET METRICS")
 }
 
 type successGetMetrics struct{}
 
-func (s *successGetMetrics) GetMetrics(info metric.Info) ([]*metric.ResourceMetric, error) {
+func (s *successGetMetrics) GetMetrics(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
 	return []*metric.ResourceMetric{
 		{
 			Value:    "SUCCESS",
@@ -94,14 +94,14 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
 					return nil, errors.New("fail getting resource")
 				},
 			},
@@ -117,24 +117,34 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-					return &appsv1.Deployment{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: name,
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
 						},
 					}, nil
 				},
 			},
 			&failGetMetrics{},
 			nil,
-			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+			},
 		},
 		{
 			"Get metrics fail invalid dry_run parameter",
@@ -156,24 +166,34 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-					return &appsv1.Deployment{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: name,
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
 						},
 					}, nil
 				},
 			},
 			&successGetMetrics{},
 			nil,
-			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+			},
 		},
 		{
 			"Get metrics success metric gathering, not dry run, parameter provided",
@@ -183,24 +203,34 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics?dry_run=false",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-					return &appsv1.Deployment{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: name,
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
 						},
 					}, nil
 				},
 			},
 			&successGetMetrics{},
 			nil,
-			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+			},
 		},
 		{
 			"Get metrics success metric gathering, dry run",
@@ -210,24 +240,34 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics?dry_run=true",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-					return &appsv1.Deployment{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: name,
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
 						},
 					}, nil
 				},
 			},
 			&successGetMetrics{},
 			nil,
-			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+			},
 		},
 		{
 			"Evaluate fail invalid dry_run parameter",
@@ -239,7 +279,15 @@ func TestAPI(t *testing.T) {
 			nil,
 			nil,
 			nil,
-			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+			},
 		},
 		{
 			"Evaluate fail to get resource",
@@ -249,20 +297,28 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
 					return nil, errors.New("fail to get resource")
 				},
 			},
 			nil,
 			nil,
-			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+			},
 		},
 		{
 			"Evaluate fail to get metrics",
@@ -272,24 +328,34 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-					return &appsv1.Deployment{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: name,
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
 						},
 					}, nil
 				},
 			},
 			&failGetMetrics{},
 			&successGetEvaluation{},
-			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+			},
 		},
 		{
 			"Evaluate fail to get evaluation",
@@ -299,24 +365,34 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-					return &appsv1.Deployment{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: name,
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
 						},
 					}, nil
 				},
 			},
 			&successGetMetrics{},
 			&failGetEvaluation{},
-			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+			},
 		},
 		{
 			"Evaluate fail failure scaling",
@@ -326,21 +402,21 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-					return &appsv1.Deployment{
-						TypeMeta: metav1.TypeMeta{
-							Kind:       "deployment",
-							APIVersion: "apps/v1",
-						},
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "test",
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "apps/v1",
+							"kind":       "deployment",
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
 						},
 					}, nil
 				},
@@ -348,7 +424,14 @@ func TestAPI(t *testing.T) {
 			&successGetMetrics{},
 			&successGetEvaluation{},
 			&fake.Scaler{
-				ScaleReactor: func(info scale.Info) (*evaluate.Evaluation, error) {
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+				ScaleReactor: func(info scale.Info, scaleResource *autoscalingv1.Scale) (*evaluate.Evaluation, error) {
 					return nil, errors.New("FAILURE SCALING")
 				},
 			},
@@ -361,17 +444,19 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-					return &appsv1.Deployment{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: name,
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
 						},
 					}, nil
 				},
@@ -379,7 +464,14 @@ func TestAPI(t *testing.T) {
 			&successGetMetrics{},
 			&successGetEvaluation{},
 			&fake.Scaler{
-				ScaleReactor: func(info scale.Info) (*evaluate.Evaluation, error) {
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+				ScaleReactor: func(info scale.Info, scaleResource *autoscalingv1.Scale) (*evaluate.Evaluation, error) {
 					return &evaluate.Evaluation{
 						TargetReplicas: 1,
 					}, nil
@@ -394,17 +486,19 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation?dry_run=false",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-					return &appsv1.Deployment{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: name,
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
 						},
 					}, nil
 				},
@@ -412,7 +506,14 @@ func TestAPI(t *testing.T) {
 			&successGetMetrics{},
 			&successGetEvaluation{},
 			&fake.Scaler{
-				ScaleReactor: func(info scale.Info) (*evaluate.Evaluation, error) {
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+				ScaleReactor: func(info scale.Info, scaleResource *autoscalingv1.Scale) (*evaluate.Evaluation, error) {
 					return &evaluate.Evaluation{
 						TargetReplicas: 1,
 					}, nil
@@ -427,24 +528,34 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation?dry_run=true",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
 				},
 			},
 			&fake.ResourceClient{
-				GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-					return &appsv1.Deployment{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: name,
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
 						},
 					}, nil
 				},
 			},
 			&successGetMetrics{},
 			&successGetEvaluation{},
-			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+					}, nil
+				},
+			},
 		},
 		{
 			"Non existent endpoint",
@@ -454,7 +565,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/non_existent",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -473,7 +584,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/metrics",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
@@ -492,7 +603,7 @@ func TestAPI(t *testing.T) {
 			"/api/v1/evaluation",
 			&config.Config{
 				Namespace: "test-namespace",
-				ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",

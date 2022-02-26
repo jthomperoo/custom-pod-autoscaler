@@ -142,16 +142,9 @@ func (s *Scale) Scale(info scale.Info, scaleResource *autoscalingv1.Scale) (*eva
 			Resource: info.ScaleTargetRef.Kind,
 		}
 
-		glog.V(3).Infoln("Attempting to get scale subresource for managed resource")
-		scale, err := s.Scaler.Scales(info.Namespace).Get(context.Background(), targetGR, info.ScaleTargetRef.Name, metav1.GetOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get scale subresource for resource: %w", err)
-		}
-		glog.V(3).Infof("Scale subresource retrieved: %+v", scale)
-
 		glog.V(3).Infoln("Attempting to apply scaling changes to resource")
-		scale.Spec.Replicas = targetReplicas
-		_, err = s.Scaler.Scales(info.Namespace).Update(context.Background(), targetGR, scale, metav1.UpdateOptions{})
+		scaleResource.Spec.Replicas = targetReplicas
+		_, err = s.Scaler.Scales(info.Namespace).Update(context.Background(), targetGR, scaleResource, metav1.UpdateOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply scaling changes to resource: %w", err)
 		}
@@ -172,6 +165,7 @@ func (s *Scale) Scale(info scale.Info, scaleResource *autoscalingv1.Scale) (*eva
 	return &info.Evaluation, nil
 }
 
+// GetScaleSubResource returns the scale subresource from the K8s scale API
 func (s *Scale) GetScaleSubResource(apiVersion string, kind string, namespace string, name string) (*autoscalingv1.Scale, error) {
 	glog.V(3).Infoln("Attempting to get scale subresource for managed resource")
 
