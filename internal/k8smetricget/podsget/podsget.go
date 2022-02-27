@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Modifications Copyright 2021 The Custom Pod Autoscaler Authors.
+Modifications Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,12 +30,12 @@ package podsget
 import (
 	"fmt"
 
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/pods"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 // Gatherer (Pods) allows retrieval of pods metrics.
@@ -45,7 +45,7 @@ type Gatherer interface {
 
 // Gather (Pods) provides functionality for retrieving metrics for pods metric specs.
 type Gather struct {
-	MetricsClient metricsclient.MetricsClient
+	MetricsClient metricsclient.Client
 	PodLister     corelisters.PodLister
 }
 
@@ -73,7 +73,7 @@ func (c *Gather) GetMetric(metricName string, namespace string, selector labels.
 	}
 
 	// Remove missing pod metrics
-	readyPodCount, _, missingPods := podutil.GroupPods(podList, metrics, v1.ResourceName(""), 0, 0)
+	readyPodCount, _, missingPods := podutil.GroupPods(podList, metrics, corev1.ResourceName(""), 0, 0)
 
 	return &pods.Metric{
 		PodMetricsInfo: metrics,

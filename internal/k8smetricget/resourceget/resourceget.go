@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Modifications Copyright 2021 The Custom Pod Autoscaler Authors.
+Modifications Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,12 +31,12 @@ import (
 	"fmt"
 	"time"
 
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/resource"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 // Gatherer (Resource) allows retrieval of resource metrics.
@@ -47,7 +47,7 @@ type Gatherer interface {
 
 // Gather (Resource) provides functionality for retrieving metrics for resource metric specs.
 type Gather struct {
-	MetricsClient                 metricsclient.MetricsClient
+	MetricsClient                 metricsclient.Client
 	PodLister                     corelisters.PodLister
 	CPUInitializationPeriod       time.Duration
 	DelayOfInitialReadinessStatus time.Duration
@@ -56,7 +56,7 @@ type Gather struct {
 // GetMetric retrieves a resource metric
 func (c *Gather) GetMetric(resourceName corev1.ResourceName, namespace string, selector labels.Selector) (*resource.Metric, error) {
 	// Get metrics
-	metrics, timestamp, err := c.MetricsClient.GetResourceMetric(resourceName, namespace, selector, "")
+	metrics, timestamp, err := c.MetricsClient.GetResourceMetric(resourceName, namespace, selector)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get metrics for resource %s: %w", resourceName, err)
 	}
@@ -69,7 +69,7 @@ func (c *Gather) GetMetric(resourceName corev1.ResourceName, namespace string, s
 
 	totalPods := len(podList)
 	if totalPods == 0 {
-		return nil, fmt.Errorf("No pods returned by selector while calculating replica count")
+		return nil, fmt.Errorf("no pods returned by selector while calculating replica count")
 	}
 
 	// Remove missing pod metrics
@@ -96,7 +96,7 @@ func (c *Gather) GetMetric(resourceName corev1.ResourceName, namespace string, s
 // GetRawMetric retrieves a a raw resource metric
 func (c *Gather) GetRawMetric(resourceName corev1.ResourceName, namespace string, selector labels.Selector) (*resource.Metric, error) {
 	// Get metrics
-	metrics, timestamp, err := c.MetricsClient.GetResourceMetric(resourceName, namespace, selector, "")
+	metrics, timestamp, err := c.MetricsClient.GetResourceMetric(resourceName, namespace, selector)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get metrics for resource %s: %w", resourceName, err)
 	}

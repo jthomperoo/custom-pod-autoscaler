@@ -47,6 +47,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute/http"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute/shell"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget"
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/metricget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/podclient"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/resourceclient"
@@ -57,7 +58,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	k8sscale "k8s.io/client-go/scale"
-	"k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 	k8sresourceclient "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
 	customclient "k8s.io/metrics/pkg/client/custom_metrics"
 	externalclient "k8s.io/metrics/pkg/client/external_metrics"
@@ -158,15 +158,15 @@ func main() {
 	)
 
 	// Create K8s metric gatherer, with required clients and configuration
-	gatherer := k8smetricget.NewGather(metrics.NewRESTMetricsClient(
-		k8sresourceclient.NewForConfigOrDie(clusterConfig),
-		customclient.NewForConfig(
+	gatherer := k8smetricget.NewGather(&metricsclient.RESTClient{
+		Client:                *k8sresourceclient.NewForConfigOrDie(clusterConfig),
+		ExternalMetricsClient: externalclient.NewForConfigOrDie(clusterConfig),
+		CustomMetricsClient: customclient.NewForConfig(
 			clusterConfig,
 			restmapper.NewDeferredDiscoveryRESTMapper(cacheddiscovery.NewMemCacheClient(clientset.Discovery())),
 			customclient.NewAvailableAPIsGetter(clientset.Discovery()),
 		),
-		externalclient.NewForConfigOrDie(clusterConfig),
-	), &podclient.OnDemandPodLister{
+	}, &podclient.OnDemandPodLister{
 		Clientset: clientset,
 	}, time.Duration(loadedConfig.CPUInitializationPeriod)*time.Second, time.Duration(loadedConfig.InitialReadinessDelay)*time.Second)
 

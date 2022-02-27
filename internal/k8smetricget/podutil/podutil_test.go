@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,14 +24,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/podmetrics"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 func TestPodReadyCount_GetReadyPodsCount(t *testing.T) {
@@ -221,7 +220,7 @@ func TestGroupPods(t *testing.T) {
 	tests := []struct {
 		name                string
 		pods                []*corev1.Pod
-		metrics             metricsclient.PodMetricsInfo
+		metrics             podmetrics.MetricsInfo
 		resource            corev1.ResourceName
 		expectReadyPodCount int
 		expectIgnoredPods   sets.String
@@ -230,7 +229,7 @@ func TestGroupPods(t *testing.T) {
 		{
 			"void",
 			[]*corev1.Pod{},
-			metricsclient.PodMetricsInfo{},
+			podmetrics.MetricsInfo{},
 			corev1.ResourceCPU,
 			0,
 			sets.NewString(),
@@ -248,8 +247,8 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metricsclient.PodMetricsInfo{
-				"bentham": metricsclient.PodMetric{Value: 1, Timestamp: time.Now(), Window: time.Minute},
+			podmetrics.MetricsInfo{
+				"bentham": podmetrics.Metric{Value: 1, Timestamp: time.Now(), Window: time.Minute},
 			},
 			corev1.ResourceMemory,
 			1,
@@ -271,8 +270,8 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metricsclient.PodMetricsInfo{
-				"lucretius": metricsclient.PodMetric{Value: 1},
+			podmetrics.MetricsInfo{
+				"lucretius": podmetrics.Metric{Value: 1},
 			},
 			corev1.ResourceCPU,
 			0,
@@ -286,7 +285,7 @@ func TestGroupPods(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "bentham",
 					},
-					Status: v1.PodStatus{
+					Status: corev1.PodStatus{
 						Phase: corev1.PodSucceeded,
 						StartTime: &metav1.Time{
 							Time: time.Now().Add(-1 * time.Minute),
@@ -301,8 +300,8 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metricsclient.PodMetricsInfo{
-				"bentham": metricsclient.PodMetric{Value: 1, Timestamp: time.Now(), Window: 30 * time.Second},
+			podmetrics.MetricsInfo{
+				"bentham": podmetrics.Metric{Value: 1, Timestamp: time.Now(), Window: 30 * time.Second},
 			},
 			corev1.ResourceCPU,
 			1,
@@ -331,8 +330,8 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metricsclient.PodMetricsInfo{
-				"bentham": metricsclient.PodMetric{Value: 1, Timestamp: time.Now(), Window: 60 * time.Second},
+			podmetrics.MetricsInfo{
+				"bentham": podmetrics.Metric{Value: 1, Timestamp: time.Now(), Window: 60 * time.Second},
 			},
 			corev1.ResourceCPU,
 			0,
@@ -361,10 +360,10 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metricsclient.PodMetricsInfo{
-				"lucretius": metricsclient.PodMetric{Value: 1},
+			podmetrics.MetricsInfo{
+				"lucretius": podmetrics.Metric{Value: 1},
 			},
-			v1.ResourceCPU,
+			corev1.ResourceCPU,
 			0,
 			sets.NewString("lucretius"),
 			sets.NewString(),
@@ -381,7 +380,7 @@ func TestGroupPods(t *testing.T) {
 						StartTime: &metav1.Time{
 							Time: time.Now().Add(-3 * time.Minute),
 						},
-						Conditions: []v1.PodCondition{
+						Conditions: []corev1.PodCondition{
 							{
 								Type:               corev1.PodReady,
 								LastTransitionTime: metav1.Time{Time: time.Now().Add(-3 * time.Minute)},
@@ -391,8 +390,8 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metricsclient.PodMetricsInfo{
-				"bentham": metricsclient.PodMetric{Value: 1, Timestamp: time.Now().Add(-2 * time.Minute), Window: time.Minute},
+			podmetrics.MetricsInfo{
+				"bentham": podmetrics.Metric{Value: 1, Timestamp: time.Now().Add(-2 * time.Minute), Window: time.Minute},
 			},
 			corev1.ResourceCPU,
 			1,
@@ -422,8 +421,8 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metricsclient.PodMetricsInfo{
-				"lucretius": metricsclient.PodMetric{Value: 1},
+			podmetrics.MetricsInfo{
+				"lucretius": podmetrics.Metric{Value: 1},
 			},
 			corev1.ResourceCPU,
 			1,
@@ -452,8 +451,8 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metricsclient.PodMetricsInfo{
-				"lucretius": metricsclient.PodMetric{Value: 1},
+			podmetrics.MetricsInfo{
+				"lucretius": podmetrics.Metric{Value: 1},
 			},
 			corev1.ResourceCPU,
 			1,
@@ -475,8 +474,8 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metricsclient.PodMetricsInfo{},
-			v1.ResourceCPU,
+			podmetrics.MetricsInfo{},
+			corev1.ResourceCPU,
 			0,
 			sets.NewString(),
 			sets.NewString("epicurus"),
@@ -525,11 +524,11 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metricsclient.PodMetricsInfo{
-				"lucretius": metricsclient.PodMetric{Value: 1},
-				"niccolo":   metricsclient.PodMetric{Value: 1},
+			podmetrics.MetricsInfo{
+				"lucretius": podmetrics.Metric{Value: 1},
+				"niccolo":   podmetrics.Metric{Value: 1},
 			},
-			v1.ResourceCPU,
+			corev1.ResourceCPU,
 			1,
 			sets.NewString("lucretius"),
 			sets.NewString("epicurus"),
@@ -546,7 +545,7 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metrics:             metricsclient.PodMetricsInfo{},
+			metrics:             podmetrics.MetricsInfo{},
 			resource:            corev1.ResourceCPU,
 			expectReadyPodCount: 0,
 			expectIgnoredPods:   sets.NewString("unscheduled"),
@@ -561,7 +560,7 @@ func TestGroupPods(t *testing.T) {
 					},
 				},
 			},
-			metrics:             metricsclient.PodMetricsInfo{},
+			metrics:             podmetrics.MetricsInfo{},
 			resource:            corev1.ResourceCPU,
 			expectReadyPodCount: 0,
 			expectIgnoredPods:   sets.NewString(),
@@ -728,32 +727,32 @@ func TestCalculatePodRequests(t *testing.T) {
 func TestRemoveMetricsForPods(t *testing.T) {
 	var tests = []struct {
 		description string
-		expected    metricsclient.PodMetricsInfo
-		metrics     metricsclient.PodMetricsInfo
+		expected    podmetrics.MetricsInfo
+		metrics     podmetrics.MetricsInfo
 		pods        sets.String
 	}{
 		{
 			"No pods to remove",
-			metricsclient.PodMetricsInfo{
-				"test": metricsclient.PodMetric{},
+			podmetrics.MetricsInfo{
+				"test": podmetrics.Metric{},
 			},
-			metricsclient.PodMetricsInfo{
-				"test": metricsclient.PodMetric{},
+			podmetrics.MetricsInfo{
+				"test": podmetrics.Metric{},
 			},
 			nil,
 		},
 		{
 			"Remove 3 pods, leave 2",
-			metricsclient.PodMetricsInfo{
-				"test3": metricsclient.PodMetric{},
-				"test4": metricsclient.PodMetric{},
+			podmetrics.MetricsInfo{
+				"test3": podmetrics.Metric{},
+				"test4": podmetrics.Metric{},
 			},
-			metricsclient.PodMetricsInfo{
-				"test":  metricsclient.PodMetric{},
-				"test1": metricsclient.PodMetric{},
-				"test2": metricsclient.PodMetric{},
-				"test3": metricsclient.PodMetric{},
-				"test4": metricsclient.PodMetric{},
+			podmetrics.MetricsInfo{
+				"test":  podmetrics.Metric{},
+				"test1": podmetrics.Metric{},
+				"test2": podmetrics.Metric{},
+				"test3": podmetrics.Metric{},
+				"test4": podmetrics.Metric{},
 			},
 			sets.String{
 				"test":  {},

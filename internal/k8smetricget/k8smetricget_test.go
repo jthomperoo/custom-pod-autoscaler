@@ -21,12 +21,12 @@ import (
 	"testing"
 	"time"
 
-	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/externalget"
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/objectget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podsget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
@@ -34,6 +34,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/external"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/object"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/podmetrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/pods"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/resource"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/value"
@@ -42,10 +43,10 @@ import (
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 func int32Ptr(i int32) *int32 {
@@ -286,14 +287,16 @@ func TestGetMetrics(t *testing.T) {
 			},
 			nil,
 			nil,
-			&argov1alpha1.Rollout{
-				Spec: argov1alpha1.RolloutSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"test": "test",
+			&unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"spec": map[string]interface{}{
+						"selector": map[string]interface{}{
+							"matchLabels": map[string]string{
+								"test": "test",
+							},
 						},
+						"replicas": 1,
 					},
-					Replicas: int32Ptr(1),
 				},
 			},
 			[]config.K8sMetricSpec{
@@ -517,7 +520,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Pods: &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -532,7 +535,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.PodsGatherer{
 				GetMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (*pods.Metric, error) {
 					return &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -642,7 +645,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Resource: &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -661,7 +664,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ResourceGatherer{
 				GetRawMetricReactor: func(res v1.ResourceName, namespace string, selector labels.Selector) (*resource.Metric, error) {
 					return &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -744,7 +747,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Resource: &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -760,7 +763,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ResourceGatherer{
 				GetMetricReactor: func(res v1.ResourceName, namespace string, selector labels.Selector) (*resource.Metric, error) {
 					return &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -1152,7 +1155,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Pods: &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						IgnoredPods: sets.String{
 							"ignored-pod": {},
@@ -1178,7 +1181,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.PodsGatherer{
 				GetMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (*pods.Metric, error) {
 					return &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						IgnoredPods: sets.String{
 							"ignored-pod": {},
@@ -1290,7 +1293,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Pods: &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						IgnoredPods: sets.String{
 							"ignored-pod": {},
@@ -1330,7 +1333,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Resource: &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						Requests:       map[string]int64{"pod-1": 1, "pod-2": 3, "pod-3": 4},
 						ReadyPodCount:  4,
 						TotalPods:      6,
@@ -1343,7 +1346,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ResourceGatherer{
 				GetRawMetricReactor: func(res v1.ResourceName, namespace string, selector labels.Selector) (*resource.Metric, error) {
 					return &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						Requests:       map[string]int64{"pod-1": 1, "pod-2": 3, "pod-3": 4},
 						ReadyPodCount:  4,
 						TotalPods:      6,
@@ -1365,7 +1368,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.PodsGatherer{
 				GetMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (*pods.Metric, error) {
 					return &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						IgnoredPods: sets.String{
 							"ignored-pod": {},
@@ -1463,7 +1466,7 @@ func TestNewGather(t *testing.T) {
 	var tests = []struct {
 		description                   string
 		expected                      k8smetricget.Gatherer
-		metricsClient                 metricsclient.MetricsClient
+		metricsClient                 metricsclient.Client
 		podlister                     corelisters.PodLister
 		cpuInitializationPeriod       time.Duration
 		delayOfInitialReadinessStatus time.Duration

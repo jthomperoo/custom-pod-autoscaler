@@ -35,6 +35,7 @@ import (
 
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/externalget"
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/objectget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podsget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
@@ -45,7 +46,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 // Gatherer allows retrieval of metrics.
@@ -63,7 +63,7 @@ type Gather struct {
 
 // NewGather sets up a new Metric Gatherer
 func NewGather(
-	metricsClient metricsclient.MetricsClient,
+	metricsClient metricsclient.Client,
 	podlister corelisters.PodLister,
 	cpuInitializationPeriod time.Duration,
 	delayOfInitialReadinessStatus time.Duration) *Gather {

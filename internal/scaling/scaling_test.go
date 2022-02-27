@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/evaluate"
@@ -33,6 +32,7 @@ import (
 	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	scaleFake "k8s.io/client-go/scale/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -787,11 +787,11 @@ func TestScale_Scale(t *testing.T) {
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
 				},
-				Resource: func() *argov1alpha1.Rollout {
-					return &argov1alpha1.Rollout{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test",
-							Namespace: "test namespace",
+				Resource: func() *unstructured.Unstructured {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"name":      "test",
+							"namespace": "test namespace",
 						},
 					}
 				}(),

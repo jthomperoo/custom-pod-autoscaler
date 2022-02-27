@@ -20,7 +20,6 @@ import (
 	"errors"
 	"testing"
 
-	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
@@ -33,6 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	fakeappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1/fake"
@@ -1189,15 +1189,15 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			metric.Info{
-				Resource: &argov1alpha1.Rollout{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test deployment",
-						Namespace: "test namespace",
-					},
-					Spec: argov1alpha1.RolloutSpec{
-						Selector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{
-								"app": "test",
+				Resource: &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"name":      "test deployment",
+						"namespace": "test namespace",
+						"spec": map[string]interface{}{
+							"selector": map[string]interface{}{
+								"matchLabels": map[string]string{
+									"test": "test",
+								},
 							},
 						},
 					},

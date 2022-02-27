@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,14 +23,15 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podsget"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/podmetrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/pods"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 func TestGetMetric(t *testing.T) {
@@ -45,7 +46,7 @@ func TestGetMetric(t *testing.T) {
 		description    string
 		expected       *pods.Metric
 		expectedErr    error
-		metricsClient  metricsclient.MetricsClient
+		metricsClient  metricsclient.Client
 		podLister      corelisters.PodLister
 		metricName     string
 		namespace      string
@@ -57,7 +58,7 @@ func TestGetMetric(t *testing.T) {
 			nil,
 			errors.New("unable to get metric test-metric: fail to get metric"),
 			&fake.MetricClient{
-				GetRawMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (metricsclient.PodMetricsInfo, time.Time, error) {
+				GetRawMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (podmetrics.MetricsInfo, time.Time, error) {
 					return nil, time.Time{}, errors.New("fail to get metric")
 				},
 			},
@@ -72,7 +73,7 @@ func TestGetMetric(t *testing.T) {
 			nil,
 			errors.New("unable to get pods while calculating replica count: fail to get pods"),
 			&fake.MetricClient{
-				GetRawMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (metricsclient.PodMetricsInfo, time.Time, error) {
+				GetRawMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (podmetrics.MetricsInfo, time.Time, error) {
 					return nil, time.Time{}, nil
 				},
 			},
@@ -99,9 +100,9 @@ func TestGetMetric(t *testing.T) {
 			},
 			nil,
 			&fake.MetricClient{
-				GetRawMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (metricsclient.PodMetricsInfo, time.Time, error) {
-					return metricsclient.PodMetricsInfo{
-						"test-pod": metricsclient.PodMetric{},
+				GetRawMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (podmetrics.MetricsInfo, time.Time, error) {
+					return podmetrics.MetricsInfo{
+						"test-pod": podmetrics.Metric{},
 					}, time.Time{}, nil
 				},
 			},
@@ -128,19 +129,19 @@ func TestGetMetric(t *testing.T) {
 					"missing-pod-1": {},
 					"missing-pod-2": {},
 				},
-				PodMetricsInfo: metricsclient.PodMetricsInfo{
-					"ready-pod-1": metricsclient.PodMetric{},
-					"ready-pod-2": metricsclient.PodMetric{},
-					"ready-pod-3": metricsclient.PodMetric{},
+				PodMetricsInfo: podmetrics.MetricsInfo{
+					"ready-pod-1": podmetrics.Metric{},
+					"ready-pod-2": podmetrics.Metric{},
+					"ready-pod-3": podmetrics.Metric{},
 				},
 			},
 			nil,
 			&fake.MetricClient{
-				GetRawMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (metricsclient.PodMetricsInfo, time.Time, error) {
-					return metricsclient.PodMetricsInfo{
-						"ready-pod-1": metricsclient.PodMetric{},
-						"ready-pod-2": metricsclient.PodMetric{},
-						"ready-pod-3": metricsclient.PodMetric{},
+				GetRawMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (podmetrics.MetricsInfo, time.Time, error) {
+					return podmetrics.MetricsInfo{
+						"ready-pod-1": podmetrics.Metric{},
+						"ready-pod-2": podmetrics.Metric{},
+						"ready-pod-3": podmetrics.Metric{},
 					}, time.Time{}, nil
 				},
 			},

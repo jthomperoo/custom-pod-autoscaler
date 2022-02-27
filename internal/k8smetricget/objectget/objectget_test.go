@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,14 +23,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/objectget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/object"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/value"
-	"k8s.io/api/autoscaling/v2beta2"
-	autoscaling "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 	"k8s.io/apimachinery/pkg/labels"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 func int64Ptr(i int64) *int64 {
@@ -49,11 +48,11 @@ func TestGetMetric(t *testing.T) {
 		description     string
 		expected        *object.Metric
 		expectedErr     error
-		metricsClient   metricsclient.MetricsClient
+		metricsClient   metricsclient.Client
 		podReadyCounter podutil.PodReadyCounter
 		metricName      string
 		namespace       string
-		objectRef       *v2beta2.CrossVersionObjectReference
+		objectRef       *autoscalingv2.CrossVersionObjectReference
 		selector        labels.Selector
 		metricSelector  labels.Selector
 	}{
@@ -62,14 +61,14 @@ func TestGetMetric(t *testing.T) {
 			nil,
 			errors.New("unable to get metric test-metric:  on test-namespace : fail to get metric"),
 			&fake.MetricClient{
-				GetObjectMetricReactor: func(metricName string, namespace string, objectRef *autoscaling.CrossVersionObjectReference, metricSelector labels.Selector) (int64, time.Time, error) {
+				GetObjectMetricReactor: func(metricName string, namespace string, objectRef *autoscalingv2.CrossVersionObjectReference, metricSelector labels.Selector) (int64, time.Time, error) {
 					return 0, time.Time{}, errors.New("fail to get metric")
 				},
 			},
 			nil,
 			"test-metric",
 			"test-namespace",
-			&autoscaling.CrossVersionObjectReference{},
+			&autoscalingv2.CrossVersionObjectReference{},
 			nil,
 			nil,
 		},
@@ -78,7 +77,7 @@ func TestGetMetric(t *testing.T) {
 			nil,
 			errors.New("unable to calculate ready pods: fail to get ready pods"),
 			&fake.MetricClient{
-				GetObjectMetricReactor: func(metricName string, namespace string, objectRef *autoscaling.CrossVersionObjectReference, metricSelector labels.Selector) (int64, time.Time, error) {
+				GetObjectMetricReactor: func(metricName string, namespace string, objectRef *autoscalingv2.CrossVersionObjectReference, metricSelector labels.Selector) (int64, time.Time, error) {
 					return 0, time.Time{}, nil
 				},
 			},
@@ -89,7 +88,7 @@ func TestGetMetric(t *testing.T) {
 			},
 			"test-metric",
 			"test-namespace",
-			&autoscaling.CrossVersionObjectReference{},
+			&autoscalingv2.CrossVersionObjectReference{},
 			nil,
 			nil,
 		},
@@ -103,7 +102,7 @@ func TestGetMetric(t *testing.T) {
 			},
 			nil,
 			&fake.MetricClient{
-				GetObjectMetricReactor: func(metricName string, namespace string, objectRef *autoscaling.CrossVersionObjectReference, metricSelector labels.Selector) (int64, time.Time, error) {
+				GetObjectMetricReactor: func(metricName string, namespace string, objectRef *autoscalingv2.CrossVersionObjectReference, metricSelector labels.Selector) (int64, time.Time, error) {
 					return 5, time.Time{}, nil
 				},
 			},
@@ -114,7 +113,7 @@ func TestGetMetric(t *testing.T) {
 			},
 			"test-metric",
 			"test-namespace",
-			&autoscaling.CrossVersionObjectReference{},
+			&autoscalingv2.CrossVersionObjectReference{},
 			nil,
 			nil,
 		},
@@ -149,11 +148,11 @@ func TestGetPerPodMetric(t *testing.T) {
 		description     string
 		expected        *object.Metric
 		expectedErr     error
-		metricsClient   metricsclient.MetricsClient
+		metricsClient   metricsclient.Client
 		podReadyCounter podutil.PodReadyCounter
 		metricName      string
 		namespace       string
-		objectRef       *v2beta2.CrossVersionObjectReference
+		objectRef       *autoscalingv2.CrossVersionObjectReference
 		metricSelector  labels.Selector
 	}{
 		{
@@ -161,14 +160,14 @@ func TestGetPerPodMetric(t *testing.T) {
 			nil,
 			errors.New("unable to get metric test-metric:  on test-namespace /fail to get metric"),
 			&fake.MetricClient{
-				GetObjectMetricReactor: func(metricName string, namespace string, objectRef *autoscaling.CrossVersionObjectReference, metricSelector labels.Selector) (int64, time.Time, error) {
+				GetObjectMetricReactor: func(metricName string, namespace string, objectRef *autoscalingv2.CrossVersionObjectReference, metricSelector labels.Selector) (int64, time.Time, error) {
 					return 0, time.Time{}, errors.New("fail to get metric")
 				},
 			},
 			nil,
 			"test-metric",
 			"test-namespace",
-			&autoscaling.CrossVersionObjectReference{},
+			&autoscalingv2.CrossVersionObjectReference{},
 			nil,
 		},
 		{
@@ -180,14 +179,14 @@ func TestGetPerPodMetric(t *testing.T) {
 			},
 			nil,
 			&fake.MetricClient{
-				GetObjectMetricReactor: func(metricName string, namespace string, objectRef *autoscaling.CrossVersionObjectReference, metricSelector labels.Selector) (int64, time.Time, error) {
+				GetObjectMetricReactor: func(metricName string, namespace string, objectRef *autoscalingv2.CrossVersionObjectReference, metricSelector labels.Selector) (int64, time.Time, error) {
 					return 5, time.Time{}, nil
 				},
 			},
 			nil,
 			"test-metric",
 			"test-namespace",
-			&autoscaling.CrossVersionObjectReference{},
+			&autoscalingv2.CrossVersionObjectReference{},
 			nil,
 		},
 	}
