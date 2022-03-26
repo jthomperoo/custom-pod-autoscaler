@@ -1,4 +1,5 @@
 mkdocs==1.2.3
+jinja2==3.0.0
 mdx-truly-sane-lists==1.2
 mkdocs-material==5.5.5
 mkdocs-material-extensions==1.0
