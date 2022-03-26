@@ -27,7 +27,7 @@ Kubernetes interactions and custom user logic interactions.
 
 A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting
 your own logic; see the [examples for more
-information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v2.4.1/example).
+information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v2.5.0/example).
 
 ## Features
 

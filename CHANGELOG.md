@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v2.5.0] - 2022-03-26
 ### Changed
 - Now internally using the Kubernetes Scale API for determining replica count and selectors, removing any direct
 dependencies on the Kubernetes core types when used in conjunction with the Kubernetes unstructured API.
@@ -239,7 +241,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.4.1...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.5.0...HEAD
+[v2.5.0]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.4.1...v2.5.0
 [v2.4.1]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.4.0...v2.4.1
 [v2.4.0]:
