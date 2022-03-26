@@ -1,16 +1,22 @@
 # Scaling targets
 
-Custom Pod Autoscalers can target any resource that the Horizontal Pod Autoscaler can target:
+Custom Pod Autoscalers can target any resource that the Horizontal Pod Autoscaler can target, for example:
 
 * Deployments
 * ReplicaSets
 * StatefulSets
 * ReplicationControllers
+
+Beyond this the CPA can target any other resource that your cluster supports as long as the resource implements the
+scale subresource API. For example this means support for:
+
 * Argo Rollouts
+* Other third party resources.
 
 ## Scale target reference
 
-To tell a Custom Pod Autoscaler which resource to target, provide a `scaleTargetRef` - a description of the resource to target. Within a Custom Pod Autoscaler definition it looks like this:
+To tell a Custom Pod Autoscaler which resource to target, provide a `scaleTargetRef` - a description of the resource to
+target. Within a Custom Pod Autoscaler definition it looks like this:
 
 ```yaml
 apiVersion: custompodautoscaler.com/v1
