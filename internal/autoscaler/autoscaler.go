@@ -54,11 +54,18 @@ func (s *Scaler) Scale() error {
 	}
 	glog.V(2).Infof("Managed resource retrieved: %+v", resource)
 
+	glog.V(2).Infoln("Attempting to get scale subresource")
+	scaleResource, err := s.Scaler.GetScaleSubResource(s.Config.ScaleTargetRef.APIVersion, s.Config.ScaleTargetRef.Kind, s.Config.Namespace, s.Config.ScaleTargetRef.Name)
+	if err != nil {
+		return fmt.Errorf("failed to get scale subresource: %w", err)
+	}
+	glog.V(2).Infof("Managed scale subresource retrieved: %+v", scaleResource)
+
 	glog.V(2).Infoln("Attempting to get resource metrics")
 	metrics, err := s.GetMetricer.GetMetrics(metric.Info{
 		Resource: resource,
 		RunType:  config.ScalerRunType,
-	})
+	}, scaleResource)
 	if err != nil {
 		return fmt.Errorf("failed to get metrics: %w", err)
 	}
@@ -85,7 +92,7 @@ func (s *Scaler) Scale() error {
 		Namespace:      s.Config.Namespace,
 		ScaleTargetRef: s.Config.ScaleTargetRef,
 		RunType:        config.ScalerRunType,
-	})
+	}, scaleResource)
 	if err != nil {
 		return fmt.Errorf("failed to scale resource: %w", err)
 	}

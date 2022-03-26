@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/externalget"
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/external"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/value"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 func int64Ptr(i int64) *int64 {
@@ -48,7 +48,7 @@ func TestGetMetric(t *testing.T) {
 		description     string
 		expected        *external.Metric
 		expectedErr     error
-		metricsClient   metricsclient.MetricsClient
+		metricsClient   metricsclient.Client
 		podReadyCounter podutil.PodReadyCounter
 		metricName      string
 		namespace       string
@@ -161,7 +161,7 @@ func TestGetPerPodMetric(t *testing.T) {
 		description     string
 		expected        *external.Metric
 		expectedErr     error
-		metricsClient   metricsclient.MetricsClient
+		metricsClient   metricsclient.Client
 		podReadyCounter podutil.PodReadyCounter
 		metricName      string
 		namespace       string

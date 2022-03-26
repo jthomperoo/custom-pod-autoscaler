@@ -24,14 +24,12 @@ import (
 	"fmt"
 	"time"
 
-	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/evaluate"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8sscale "k8s.io/client-go/scale"
@@ -39,7 +37,8 @@ import (
 
 // Scaler abstracts interactions with the Kubernetes scale API, allowing scaling based on an evaluation provided
 type Scaler interface {
-	Scale(info scale.Info) (*evaluate.Evaluation, error)
+	Scale(info scale.Info, scaleResource *autoscalingv1.Scale) (*evaluate.Evaluation, error)
+	GetScaleSubResource(apiVersion string, kind string, namespace string, name string) (*autoscalingv1.Scale, error)
 }
 
 // Scale interacts with the Kubernetes API to allow scaling on evaluations
@@ -59,18 +58,8 @@ type TimestampedEvaluation struct {
 
 // Scale takes an evaluation and uses it to interact with the Kubernetes scaling API,
 // to scale up/down, or keep the same number of replicas for a resource
-func (s *Scale) Scale(info scale.Info) (*evaluate.Evaluation, error) {
-	glog.V(3).Infof("Determining replica count for resource '%s'", info.Resource.GetName())
-	currentReplicas := int32(1)
-	resourceReplicas, err := s.getReplicaCount(info.Resource)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get replica count for resource: %w", err)
-	}
-	if resourceReplicas != nil {
-		currentReplicas = *resourceReplicas
-	}
-	glog.V(3).Infof("Replica count determined: %d", currentReplicas)
-
+func (s *Scale) Scale(info scale.Info, scaleResource *autoscalingv1.Scale) (*evaluate.Evaluation, error) {
+	currentReplicas := scaleResource.Spec.Replicas
 	targetReplicas := currentReplicas
 	if info.Evaluation.TargetReplicas < info.MinReplicas {
 		glog.V(1).Infof("Scale target less than min at %d replicas, setting target to min %d replicas", targetReplicas, info.MinReplicas)
@@ -153,16 +142,9 @@ func (s *Scale) Scale(info scale.Info) (*evaluate.Evaluation, error) {
 			Resource: info.ScaleTargetRef.Kind,
 		}
 
-		glog.V(3).Infoln("Attempting to get scale subresource for managed resource")
-		scale, err := s.Scaler.Scales(info.Namespace).Get(context.Background(), targetGR, info.ScaleTargetRef.Name, metav1.GetOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get scale subresource for resource: %w", err)
-		}
-		glog.V(3).Infof("Scale subresource retrieved: %+v", scale)
-
 		glog.V(3).Infoln("Attempting to apply scaling changes to resource")
-		scale.Spec.Replicas = targetReplicas
-		_, err = s.Scaler.Scales(info.Namespace).Update(context.Background(), targetGR, scale, metav1.UpdateOptions{})
+		scaleResource.Spec.Replicas = targetReplicas
+		_, err = s.Scaler.Scales(info.Namespace).Update(context.Background(), targetGR, scaleResource, metav1.UpdateOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply scaling changes to resource: %w", err)
 		}
@@ -183,19 +165,25 @@ func (s *Scale) Scale(info scale.Info) (*evaluate.Evaluation, error) {
 	return &info.Evaluation, nil
 }
 
-func (s *Scale) getReplicaCount(resource metav1.Object) (*int32, error) {
-	switch v := resource.(type) {
-	case *appsv1.Deployment:
-		return v.Spec.Replicas, nil
-	case *appsv1.ReplicaSet:
-		return v.Spec.Replicas, nil
-	case *appsv1.StatefulSet:
-		return v.Spec.Replicas, nil
-	case *corev1.ReplicationController:
-		return v.Spec.Replicas, nil
-	case *argov1alpha1.Rollout:
-		return v.Spec.Replicas, nil
-	default:
-		return nil, fmt.Errorf("unsupported resource of type %T", v)
+// GetScaleSubResource returns the scale subresource from the K8s scale API
+func (s *Scale) GetScaleSubResource(apiVersion string, kind string, namespace string, name string) (*autoscalingv1.Scale, error) {
+	glog.V(3).Infoln("Attempting to get scale subresource for managed resource")
+
+	resourceGV, err := schema.ParseGroupVersion(apiVersion)
+	if err != nil {
+		return nil, err
 	}
+	glog.V(3).Infof("Group version parsed: %+v", resourceGV)
+
+	targetGR := schema.GroupResource{
+		Group:    resourceGV.Group,
+		Resource: kind,
+	}
+
+	scale, err := s.Scaler.Scales(namespace).Get(context.Background(), targetGR, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get scale subresource for resource: %w", err)
+	}
+
+	return scale, nil
 }

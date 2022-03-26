@@ -21,12 +21,12 @@ import (
 	"testing"
 	"time"
 
-	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/externalget"
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/objectget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podsget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
@@ -34,17 +34,19 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/external"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/object"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/podmetrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/pods"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/resource"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/value"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 func int32Ptr(i int32) *int32 {
@@ -64,33 +66,18 @@ func TestGetMetrics(t *testing.T) {
 	})
 
 	var tests = []struct {
-		description string
-		expected    []*k8smetric.Metric
-		expectedErr error
-		resource    resourceget.Gatherer
-		object      objectget.Gatherer
-		pods        podsget.Gatherer
-		external    externalget.Gatherer
-		deployment  metav1.Object
-		specs       []config.K8sMetricSpec
-		namespace   string
+		description   string
+		expected      []*k8smetric.Metric
+		expectedErr   error
+		resource      resourceget.Gatherer
+		object        objectget.Gatherer
+		pods          podsget.Gatherer
+		external      externalget.Gatherer
+		deployment    metav1.Object
+		specs         []config.K8sMetricSpec
+		namespace     string
+		scaleResource *autoscalingv1.Scale
 	}{
-		{
-			"Single invalid resource type",
-			nil,
-			errors.New(`failed to get replica count for resource: unsupported resource of type *v1.DaemonSet`),
-			nil,
-			nil,
-			nil,
-			nil,
-			&appsv1.DaemonSet{},
-			[]config.K8sMetricSpec{
-				{
-					Type: "invalid",
-				},
-			},
-			"test-namespace",
-		},
 		{
 			"Single unknown metric type",
 			nil,
@@ -110,6 +97,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single object metric, fail to convert label",
@@ -119,11 +111,7 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			nil,
 			nil,
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(1),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ObjectMetricSourceType,
@@ -141,6 +129,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single object metric, invalid target",
@@ -150,11 +143,7 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			nil,
 			nil,
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(1),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ObjectMetricSourceType,
@@ -166,6 +155,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single object metric, value metric, fail to get metric",
@@ -179,11 +173,7 @@ func TestGetMetrics(t *testing.T) {
 			},
 			nil,
 			nil,
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(1),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ObjectMetricSourceType,
@@ -195,6 +185,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single object metric, deployment, value metric, success",
@@ -238,7 +233,6 @@ func TestGetMetrics(t *testing.T) {
 							"test": "test",
 						},
 					},
-					Replicas: int32Ptr(1),
 				},
 			},
 			[]config.K8sMetricSpec{
@@ -252,6 +246,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 1,
+				},
+			},
 		},
 		{
 			"Single object metric, argo rollout, value metric, success",
@@ -288,14 +287,16 @@ func TestGetMetrics(t *testing.T) {
 			},
 			nil,
 			nil,
-			&argov1alpha1.Rollout{
-				Spec: argov1alpha1.RolloutSpec{
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"test": "test",
+			&unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"spec": map[string]interface{}{
+						"selector": map[string]interface{}{
+							"matchLabels": map[string]string{
+								"test": "test",
+							},
 						},
+						"replicas": 1,
 					},
-					Replicas: int32Ptr(1),
 				},
 			},
 			[]config.K8sMetricSpec{
@@ -309,6 +310,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 1,
+				},
+			},
 		},
 		{
 			"Single object metric, replicaset, average value metric, fail to get metric",
@@ -322,11 +328,7 @@ func TestGetMetrics(t *testing.T) {
 			},
 			nil,
 			nil,
-			&appsv1.ReplicaSet{
-				Spec: appsv1.ReplicaSetSpec{
-					Replicas: int32Ptr(1),
-				},
-			},
+			&appsv1.ReplicaSet{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ObjectMetricSourceType,
@@ -338,6 +340,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single object metric, statefulset, average value metric, success",
@@ -395,6 +402,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 
 		{
@@ -405,11 +417,7 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			nil,
 			nil,
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(1),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.PodsMetricSourceType,
@@ -427,6 +435,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single pods metric, fail to get metric, non average value",
@@ -436,11 +449,7 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			&fake.PodsGatherer{},
 			nil,
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(1),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.PodsMetricSourceType,
@@ -455,6 +464,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single pods metric, fail to get metric",
@@ -468,11 +482,7 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			nil,
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(1),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.PodsMetricSourceType,
@@ -487,6 +497,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single pods metric, replicationcontroller, success",
@@ -505,7 +520,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Pods: &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -520,7 +535,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.PodsGatherer{
 				GetMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (*pods.Metric, error) {
 					return &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -535,7 +550,6 @@ func TestGetMetrics(t *testing.T) {
 					Selector: map[string]string{
 						"test": "test",
 					},
-					Replicas: int32Ptr(8),
 				},
 			},
 			[]config.K8sMetricSpec{
@@ -552,6 +566,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 8,
+				},
+			},
 		},
 		{
 			"Single resource metric, invalid target",
@@ -561,11 +580,7 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			nil,
 			nil,
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(3),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ResourceMetricSourceType,
@@ -578,6 +593,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single resource metric, average value, fail to get metric",
@@ -591,11 +611,7 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			nil,
 			nil,
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(1),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ResourceMetricSourceType,
@@ -608,6 +624,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single resource metric, average metric, success",
@@ -624,7 +645,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Resource: &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -643,7 +664,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ResourceGatherer{
 				GetRawMetricReactor: func(res v1.ResourceName, namespace string, selector labels.Selector) (*resource.Metric, error) {
 					return &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -661,11 +682,7 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			nil,
 			nil,
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(9),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ResourceMetricSourceType,
@@ -678,6 +695,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 9,
+				},
+			},
 		},
 		{
 			"Single resource metric, average utilisation, fail to get metric",
@@ -691,11 +713,7 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			nil,
 			nil,
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(1),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ResourceMetricSourceType,
@@ -708,6 +726,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single resource metric, average utilisation, success",
@@ -724,7 +747,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Resource: &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -740,7 +763,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ResourceGatherer{
 				GetMetricReactor: func(res v1.ResourceName, namespace string, selector labels.Selector) (*resource.Metric, error) {
 					return &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						TotalPods:      5,
 						MissingPods: sets.String{
@@ -762,7 +785,6 @@ func TestGetMetrics(t *testing.T) {
 							"test": "test",
 						},
 					},
-					Replicas: int32Ptr(9),
 				},
 			},
 			[]config.K8sMetricSpec{
@@ -777,6 +799,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 9,
+				},
+			},
 		},
 		{
 			"Single external metric, invalid target",
@@ -786,11 +813,7 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 			nil,
 			nil,
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(3),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ExternalMetricSourceType,
@@ -806,6 +829,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single external metric, average value, fail to get metric",
@@ -819,11 +847,7 @@ func TestGetMetrics(t *testing.T) {
 					return nil, errors.New("fail to get metric")
 				},
 			},
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(2),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ExternalMetricSourceType,
@@ -839,6 +863,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single external metric, average metric, success",
@@ -886,7 +915,6 @@ func TestGetMetrics(t *testing.T) {
 							"test": "test",
 						},
 					},
-					Replicas: int32Ptr(2),
 				},
 			},
 			[]config.K8sMetricSpec{
@@ -904,6 +932,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 2,
+				},
+			},
 		},
 		{
 			"Single external metric, value, fail to get metric",
@@ -917,11 +950,7 @@ func TestGetMetrics(t *testing.T) {
 					return nil, errors.New("fail to get metric")
 				},
 			},
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(7),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ExternalMetricSourceType,
@@ -937,6 +966,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"Single external metric, value, success",
@@ -984,7 +1018,6 @@ func TestGetMetrics(t *testing.T) {
 							"test": "test",
 						},
 					},
-					Replicas: int32Ptr(7),
 				},
 			},
 			[]config.K8sMetricSpec{
@@ -1002,6 +1035,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 7,
+				},
+			},
 		},
 		{
 			"One of each metric, all failure",
@@ -1027,11 +1065,7 @@ func TestGetMetrics(t *testing.T) {
 					return nil, errors.New("fail to get external metric")
 				},
 			},
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(4),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ExternalMetricSourceType,
@@ -1076,6 +1110,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
 		},
 		{
 			"One of each metric, 2 success, 2 invalid",
@@ -1116,7 +1155,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Pods: &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						IgnoredPods: sets.String{
 							"ignored-pod": {},
@@ -1142,7 +1181,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.PodsGatherer{
 				GetMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (*pods.Metric, error) {
 					return &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						IgnoredPods: sets.String{
 							"ignored-pod": {},
@@ -1164,11 +1203,7 @@ func TestGetMetrics(t *testing.T) {
 					}, nil
 				},
 			},
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(4),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ExternalMetricSourceType,
@@ -1213,6 +1248,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 4,
+				},
+			},
 		},
 		{
 			"One of each metric, all success",
@@ -1253,7 +1293,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Pods: &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						IgnoredPods: sets.String{
 							"ignored-pod": {},
@@ -1293,7 +1333,7 @@ func TestGetMetrics(t *testing.T) {
 						},
 					},
 					Resource: &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						Requests:       map[string]int64{"pod-1": 1, "pod-2": 3, "pod-3": 4},
 						ReadyPodCount:  4,
 						TotalPods:      6,
@@ -1306,7 +1346,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.ResourceGatherer{
 				GetRawMetricReactor: func(res v1.ResourceName, namespace string, selector labels.Selector) (*resource.Metric, error) {
 					return &resource.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						Requests:       map[string]int64{"pod-1": 1, "pod-2": 3, "pod-3": 4},
 						ReadyPodCount:  4,
 						TotalPods:      6,
@@ -1328,7 +1368,7 @@ func TestGetMetrics(t *testing.T) {
 			&fake.PodsGatherer{
 				GetMetricReactor: func(metricName, namespace string, selector, metricSelector labels.Selector) (*pods.Metric, error) {
 					return &pods.Metric{
-						PodMetricsInfo: metricsclient.PodMetricsInfo{},
+						PodMetricsInfo: podmetrics.MetricsInfo{},
 						ReadyPodCount:  3,
 						IgnoredPods: sets.String{
 							"ignored-pod": {},
@@ -1350,11 +1390,7 @@ func TestGetMetrics(t *testing.T) {
 					}, nil
 				},
 			},
-			&appsv1.Deployment{
-				Spec: appsv1.DeploymentSpec{
-					Replicas: int32Ptr(4),
-				},
-			},
+			&appsv1.Deployment{},
 			[]config.K8sMetricSpec{
 				{
 					Type: autoscaling.ExternalMetricSourceType,
@@ -1399,6 +1435,11 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			"test-namespace",
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 4,
+				},
+			},
 		},
 	}
 	for _, test := range tests {
@@ -1409,7 +1450,7 @@ func TestGetMetrics(t *testing.T) {
 				Object:   test.object,
 				External: test.external,
 			}
-			metrics, err := gatherer.GetMetrics(test.deployment, test.specs, test.namespace)
+			metrics, err := gatherer.GetMetrics(test.deployment, test.specs, test.namespace, test.scaleResource)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return
@@ -1425,7 +1466,7 @@ func TestNewGather(t *testing.T) {
 	var tests = []struct {
 		description                   string
 		expected                      k8smetricget.Gatherer
-		metricsClient                 metricsclient.MetricsClient
+		metricsClient                 metricsclient.Client
 		podlister                     corelisters.PodLister
 		cpuInitializationPeriod       time.Duration
 		delayOfInitialReadinessStatus time.Duration

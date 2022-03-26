@@ -16,14 +16,14 @@ limitations under the License.
 
 package fake
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 // ResourceClient (fake) allows inserting logic into a resource client for testing
 type ResourceClient struct {
-	GetReactor func(apiVersion string, kind string, name string, namespace string) (metav1.Object, error)
+	GetReactor func(apiVersion string, kind string, name string, namespace string) (*unstructured.Unstructured, error)
 }
 
 // Get calls the fake ResourceClient reactor method provided
-func (u *ResourceClient) Get(apiVersion string, kind string, name string, namespace string) (metav1.Object, error) {
+func (u *ResourceClient) Get(apiVersion string, kind string, name string, namespace string) (*unstructured.Unstructured, error) {
 	return u.GetReactor(apiVersion, kind, name, namespace)
 }

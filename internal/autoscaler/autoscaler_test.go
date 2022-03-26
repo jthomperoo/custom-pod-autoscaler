@@ -27,17 +27,17 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
-	appsv1 "k8s.io/api/apps/v1"
-	autoscaling "k8s.io/api/autoscaling/v2beta2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type fakeGetMetric struct {
-	getMetrics func(info metric.Info) ([]*metric.ResourceMetric, error)
+	getMetrics func(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error)
 }
 
-func (m *fakeGetMetric) GetMetrics(info metric.Info) ([]*metric.ResourceMetric, error) {
-	return m.getMetrics(info)
+func (m *fakeGetMetric) GetMetrics(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
+	return m.getMetrics(info, scaleResource)
 }
 
 type fakeGetEvaluation struct {
@@ -66,16 +66,47 @@ func TestScaler(t *testing.T) {
 			errors.New(`failed to get managed resource: fail to get resource`),
 			autoscaler.Scaler{
 				Client: &fake.ResourceClient{
-					GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
+					GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
 						return nil, errors.New("fail to get resource")
 					},
 				},
 				Config: &config.Config{
 					Namespace: "test namespace",
-					ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 						Kind:       "deployment",
 						Name:       "test",
 						APIVersion: "apps/v1",
+					},
+				},
+			},
+		},
+		{
+			"Get scale subresource fail",
+			errors.New(`failed to get scale subresource: fail to get scale subresource`),
+			autoscaler.Scaler{
+				Client: &fake.ResourceClient{
+					GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+						return &unstructured.Unstructured{
+							Object: map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"name":      name,
+									"namespace": namespace,
+								},
+							},
+						}, nil
+					},
+				},
+				Config: &config.Config{
+					Namespace: "test namespace",
+					ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
+						Kind:       "deployment",
+						Name:       "test",
+						APIVersion: "apps/v1",
+					},
+				},
+				Scaler: &fake.Scaler{
+					GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+						return nil, errors.New("fail to get scale subresource")
 					},
 				},
 			},
@@ -85,18 +116,20 @@ func TestScaler(t *testing.T) {
 			errors.New("failed to get metrics: fail to get metric"),
 			autoscaler.Scaler{
 				Client: &fake.ResourceClient{
-					GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-						return &appsv1.Deployment{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      name,
-								Namespace: namespace,
+					GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+						return &unstructured.Unstructured{
+							Object: map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"name":      name,
+									"namespace": namespace,
+								},
 							},
 						}, nil
 					},
 				},
 				Config: &config.Config{
 					Namespace: "test namespace",
-					ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 						Kind:       "deployment",
 						Name:       "test",
 						APIVersion: "apps/v1",
@@ -104,11 +137,20 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(spec metric.Info) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(spec metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
 						return nil, errors.New("fail to get metric")
 					}
 					return &getMetric
 				}(),
+				Scaler: &fake.Scaler{
+					GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+						return &autoscalingv1.Scale{
+							Spec: autoscalingv1.ScaleSpec{
+								Replicas: 1,
+							},
+						}, nil
+					},
+				},
 			},
 		},
 		{
@@ -116,18 +158,20 @@ func TestScaler(t *testing.T) {
 			errors.New("failed get evaluation: fail to evaluate"),
 			autoscaler.Scaler{
 				Client: &fake.ResourceClient{
-					GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-						return &appsv1.Deployment{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      name,
-								Namespace: namespace,
+					GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+						return &unstructured.Unstructured{
+							Object: map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"name":      name,
+									"namespace": namespace,
+								},
 							},
 						}, nil
 					},
 				},
 				Config: &config.Config{
 					Namespace: "test namespace",
-					ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 						Kind:       "deployment",
 						Name:       "test",
 						APIVersion: "apps/v1",
@@ -135,7 +179,7 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(spec metric.Info) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(spec metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
 						return []*metric.ResourceMetric{}, nil
 					}
 					return &getMetric
@@ -147,6 +191,15 @@ func TestScaler(t *testing.T) {
 					}
 					return &getEvaluation
 				}(),
+				Scaler: &fake.Scaler{
+					GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+						return &autoscalingv1.Scale{
+							Spec: autoscalingv1.ScaleSpec{
+								Replicas: 1,
+							},
+						}, nil
+					},
+				},
 			},
 		},
 		{
@@ -154,27 +207,35 @@ func TestScaler(t *testing.T) {
 			errors.New("failed to scale resource: fail to scale"),
 			autoscaler.Scaler{
 				Client: &fake.ResourceClient{
-					GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-						replicas := int32(2)
-						return &appsv1.Deployment{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      "test",
-								Namespace: "test namespace",
-							},
-							Spec: appsv1.DeploymentSpec{
-								Replicas: &replicas,
+					GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+						return &unstructured.Unstructured{
+							Object: map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"name":      name,
+									"namespace": namespace,
+								},
+								"spec": map[string]interface{}{
+									"replicas": 2,
+								},
 							},
 						}, nil
 					},
 				},
 				Scaler: &fake.Scaler{
-					ScaleReactor: func(info scale.Info) (*evaluate.Evaluation, error) {
+					ScaleReactor: func(info scale.Info, scaleResource *autoscalingv1.Scale) (*evaluate.Evaluation, error) {
 						return nil, errors.New("fail to scale")
+					},
+					GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+						return &autoscalingv1.Scale{
+							Spec: autoscalingv1.ScaleSpec{
+								Replicas: 1,
+							},
+						}, nil
 					},
 				},
 				Config: &config.Config{
 					Namespace: "test namespace",
-					ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 						Kind:       "deployment",
 						Name:       "test",
 						APIVersion: "apps/v1",
@@ -182,7 +243,7 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(info metric.Info) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
 						return []*metric.ResourceMetric{}, nil
 					}
 					return &getMetric
@@ -201,29 +262,37 @@ func TestScaler(t *testing.T) {
 			nil,
 			autoscaler.Scaler{
 				Client: &fake.ResourceClient{
-					GetReactor: func(apiVersion, kind, name, namespace string) (metav1.Object, error) {
-						replicas := int32(1)
-						return &appsv1.Deployment{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      "test",
-								Namespace: "test namespace",
-							},
-							Spec: appsv1.DeploymentSpec{
-								Replicas: &replicas,
+					GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+						return &unstructured.Unstructured{
+							Object: map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"name":      name,
+									"namespace": namespace,
+								},
+								"spec": map[string]interface{}{
+									"replicas": 1,
+								},
 							},
 						}, nil
 					},
 				},
 				Scaler: &fake.Scaler{
-					ScaleReactor: func(info scale.Info) (*evaluate.Evaluation, error) {
+					ScaleReactor: func(info scale.Info, scaleResource *autoscalingv1.Scale) (*evaluate.Evaluation, error) {
 						return &evaluate.Evaluation{
 							TargetReplicas: 2,
+						}, nil
+					},
+					GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+						return &autoscalingv1.Scale{
+							Spec: autoscalingv1.ScaleSpec{
+								Replicas: 1,
+							},
 						}, nil
 					},
 				},
 				Config: &config.Config{
 					Namespace: "test namespace",
-					ScaleTargetRef: &autoscaling.CrossVersionObjectReference{
+					ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
 						Kind:       "deployment",
 						Name:       "test",
 						APIVersion: "apps/v1",
@@ -231,7 +300,7 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(spec metric.Info) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(spec metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
 						return []*metric.ResourceMetric{}, nil
 					}
 					return &getMetric

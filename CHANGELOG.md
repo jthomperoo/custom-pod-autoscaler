@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Now internally using the Kubernetes Scale API for determining replica count and selectors, removing any direct
+dependencies on the Kubernetes core types when used in conjunction with the Kubernetes unstructured API.
+- Can now install the project by using the `go install` command since replace directives have been removed.
 
 ## [v2.4.1] - 2022-02-22
 ### Fixed

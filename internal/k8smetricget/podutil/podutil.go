@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Modifications Copyright 2021 The Custom Pod Autoscaler Authors.
+Modifications Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,12 +31,11 @@ import (
 	"fmt"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/podmetrics"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 // PodReadyCounter provides a way to count number of ready pods
@@ -60,7 +59,7 @@ func (c *PodReadyCount) GetReadyPodsCount(namespace string, selector labels.Sele
 	// Count number of ready pods
 	readyPodCount := int64(0)
 	for _, pod := range podList {
-		if pod.Status.Phase == v1.PodRunning && podutil.IsPodReady(pod) {
+		if pod.Status.Phase == corev1.PodRunning && isPodReady(pod) {
 			readyPodCount++
 		}
 	}
@@ -69,15 +68,15 @@ func (c *PodReadyCount) GetReadyPodsCount(namespace string, selector labels.Sele
 }
 
 // GroupPods groups pods into ready, missing and ignored based on PodMetricsInfo and resource provided
-func GroupPods(pods []*v1.Pod, metrics metricsclient.PodMetricsInfo, resource v1.ResourceName, cpuInitializationPeriod, delayOfInitialReadinessStatus time.Duration) (readyPodCount int, ignoredPods sets.String, missingPods sets.String) {
+func GroupPods(pods []*corev1.Pod, metrics podmetrics.MetricsInfo, resource corev1.ResourceName, cpuInitializationPeriod, delayOfInitialReadinessStatus time.Duration) (readyPodCount int, ignoredPods sets.String, missingPods sets.String) {
 	missingPods = sets.NewString()
 	ignoredPods = sets.NewString()
 	for _, pod := range pods {
-		if pod.DeletionTimestamp != nil || pod.Status.Phase == v1.PodFailed {
+		if pod.DeletionTimestamp != nil || pod.Status.Phase == corev1.PodFailed {
 			continue
 		}
 		// Pending pods are ignored.
-		if pod.Status.Phase == v1.PodPending {
+		if pod.Status.Phase == corev1.PodPending {
 			ignoredPods.Insert(pod.Name)
 			continue
 		}
@@ -88,19 +87,19 @@ func GroupPods(pods []*v1.Pod, metrics metricsclient.PodMetricsInfo, resource v1
 			continue
 		}
 		// Unready pods are ignored.
-		if resource == v1.ResourceCPU {
+		if resource == corev1.ResourceCPU {
 			var ignorePod bool
-			_, condition := podutil.GetPodCondition(&pod.Status, v1.PodReady)
+			_, condition := getPodCondition(pod.Status, corev1.PodReady)
 			if condition == nil || pod.Status.StartTime == nil {
 				ignorePod = true
 			} else {
 				// Pod still within possible initialisation period.
 				if pod.Status.StartTime.Add(cpuInitializationPeriod).After(time.Now()) {
 					// Ignore sample if pod is unready or one window of metric wasn't collected since last state transition.
-					ignorePod = condition.Status == v1.ConditionFalse || metric.Timestamp.Before(condition.LastTransitionTime.Time.Add(metric.Window))
+					ignorePod = condition.Status == corev1.ConditionFalse || metric.Timestamp.Before(condition.LastTransitionTime.Time.Add(metric.Window))
 				} else {
 					// Ignore metric if pod is unready and it has never been ready.
-					ignorePod = condition.Status == v1.ConditionFalse && pod.Status.StartTime.Add(delayOfInitialReadinessStatus).After(condition.LastTransitionTime.Time)
+					ignorePod = condition.Status == corev1.ConditionFalse && pod.Status.StartTime.Add(delayOfInitialReadinessStatus).After(condition.LastTransitionTime.Time)
 				}
 			}
 			if ignorePod {
@@ -114,7 +113,7 @@ func GroupPods(pods []*v1.Pod, metrics metricsclient.PodMetricsInfo, resource v1
 }
 
 // CalculatePodRequests calculates pod resource requests for a slice of pods
-func CalculatePodRequests(pods []*v1.Pod, resource v1.ResourceName) (map[string]int64, error) {
+func CalculatePodRequests(pods []*corev1.Pod, resource corev1.ResourceName) (map[string]int64, error) {
 	requests := make(map[string]int64, len(pods))
 	for _, pod := range pods {
 		podSum := int64(0)
@@ -131,8 +130,29 @@ func CalculatePodRequests(pods []*v1.Pod, resource v1.ResourceName) (map[string]
 }
 
 // RemoveMetricsForPods removes the pods provided from the PodMetricsInfo provided
-func RemoveMetricsForPods(metrics metricsclient.PodMetricsInfo, pods sets.String) {
+func RemoveMetricsForPods(metrics podmetrics.MetricsInfo, pods sets.String) {
 	for _, pod := range pods.UnsortedList() {
 		delete(metrics, pod)
 	}
+}
+
+// IsPodReady returns true if a pod is ready; false otherwise.
+func isPodReady(pod *corev1.Pod) bool {
+	_, condition := getPodCondition(pod.Status, corev1.PodReady)
+	return condition != nil && condition.Status == corev1.ConditionTrue
+}
+
+// GetPodCondition extracts the provided condition from the given status and returns that.
+// Returns nil and -1 if the condition is not present, and the index of the located condition.
+func getPodCondition(status corev1.PodStatus, conditionType corev1.PodConditionType) (int, *corev1.PodCondition) {
+	conditions := status.Conditions
+	if conditions == nil {
+		return -1, nil
+	}
+	for i := range conditions {
+		if conditions[i].Type == conditionType {
+			return i, &conditions[i]
+		}
+	}
+	return -1, nil
 }

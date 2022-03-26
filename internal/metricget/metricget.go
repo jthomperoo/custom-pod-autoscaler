@@ -23,14 +23,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -38,7 +36,7 @@ import (
 
 // GetMetricer provides methods for retrieving metrics
 type GetMetricer interface {
-	GetMetrics(info metric.Info) ([]*metric.ResourceMetric, error)
+	GetMetrics(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error)
 }
 
 // Gatherer handles triggering the metric gathering logic to gather metrics for a resource
@@ -50,12 +48,12 @@ type Gatherer struct {
 }
 
 // GetMetrics gathers metrics for the resource supplied
-func (m *Gatherer) GetMetrics(info metric.Info) ([]*metric.ResourceMetric, error) {
+func (m *Gatherer) GetMetrics(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
 
 	// Query metrics server if requested
 	if m.Config.KubernetesMetricSpecs != nil {
 		glog.V(3).Infoln("K8s Metrics specs provided, attempting to query the K8s metrics server")
-		k8sMetricSpec, err := m.K8sMetricGatherer.GetMetrics(info.Resource, m.Config.KubernetesMetricSpecs, m.Config.Namespace)
+		k8sMetricSpec, err := m.K8sMetricGatherer.GetMetrics(info.Resource, m.Config.KubernetesMetricSpecs, m.Config.Namespace, scaleResource)
 		if err != nil {
 			if m.Config.RequireKubernetesMetrics {
 				return nil, fmt.Errorf("failed to get required Kubernetes metrics: %w", err)
@@ -70,11 +68,11 @@ func (m *Gatherer) GetMetrics(info metric.Info) ([]*metric.ResourceMetric, error
 
 	switch m.Config.RunMode {
 	case config.PerPodRunMode:
-		return m.getMetricsForPods(info)
+		return m.getMetricsForPods(info, scaleResource)
 	case config.PerResourceRunMode:
 		return m.getMetricsForResource(info)
 	default:
-		return nil, fmt.Errorf("Unknown run mode: %s", m.Config.RunMode)
+		return nil, fmt.Errorf("unknown run mode: %s", m.Config.RunMode)
 	}
 }
 
@@ -128,18 +126,18 @@ func (m *Gatherer) getMetricsForResource(info metric.Info) ([]*metric.ResourceMe
 	return info.Metrics, nil
 }
 
-func (m *Gatherer) getMetricsForPods(info metric.Info) ([]*metric.ResourceMetric, error) {
+func (m *Gatherer) getMetricsForPods(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
 	glog.V(3).Infoln("Gathering metrics in per-pod mode")
 
 	glog.V(3).Infoln("Attempting to get pod selector from managed resource")
-	labels, err := m.getPodSelectorForResource(info.Resource)
+	labels, err := labels.Parse(scaleResource.Status.Selector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod selector of managed resource: %w", err)
 	}
 	glog.V(3).Infof("Label selector retrieved: %+v", labels)
 
 	glog.V(3).Infoln("Attempting to get pods being managed")
-	pods, err := m.Clientset.CoreV1().Pods(m.Config.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: labels})
+	pods, err := m.Clientset.CoreV1().Pods(m.Config.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: labels.String()})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pods being managed: %w", err)
 	}
@@ -207,37 +205,4 @@ func (m *Gatherer) getMetricsForPods(info metric.Info) ([]*metric.ResourceMetric
 	}
 
 	return metrics, nil
-}
-
-func (m *Gatherer) getPodSelectorForResource(resource metav1.Object) (string, error) {
-	switch v := resource.(type) {
-	case *appsv1.Deployment:
-		selector, err := metav1.LabelSelectorAsMap(v.Spec.Selector)
-		if err != nil {
-			return "", err
-		}
-		return labels.SelectorFromSet(selector).String(), nil
-	case *appsv1.ReplicaSet:
-		selector, err := metav1.LabelSelectorAsMap(v.Spec.Selector)
-		if err != nil {
-			return "", err
-		}
-		return labels.SelectorFromSet(selector).String(), nil
-	case *appsv1.StatefulSet:
-		selector, err := metav1.LabelSelectorAsMap(v.Spec.Selector)
-		if err != nil {
-			return "", err
-		}
-		return labels.SelectorFromSet(selector).String(), nil
-	case *corev1.ReplicationController:
-		return labels.SelectorFromSet(v.Spec.Selector).String(), nil
-	case *argov1alpha1.Rollout:
-		selector, err := metav1.LabelSelectorAsMap(v.Spec.Selector)
-		if err != nil {
-			return "", err
-		}
-		return labels.SelectorFromSet(selector).String(), nil
-	default:
-		return "", fmt.Errorf("unsupported resource of type %T", v)
-	}
 }

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Modifications Copyright 2021 The Custom Pod Autoscaler Authors.
+Modifications Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/value"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"k8s.io/apimachinery/pkg/labels"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 // Gatherer (External) allows retrieval of external metrics.
@@ -47,7 +47,7 @@ type Gatherer interface {
 
 // Gather (External)  provides functionality for retrieving metrics for external metric specs.
 type Gather struct {
-	MetricsClient   metricsclient.MetricsClient
+	MetricsClient   metricsclient.Client
 	PodReadyCounter podutil.PodReadyCounter
 }
 

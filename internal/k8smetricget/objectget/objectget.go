@@ -30,12 +30,12 @@ package objectget
 import (
 	"fmt"
 
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/object"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/value"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	"k8s.io/apimachinery/pkg/labels"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 // Gatherer (Object) allows retrieval of object metrics.
@@ -46,7 +46,7 @@ type Gatherer interface {
 
 // Gather (Object) provides functionality for retrieving metrics for object metric specs.
 type Gather struct {
-	MetricsClient   metricsclient.MetricsClient
+	MetricsClient   metricsclient.Client
 	PodReadyCounter podutil.PodReadyCounter
 }
 

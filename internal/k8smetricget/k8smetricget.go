@@ -33,26 +33,24 @@ import (
 	"fmt"
 	"time"
 
-	argov1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/externalget"
+	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/objectget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podsget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/podutil"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/resourceget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric"
-	appsv1 "k8s.io/api/apps/v1"
-	autoscaling "k8s.io/api/autoscaling/v2beta2"
-	corev1 "k8s.io/api/core/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	metricsclient "k8s.io/kubernetes/pkg/controller/podautoscaler/metrics"
 )
 
 // Gatherer allows retrieval of metrics.
 type Gatherer interface {
-	GetMetrics(resource metav1.Object, specs []config.K8sMetricSpec, namespace string) ([]*k8smetric.Metric, error)
+	GetMetrics(resource metav1.Object, specs []config.K8sMetricSpec, namespace string, scaleResource *autoscalingv1.Scale) ([]*k8smetric.Metric, error)
 }
 
 // Gather provides functionality for retrieving metrics on supplied metric specs.
@@ -65,7 +63,7 @@ type Gather struct {
 
 // NewGather sets up a new Metric Gatherer
 func NewGather(
-	metricsClient metricsclient.MetricsClient,
+	metricsClient metricsclient.Client,
 	podlister corelisters.PodLister,
 	cpuInitializationPeriod time.Duration,
 	delayOfInitialReadinessStatus time.Duration) *Gather {
@@ -99,20 +97,13 @@ func NewGather(
 
 // GetMetrics processes each MetricSpec provided, calculating metric values for each and combining them into a slice before returning them.
 // Error will only be returned if all metrics are invalid, otherwise it will return the valid metrics.
-func (c *Gather) GetMetrics(resource metav1.Object, specs []config.K8sMetricSpec, namespace string) ([]*k8smetric.Metric, error) {
+func (c *Gather) GetMetrics(resource metav1.Object, specs []config.K8sMetricSpec, namespace string, scaleResource *autoscalingv1.Scale) ([]*k8smetric.Metric, error) {
 	var combinedMetrics []*k8smetric.Metric
 	var invalidMetricError error
 	invalidMetricsCount := 0
-	currentReplicas := int32(0)
-	resourceReplicas, err := getReplicaCount(resource)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get replica count for resource: %w", err)
-	}
-	if resourceReplicas != nil {
-		currentReplicas = *resourceReplicas
-	}
+	currentReplicas := scaleResource.Spec.Replicas
 	for _, spec := range specs {
-		specSelector, err := getSelector(resource)
+		specSelector, err := labels.Parse(scaleResource.Status.Selector)
 		if err != nil {
 			if invalidMetricsCount <= 0 {
 				invalidMetricError = err
@@ -142,14 +133,14 @@ func (c *Gather) GetMetrics(resource metav1.Object, specs []config.K8sMetricSpec
 
 func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, namespace string, selector labels.Selector) (*k8smetric.Metric, error) {
 	switch spec.Type {
-	case autoscaling.ObjectMetricSourceType:
+	case autoscalingv2.ObjectMetricSourceType:
 		metricSelector, err := metav1.LabelSelectorAsSelector(spec.Object.Metric.Selector)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get object metric: %w", err)
 		}
 
 		switch spec.Object.Target.Type {
-		case autoscaling.ValueMetricType:
+		case autoscalingv2.ValueMetricType:
 			objectMetric, err := c.Object.GetMetric(spec.Object.Metric.Name, namespace, &spec.Object.DescribedObject, selector, metricSelector)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get object metric: %w", err)
@@ -159,7 +150,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 				Spec:            spec,
 				Object:          objectMetric,
 			}, nil
-		case autoscaling.AverageValueMetricType:
+		case autoscalingv2.AverageValueMetricType:
 			objectMetric, err := c.Object.GetPerPodMetric(spec.Object.Metric.Name, namespace, &spec.Object.DescribedObject, selector)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get object metric: %w", err)
@@ -172,13 +163,13 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 		default:
 			return nil, fmt.Errorf("invalid object metric source: must be either value or average value")
 		}
-	case autoscaling.PodsMetricSourceType:
+	case autoscalingv2.PodsMetricSourceType:
 		metricSelector, err := metav1.LabelSelectorAsSelector(spec.Pods.Metric.Selector)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get pods metric: %w", err)
 		}
 
-		if spec.Pods.Target.Type != autoscaling.AverageValueMetricType {
+		if spec.Pods.Target.Type != autoscalingv2.AverageValueMetricType {
 			return nil, fmt.Errorf("invalid pods metric source: must be average value")
 		}
 
@@ -191,9 +182,9 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 			Spec:            spec,
 			Pods:            podsMetric,
 		}, nil
-	case autoscaling.ResourceMetricSourceType:
+	case autoscalingv2.ResourceMetricSourceType:
 		switch spec.Resource.Target.Type {
-		case autoscaling.AverageValueMetricType:
+		case autoscalingv2.AverageValueMetricType:
 			resourceMetric, err := c.Resource.GetRawMetric(spec.Resource.Name, namespace, selector)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get resource metric: %w", err)
@@ -203,7 +194,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 				Spec:            spec,
 				Resource:        resourceMetric,
 			}, nil
-		case autoscaling.UtilizationMetricType:
+		case autoscalingv2.UtilizationMetricType:
 			resourceMetric, err := c.Resource.GetMetric(spec.Resource.Name, namespace, selector)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get resource metric: %w", err)
@@ -217,9 +208,9 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 			return nil, fmt.Errorf("invalid resource metric source: must be either average value or average utilization")
 		}
 
-	case autoscaling.ExternalMetricSourceType:
+	case autoscalingv2.ExternalMetricSourceType:
 		switch spec.External.Target.Type {
-		case autoscaling.AverageValueMetricType:
+		case autoscalingv2.AverageValueMetricType:
 			externalMetric, err := c.External.GetPerPodMetric(spec.External.Metric.Name, namespace, spec.External.Metric.Selector)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get external metric: %w", err)
@@ -229,7 +220,7 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 				Spec:            spec,
 				External:        externalMetric,
 			}, nil
-		case autoscaling.ValueMetricType:
+		case autoscalingv2.ValueMetricType:
 			externalMetric, err := c.External.GetMetric(spec.External.Metric.Name, namespace, spec.External.Metric.Selector, selector)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get external metric: %w", err)
@@ -245,39 +236,5 @@ func (c *Gather) getMetric(currentReplicas int32, spec config.K8sMetricSpec, nam
 
 	default:
 		return nil, fmt.Errorf("unknown metric source type %q", string(spec.Type))
-	}
-}
-
-func getReplicaCount(resource metav1.Object) (*int32, error) {
-	switch v := resource.(type) {
-	case *appsv1.Deployment:
-		return v.Spec.Replicas, nil
-	case *appsv1.ReplicaSet:
-		return v.Spec.Replicas, nil
-	case *appsv1.StatefulSet:
-		return v.Spec.Replicas, nil
-	case *corev1.ReplicationController:
-		return v.Spec.Replicas, nil
-	case *argov1alpha1.Rollout:
-		return v.Spec.Replicas, nil
-	default:
-		return nil, fmt.Errorf("unsupported resource of type %T", v)
-	}
-}
-
-func getSelector(resource metav1.Object) (labels.Selector, error) {
-	switch v := resource.(type) {
-	case *appsv1.Deployment:
-		return metav1.LabelSelectorAsSelector(v.Spec.Selector)
-	case *appsv1.ReplicaSet:
-		return metav1.LabelSelectorAsSelector(v.Spec.Selector)
-	case *appsv1.StatefulSet:
-		return metav1.LabelSelectorAsSelector(v.Spec.Selector)
-	case *corev1.ReplicationController:
-		return labels.Set(v.Spec.Selector).AsSelector(), nil
-	case *argov1alpha1.Rollout:
-		return metav1.LabelSelectorAsSelector(v.Spec.Selector)
-	default:
-		return nil, fmt.Errorf("unsupported resource of type %T", v)
 	}
 }
