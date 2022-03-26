@@ -159,7 +159,7 @@ func main() {
 
 	// Create K8s metric gatherer, with required clients and configuration
 	gatherer := k8smetricget.NewGather(&metricsclient.RESTClient{
-		Client:                *k8sresourceclient.NewForConfigOrDie(clusterConfig),
+		Client:                k8sresourceclient.NewForConfigOrDie(clusterConfig),
 		ExternalMetricsClient: externalclient.NewForConfigOrDie(clusterConfig),
 		CustomMetricsClient: customclient.NewForConfig(
 			clusterConfig,

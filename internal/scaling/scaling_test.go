@@ -18,6 +18,7 @@ package scaling_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -94,6 +95,56 @@ func TestScale_Scale(t *testing.T) {
 					Kind:       "deployment",
 					Name:       "test",
 					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   config.ScalerRunType,
+			},
+			&autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
+		},
+		{
+			"Fail to parse invalid API version",
+			nil,
+			errors.New("unexpected GroupVersion string: invalid/invalid/invalid"),
+			&scaling.Scale{
+				&scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "deployment",
+								Verb:     "update",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, nil, errors.New("fail to update resource")
+								},
+							},
+						},
+					},
+				},
+				&config.Config{},
+				nil,
+				nil,
+			},
+			scale.Info{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(1),
+				},
+				Resource: func() *appsv1.Deployment {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "invalid/invalid/invalid",
 				},
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
@@ -1090,6 +1141,102 @@ func TestScale_Scale(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			result, err := test.scaler.Scale(test.info, test.scaleResource)
+			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
+				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
+				return
+			}
+			if !cmp.Equal(test.expected, result) {
+				t.Errorf("metrics mismatch (-want +got):\n%s", cmp.Diff(test.expected, result))
+			}
+		})
+	}
+}
+
+func TestGetScaleSubResource(t *testing.T) {
+	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
+		if x == nil || y == nil {
+			return x == nil && y == nil
+		}
+		return x.Error() == y.Error()
+	})
+
+	tests := []struct {
+		name         string
+		expected     *autoscalingv1.Scale
+		expectedErr  error
+		scale        *scaling.Scale
+		apiVersion   string
+		kind         string
+		namespace    string
+		resourceName string
+	}{
+		{
+			name:        "Invalid api version",
+			expected:    nil,
+			expectedErr: fmt.Errorf("unexpected GroupVersion string: invalid/invalid/invalid"),
+			scale:       &scaling.Scale{},
+			apiVersion:  "invalid/invalid/invalid",
+		},
+		{
+			name:        "Fail to get scale subresource",
+			expected:    nil,
+			expectedErr: fmt.Errorf("failed to get scale subresource for resource: fail to get scale subresource"),
+			scale: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "test",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, nil, errors.New("fail to get scale subresource")
+								},
+							},
+						},
+					},
+				},
+			},
+			apiVersion:   "test/v1",
+			kind:         "test",
+			namespace:    "test",
+			resourceName: "test",
+		},
+		{
+			name: "Success",
+			expected: &autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 3,
+				},
+			},
+			expectedErr: nil,
+			scale: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
+					Fake: k8stesting.Fake{
+						ReactionChain: []k8stesting.Reactor{
+							&k8stesting.SimpleReactor{
+								Resource: "test",
+								Verb:     "get",
+								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+									return true, &autoscalingv1.Scale{
+										Spec: autoscalingv1.ScaleSpec{
+											Replicas: 3,
+										},
+									}, nil
+								},
+							},
+						},
+					},
+				},
+			},
+			apiVersion:   "test/v1",
+			kind:         "test",
+			namespace:    "test",
+			resourceName: "test",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := test.scale.GetScaleSubResource(test.apiVersion, test.kind, test.namespace, test.resourceName)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return

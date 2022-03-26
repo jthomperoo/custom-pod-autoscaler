@@ -87,7 +87,7 @@ func TestAPI(t *testing.T) {
 		scaler           scaling.Scaler
 	}{
 		{
-			"Fail to get resource metric gathering",
+			"Get metrics fail to get resource",
 			`{"message":"fail getting resource","code":500}`,
 			http.StatusInternalServerError,
 			"GET",
@@ -108,6 +108,39 @@ func TestAPI(t *testing.T) {
 			nil,
 			nil,
 			nil,
+		},
+		{
+			"Get metrics fail to get scale subresource",
+			`{"message":"fail getting scale subresource","code":500}`,
+			http.StatusInternalServerError,
+			"GET",
+			"/api/v1/metrics",
+			&config.Config{
+				Namespace: "test-namespace",
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+			},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
+						},
+					}, nil
+				},
+			},
+			nil,
+			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return nil, errors.New("fail getting scale subresource")
+				},
+			},
 		},
 		{
 			"Get metrics fail metric gathering",
@@ -310,13 +343,38 @@ func TestAPI(t *testing.T) {
 			},
 			nil,
 			nil,
-			&fake.Scaler{
-				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
-					return &autoscalingv1.Scale{
-						Spec: autoscalingv1.ScaleSpec{
-							Replicas: 1,
+			nil,
+		},
+		{
+			"Evaluate fail to get scale subresource",
+			`{"message":"fail to get subresource","code":500}`,
+			http.StatusInternalServerError,
+			"POST",
+			"/api/v1/evaluation",
+			&config.Config{
+				Namespace: "test-namespace",
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+			},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
 						},
 					}, nil
+				},
+			},
+			nil,
+			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return nil, errors.New("fail to get subresource")
 				},
 			},
 		},

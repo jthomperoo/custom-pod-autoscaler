@@ -81,6 +81,37 @@ func TestScaler(t *testing.T) {
 			},
 		},
 		{
+			"Get scale subresource fail",
+			errors.New(`failed to get scale subresource: fail to get scale subresource`),
+			autoscaler.Scaler{
+				Client: &fake.ResourceClient{
+					GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+						return &unstructured.Unstructured{
+							Object: map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"name":      name,
+									"namespace": namespace,
+								},
+							},
+						}, nil
+					},
+				},
+				Config: &config.Config{
+					Namespace: "test namespace",
+					ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
+						Kind:       "deployment",
+						Name:       "test",
+						APIVersion: "apps/v1",
+					},
+				},
+				Scaler: &fake.Scaler{
+					GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+						return nil, errors.New("fail to get scale subresource")
+					},
+				},
+			},
+		},
+		{
 			"Gather metric fail",
 			errors.New("failed to get metrics: fail to get metric"),
 			autoscaler.Scaler{

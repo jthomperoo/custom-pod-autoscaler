@@ -29,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	custommetricsv1 "k8s.io/metrics/pkg/apis/custom_metrics/v1beta2"
-	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	metricsv1beta1 "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
 	"k8s.io/metrics/pkg/client/custom_metrics"
 	"k8s.io/metrics/pkg/client/external_metrics"
@@ -49,7 +48,7 @@ type Client interface {
 
 // RESTClient retrieves Kubernetes metrics through the Kubernetes REST API
 type RESTClient struct {
-	Client                metricsv1beta1.MetricsV1beta1Client
+	Client                metricsv1beta1.MetricsV1beta1Interface
 	ExternalMetricsClient external_metrics.ExternalMetricsClient
 	CustomMetricsClient   custom_metrics.CustomMetricsClient
 }
@@ -66,7 +65,27 @@ func (c *RESTClient) GetResourceMetric(resource v1.ResourceName, namespace strin
 		return nil, time.Time{}, fmt.Errorf("no metrics returned from resource metrics API")
 	}
 
-	res := getPodMetrics(metrics.Items, resource)
+	res := make(podmetrics.MetricsInfo, len(metrics.Items))
+	for _, m := range metrics.Items {
+		podSum := int64(0)
+		missing := len(m.Containers) == 0
+		for _, c := range m.Containers {
+			resValue, found := c.Usage[resource]
+			if !found {
+				missing = true
+				glog.V(4).Infof("missing resource metric %v for %s/%s", resource, m.Namespace, m.Name)
+				break
+			}
+			podSum += resValue.MilliValue()
+		}
+		if !missing {
+			res[m.Name] = podmetrics.Metric{
+				Timestamp: m.Timestamp.Time,
+				Window:    m.Window.Duration,
+				Value:     podSum,
+			}
+		}
+	}
 
 	timestamp := metrics.Items[0].Timestamp.Time
 
@@ -145,29 +164,4 @@ func (c *RESTClient) GetExternalMetric(metricName, namespace string, selector la
 	}
 	timestamp := metrics.Items[0].Timestamp.Time
 	return res, timestamp, nil
-}
-
-func getPodMetrics(rawMetrics []v1beta1.PodMetrics, resource v1.ResourceName) podmetrics.MetricsInfo {
-	res := make(podmetrics.MetricsInfo, len(rawMetrics))
-	for _, m := range rawMetrics {
-		podSum := int64(0)
-		missing := len(m.Containers) == 0
-		for _, c := range m.Containers {
-			resValue, found := c.Usage[resource]
-			if !found {
-				missing = true
-				glog.V(4).Infof("missing resource metric %v for %s/%s", resource, m.Namespace, m.Name)
-				break
-			}
-			podSum += resValue.MilliValue()
-		}
-		if !missing {
-			res[m.Name] = podmetrics.Metric{
-				Timestamp: m.Timestamp.Time,
-				Window:    m.Window.Duration,
-				Value:     podSum,
-			}
-		}
-	}
-	return res
 }

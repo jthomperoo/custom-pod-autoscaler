@@ -198,6 +198,40 @@ func TestPodReadyCount_GetReadyPodsCount(t *testing.T) {
 			"test-namespace",
 			nil,
 		},
+		{
+			"1 ready pod, 1 no status provided, success",
+			1,
+			nil,
+			&fake.PodLister{
+				PodsReactor: func(namespace string) corelisters.PodNamespaceLister {
+					return &fake.PodNamespaceLister{
+						ListReactor: func(selector labels.Selector) (ret []*corev1.Pod, err error) {
+							return []*corev1.Pod{
+								{
+									Status: corev1.PodStatus{
+										Phase: corev1.PodRunning,
+										Conditions: []corev1.PodCondition{
+											{
+												Type:   corev1.PodReady,
+												Status: corev1.ConditionTrue,
+											},
+										},
+									},
+								},
+								{
+									Status: corev1.PodStatus{
+										Phase:      corev1.PodRunning,
+										Conditions: []corev1.PodCondition{},
+									},
+								},
+							}, nil
+						},
+					}
+				},
+			},
+			"test-namespace",
+			nil,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
