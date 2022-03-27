@@ -83,6 +83,9 @@ metric:
     headers:
       exampleHeader: exampleHeaderValue
     parameterMode: query
+    caCert: "/ca.pem"
+    clientCert: "/client.cert"
+    clientKey: "/client.key"
 ```
 
 Breaking this example down:
@@ -103,6 +106,9 @@ Breaking this example down:
   - `parameterMode` = the mode for passing parameters to the target; either
     `query` - as a query parameter, or `body` - as a body parameter. In this
     example it is by query parameter.
+  - `caCert` = an optional path to a CA certificate to trust for an HTTPS request.
+  - `clientCert` = an optional client certificate to use for mutual TLS.
+  - `clientKey` = an optional client key to use for mutual TLS.
 
 ### POST Example
 
