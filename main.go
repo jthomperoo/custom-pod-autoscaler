@@ -175,7 +175,9 @@ func main() {
 		Command: exec.Command,
 	}
 
-	httpExec := &http.Execute{}
+	httpExec := &http.Execute{
+		ClientGenerator: http.DefaultClientGenerator,
+	}
 
 	// Combine executers
 	combinedExecute := &execute.CombinedExecute{

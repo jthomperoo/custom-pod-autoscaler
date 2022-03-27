@@ -19,6 +19,8 @@ package http
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	gohttp "net/http"
@@ -47,9 +49,23 @@ const (
 	QueryParameterKey = "value"
 )
 
+// DefaultClientGenerator generates a Go HTTP client for http requests, loading in the TLS config provided if it is
+// not null. This is the default client generator that simply creates the client and adds the TLS if needed with no
+// extra processing.
+func DefaultClientGenerator(tlsConfig *tls.Config) (*gohttp.Client, error) {
+	if tlsConfig != nil {
+		return &gohttp.Client{
+			Transport: &gohttp.Transport{
+				TLSClientConfig: tlsConfig,
+			},
+		}, nil
+	}
+	return gohttp.DefaultClient, nil
+}
+
 // Execute represents a way to execute HTTP requests with values as parameters.
 type Execute struct {
-	Client gohttp.Client
+	ClientGenerator func(tlsConfig *tls.Config) (*gohttp.Client, error)
 }
 
 // ExecuteWithValue executes an HTTP request with the value provided as
@@ -81,6 +97,16 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 		return "", fmt.Errorf("unknown parameter mode '%s'", method.HTTP.ParameterMode)
 	}
 
+	tlsConfig, err := getTLSConfig(method.HTTP)
+	if err != nil {
+		return "", err
+	}
+
+	httpClient, err := e.ClientGenerator(tlsConfig)
+	if err != nil {
+		return "", err
+	}
+
 	// Add headers
 	for key, val := range method.HTTP.Headers {
 		req.Header.Add(key, val)
@@ -91,7 +117,7 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 	defer cancel()
 
 	// Make request
-	resp, err := e.Client.Do(req.WithContext(ctx))
+	resp, err := httpClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return "", err
 	}
@@ -121,4 +147,41 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 // GetType returns the http executer type
 func (e *Execute) GetType() string {
 	return Type
+}
+
+func getTLSConfig(config *config.HTTP) (*tls.Config, error) {
+	if config.CACert == nil && config.ClientCert == nil && config.ClientKey == nil {
+		return nil, nil
+	}
+
+	var caCertPool *x509.CertPool
+	if config.CACert == nil {
+		caCert, err := ioutil.ReadFile(*config.CACert)
+		if err != nil {
+			return nil, err
+		}
+		caCertPool = x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+	}
+
+	var cert *tls.Certificate
+	if config.ClientCert != nil && config.ClientKey != nil {
+		loadedCert, err := tls.LoadX509KeyPair(*config.ClientCert, *config.ClientKey)
+		if err != nil {
+			return nil, err
+		}
+		cert = &loadedCert
+	}
+
+	tlsConfig := &tls.Config{}
+
+	if caCertPool != nil {
+		tlsConfig.RootCAs = caCertPool
+	}
+
+	if cert != nil {
+		tlsConfig.Certificates = []tls.Certificate{*cert}
+	}
+
+	return tlsConfig, nil
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package http_test
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -120,12 +121,14 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 			},
 			"test",
 			http.Execute{
-				Client: gohttp.Client{
-					Transport: &testHTTPClient{
-						func(req *gohttp.Request) (*gohttp.Response, error) {
-							return nil, errors.New("Test network error!")
+				ClientGenerator: func(tlsConfig *tls.Config) (*gohttp.Client, error) {
+					return &gohttp.Client{
+						Transport: &testHTTPClient{
+							func(req *gohttp.Request) (*gohttp.Response, error) {
+								return nil, errors.New("Test network error!")
+							},
 						},
-					},
+					}, nil
 				},
 			},
 		},
@@ -144,16 +147,18 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 			},
 			"test",
 			http.Execute{
-				Client: func() gohttp.Client {
-					testserver := httptest.NewServer(gohttp.HandlerFunc(func(rw gohttp.ResponseWriter, req *gohttp.Request) {
-						time.Sleep(10 * time.Millisecond)
-						// Send response to be tested
-						rw.Write([]byte(`OK`))
-					}))
-					defer testserver.Close()
+				ClientGenerator: func(tlsConfig *tls.Config) (*gohttp.Client, error) {
+					return func() *gohttp.Client {
+						testserver := httptest.NewServer(gohttp.HandlerFunc(func(rw gohttp.ResponseWriter, req *gohttp.Request) {
+							time.Sleep(10 * time.Millisecond)
+							// Send response to be tested
+							rw.Write([]byte(`OK`))
+						}))
+						defer testserver.Close()
 
-					return *testserver.Client()
-				}(),
+						return testserver.Client()
+					}(), nil
+				},
 			},
 		},
 		{
@@ -170,21 +175,23 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 			},
 			"test",
 			http.Execute{
-				Client: gohttp.Client{
-					Transport: &testHTTPClient{
-						func(req *gohttp.Request) (*gohttp.Response, error) {
-							resp := &gohttp.Response{
-								Body: &testReader{
-									ReadReactor: func(p []byte) (n int, err error) {
-										return 0, errors.New("fail to read body!")
+				ClientGenerator: func(tlsConfig *tls.Config) (*gohttp.Client, error) {
+					return &gohttp.Client{
+						Transport: &testHTTPClient{
+							func(req *gohttp.Request) (*gohttp.Response, error) {
+								resp := &gohttp.Response{
+									Body: &testReader{
+										ReadReactor: func(p []byte) (n int, err error) {
+											return 0, errors.New("fail to read body!")
+										},
 									},
-								},
-								Header: gohttp.Header{},
-							}
-							resp.Header.Set("Content-Length", "1")
-							return resp, nil
+									Header: gohttp.Header{},
+								}
+								resp.Header.Set("Content-Length", "1")
+								return resp, nil
+							},
 						},
-					},
+					}, nil
 				},
 			},
 		},
@@ -206,16 +213,18 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 			},
 			"test",
 			http.Execute{
-				Client: gohttp.Client{
-					Transport: &testHTTPClient{
-						func(req *gohttp.Request) (*gohttp.Response, error) {
-							return &gohttp.Response{
-								Body:       ioutil.NopCloser(strings.NewReader("bad request!")),
-								Header:     gohttp.Header{},
-								StatusCode: 400,
-							}, nil
+				ClientGenerator: func(tlsConfig *tls.Config) (*gohttp.Client, error) {
+					return &gohttp.Client{
+						Transport: &testHTTPClient{
+							func(req *gohttp.Request) (*gohttp.Response, error) {
+								return &gohttp.Response{
+									Body:       ioutil.NopCloser(strings.NewReader("bad request!")),
+									Header:     gohttp.Header{},
+									StatusCode: 400,
+								}, nil
+							},
 						},
-					},
+					}, nil
 				},
 			},
 		},
@@ -242,40 +251,42 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 			},
 			"test",
 			http.Execute{
-				Client: gohttp.Client{
-					Transport: &testHTTPClient{
-						func(req *gohttp.Request) (*gohttp.Response, error) {
+				ClientGenerator: func(tlsConfig *tls.Config) (*gohttp.Client, error) {
+					return &gohttp.Client{
+						Transport: &testHTTPClient{
+							func(req *gohttp.Request) (*gohttp.Response, error) {
 
-							if !cmp.Equal(req.Method, "POST") {
-								return nil, fmt.Errorf("Invalid method, expected 'POST', got '%s'", req.Method)
-							}
+								if !cmp.Equal(req.Method, "POST") {
+									return nil, fmt.Errorf("Invalid method, expected 'POST', got '%s'", req.Method)
+								}
 
-							// Read the request body
-							body, err := ioutil.ReadAll(req.Body)
-							if err != nil {
-								return nil, err
-							}
+								// Read the request body
+								body, err := ioutil.ReadAll(req.Body)
+								if err != nil {
+									return nil, err
+								}
 
-							if !cmp.Equal(req.Header.Get("a"), "testa") {
-								return nil, fmt.Errorf("Missing header 'a'")
-							}
-							if !cmp.Equal(req.Header.Get("b"), "testb") {
-								return nil, fmt.Errorf("Missing header 'a'")
-							}
-							if !cmp.Equal(req.Header.Get("c"), "testc") {
-								return nil, fmt.Errorf("Missing header 'a'")
-							}
-							if !cmp.Equal(string(body), "test") {
-								return nil, fmt.Errorf("Invalid body, expected 'test', got '%s'", body)
-							}
+								if !cmp.Equal(req.Header.Get("a"), "testa") {
+									return nil, fmt.Errorf("Missing header 'a'")
+								}
+								if !cmp.Equal(req.Header.Get("b"), "testb") {
+									return nil, fmt.Errorf("Missing header 'a'")
+								}
+								if !cmp.Equal(req.Header.Get("c"), "testc") {
+									return nil, fmt.Errorf("Missing header 'a'")
+								}
+								if !cmp.Equal(string(body), "test") {
+									return nil, fmt.Errorf("Invalid body, expected 'test', got '%s'", body)
+								}
 
-							return &gohttp.Response{
-								Body:       ioutil.NopCloser(strings.NewReader("Success!")),
-								Header:     gohttp.Header{},
-								StatusCode: 200,
-							}, nil
+								return &gohttp.Response{
+									Body:       ioutil.NopCloser(strings.NewReader("Success!")),
+									Header:     gohttp.Header{},
+									StatusCode: 200,
+								}, nil
+							},
 						},
-					},
+					}, nil
 				},
 			},
 		},
@@ -300,31 +311,33 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 			},
 			"test",
 			http.Execute{
-				Client: gohttp.Client{
-					Transport: &testHTTPClient{
-						func(req *gohttp.Request) (*gohttp.Response, error) {
+				ClientGenerator: func(tlsConfig *tls.Config) (*gohttp.Client, error) {
+					return &gohttp.Client{
+						Transport: &testHTTPClient{
+							func(req *gohttp.Request) (*gohttp.Response, error) {
 
-							if !cmp.Equal(req.Method, "GET") {
-								return nil, fmt.Errorf("Invalid method, expected 'GET', got '%s'", req.Method)
-							}
+								if !cmp.Equal(req.Method, "GET") {
+									return nil, fmt.Errorf("Invalid method, expected 'GET', got '%s'", req.Method)
+								}
 
-							query := req.URL.Query()
+								query := req.URL.Query()
 
-							if !cmp.Equal(query.Get("value"), "test") {
-								return nil, fmt.Errorf("Invalid query param, expected 'test', got '%s'", query.Get("value"))
-							}
+								if !cmp.Equal(query.Get("value"), "test") {
+									return nil, fmt.Errorf("Invalid query param, expected 'test', got '%s'", query.Get("value"))
+								}
 
-							if !cmp.Equal(req.Header.Get("a"), "testa") {
-								return nil, fmt.Errorf("Missing header 'a'")
-							}
+								if !cmp.Equal(req.Header.Get("a"), "testa") {
+									return nil, fmt.Errorf("Missing header 'a'")
+								}
 
-							return &gohttp.Response{
-								Body:       ioutil.NopCloser(strings.NewReader("Success!")),
-								Header:     gohttp.Header{},
-								StatusCode: 200,
-							}, nil
+								return &gohttp.Response{
+									Body:       ioutil.NopCloser(strings.NewReader("Success!")),
+									Header:     gohttp.Header{},
+									StatusCode: 200,
+								}, nil
+							},
 						},
-					},
+					}, nil
 				},
 			},
 		},
@@ -346,27 +359,29 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 			},
 			"test",
 			http.Execute{
-				Client: gohttp.Client{
-					Transport: &testHTTPClient{
-						func(req *gohttp.Request) (*gohttp.Response, error) {
+				ClientGenerator: func(tlsConfig *tls.Config) (*gohttp.Client, error) {
+					return &gohttp.Client{
+						Transport: &testHTTPClient{
+							func(req *gohttp.Request) (*gohttp.Response, error) {
 
-							if !cmp.Equal(req.Method, "GET") {
-								return nil, fmt.Errorf("Invalid method, expected 'GET', got '%s'", req.Method)
-							}
+								if !cmp.Equal(req.Method, "GET") {
+									return nil, fmt.Errorf("Invalid method, expected 'GET', got '%s'", req.Method)
+								}
 
-							query := req.URL.Query()
+								query := req.URL.Query()
 
-							if !cmp.Equal(query.Get("value"), "test") {
-								return nil, fmt.Errorf("Invalid query param, expected 'test', got '%s'", query.Get("value"))
-							}
+								if !cmp.Equal(query.Get("value"), "test") {
+									return nil, fmt.Errorf("Invalid query param, expected 'test', got '%s'", query.Get("value"))
+								}
 
-							return &gohttp.Response{
-								Body:       ioutil.NopCloser(strings.NewReader("Success!")),
-								Header:     gohttp.Header{},
-								StatusCode: 200,
-							}, nil
+								return &gohttp.Response{
+									Body:       ioutil.NopCloser(strings.NewReader("Success!")),
+									Header:     gohttp.Header{},
+									StatusCode: 200,
+								}, nil
+							},
 						},
-					},
+					}, nil
 				},
 			},
 		},
@@ -388,31 +403,33 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 			},
 			"test",
 			http.Execute{
-				Client: gohttp.Client{
-					Transport: &testHTTPClient{
-						func(req *gohttp.Request) (*gohttp.Response, error) {
+				ClientGenerator: func(tlsConfig *tls.Config) (*gohttp.Client, error) {
+					return &gohttp.Client{
+						Transport: &testHTTPClient{
+							func(req *gohttp.Request) (*gohttp.Response, error) {
 
-							if !cmp.Equal(req.Method, "PUT") {
-								return nil, fmt.Errorf("Invalid method, expected 'PUT', got '%s'", req.Method)
-							}
+								if !cmp.Equal(req.Method, "PUT") {
+									return nil, fmt.Errorf("Invalid method, expected 'PUT', got '%s'", req.Method)
+								}
 
-							// Read the request body
-							body, err := ioutil.ReadAll(req.Body)
-							if err != nil {
-								return nil, err
-							}
+								// Read the request body
+								body, err := ioutil.ReadAll(req.Body)
+								if err != nil {
+									return nil, err
+								}
 
-							if !cmp.Equal(string(body), "test") {
-								return nil, fmt.Errorf("Invalid body, expected 'test', got '%s'", body)
-							}
+								if !cmp.Equal(string(body), "test") {
+									return nil, fmt.Errorf("Invalid body, expected 'test', got '%s'", body)
+								}
 
-							return &gohttp.Response{
-								Body:       ioutil.NopCloser(strings.NewReader("Success!")),
-								Header:     gohttp.Header{},
-								StatusCode: 200,
-							}, nil
+								return &gohttp.Response{
+									Body:       ioutil.NopCloser(strings.NewReader("Success!")),
+									Header:     gohttp.Header{},
+									StatusCode: 200,
+								}, nil
+							},
 						},
-					},
+					}, nil
 				},
 			},
 		},

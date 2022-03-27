@@ -39,4 +39,7 @@ type HTTP struct {
 	Headers       map[string]string `json:"headers,omitempty"`
 	SuccessCodes  []int             `json:"successCodes"`
 	ParameterMode string            `json:"parameterMode"`
+	CACert        *string           `json:"caCert"`
+	ClientCert    *string           `json:"clientCert"`
+	ClientKey     *string           `json:"clientKey"`
 }

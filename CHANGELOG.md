@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Three new fields to the `http` method, `caCert`, `clientCert` and `clientKey` which allow paths to be specified to
+certs and keys to support mutual TLS and client certificates.
 
 ## [v2.5.0] - 2022-03-26
 ### Changed
