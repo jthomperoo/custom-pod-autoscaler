@@ -175,7 +175,7 @@ func main() {
 		Command: exec.Command,
 	}
 
-	httpExec := &http.Execute{}
+	httpExec := http.DefaultExecute()
 
 	// Combine executers
 	combinedExecute := &execute.CombinedExecute{
