@@ -5,9 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v2.6.0] - 2022-04-17
 ### Added
-- Three new fields to the `http` method, `caCert`, `clientCert` and `clientKey` which allow paths to be specified to
-certs and keys to support mutual TLS and client certificates.
+- Mutual TLS support for `http` methods.
+  - Three new fields to the `http` method, `caCert`, `clientCert` and `clientKey` which allow paths to be specified to
+  certs and keys to support mutual TLS and client certificates.
 
 ## [v2.5.0] - 2022-03-26
 ### Changed
@@ -244,7 +247,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.5.0...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.6.0...HEAD
+[v2.6.0]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.5.0...v2.6.0
 [v2.5.0]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.4.1...v2.5.0
 [v2.4.1]:
