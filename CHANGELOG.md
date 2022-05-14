@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v2.7.0] - 2022-05-14
 ### Changed
 - Upgraded K8s client libraries to `v0.24.0`.
 - Upgraded to Go `v1.17`.
@@ -252,7 +254,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.6.0...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.7.0...HEAD
+[v2.7.0]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.6.0...v2.7.0
 [v2.6.0]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.5.0...v2.6.0
 [v2.5.0]:
