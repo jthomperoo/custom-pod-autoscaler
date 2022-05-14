@@ -6,7 +6,7 @@ require (
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/golang/glog v1.0.0
 	github.com/google/go-cmp v0.5.8
-	github.com/jthomperoo/k8shorizmetrics v0.0.0-20220514105057-0f0047cab674
+	github.com/jthomperoo/k8shorizmetrics v1.0.0
 	k8s.io/api v0.24.0
 	k8s.io/apimachinery v0.24.0
 	k8s.io/client-go v0.24.0

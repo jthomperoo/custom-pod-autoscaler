@@ -221,6 +221,8 @@ github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/jthomperoo/k8shorizmetrics v0.0.0-20220514105057-0f0047cab674 h1:JzxWUxnjcM3lf0LTxSjVKu0VpzIVtVc+SJw02sQfi/s=
 github.com/jthomperoo/k8shorizmetrics v0.0.0-20220514105057-0f0047cab674/go.mod h1:2VxR9HlR12zKZqS7exYHcgtSUzPRmaIGZYISKDzgtp8=
+github.com/jthomperoo/k8shorizmetrics v1.0.0 h1:GYAOPSbfE760WGj8ic6PH4IQetFuiXjQJUOPFQMIi5Q=
+github.com/jthomperoo/k8shorizmetrics v1.0.0/go.mod h1:MnIAv05IAb/DxcoyvbBrPTjBIfkQbrcBJfZw+hsg+Zo=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
