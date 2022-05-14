@@ -34,11 +34,11 @@ import (
 )
 
 type fakeGetMetric struct {
-	getMetrics func(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error)
+	getMetrics func(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error)
 }
 
-func (m *fakeGetMetric) GetMetrics(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
-	return m.getMetrics(info, podSelector)
+func (m *fakeGetMetric) GetMetrics(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error) {
+	return m.getMetrics(info, podSelector, currentReplicas)
 }
 
 type fakeGetEvaluation struct {
@@ -176,7 +176,7 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error) {
 						return nil, errors.New("fail to get metric")
 					}
 					return &getMetric
@@ -218,7 +218,7 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error) {
 						return []*metric.ResourceMetric{}, nil
 					}
 					return &getMetric
@@ -282,7 +282,7 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error) {
 						return []*metric.ResourceMetric{}, nil
 					}
 					return &getMetric
@@ -339,7 +339,7 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error) {
 						return []*metric.ResourceMetric{}, nil
 					}
 					return &getMetric

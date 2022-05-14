@@ -21,4 +21,11 @@ import (
 	"github.com/jthomperoo/k8shorizmetrics/metrics"
 )
 
-type Metric metrics.Metric
+type Metric struct {
+	CurrentReplicas int32 `json:"current_replicas"`
+	metrics.Metric
+}
+
+func (m *Metric) K8sMetric() *metrics.Metric {
+	return &m.Metric
+}

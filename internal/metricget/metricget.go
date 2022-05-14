@@ -37,7 +37,7 @@ import (
 
 // GetMetricer provides methods for retrieving metrics
 type GetMetricer interface {
-	GetMetrics(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error)
+	GetMetrics(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error)
 }
 
 type K8sMetricGatherer interface {
@@ -53,7 +53,7 @@ type Gatherer struct {
 }
 
 // GetMetrics gathers metrics for the resource supplied
-func (m *Gatherer) GetMetrics(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
+func (m *Gatherer) GetMetrics(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error) {
 	// Query metrics server if requested
 	if m.Config.KubernetesMetricSpecs != nil {
 		glog.V(3).Infoln("K8s Metrics specs provided, attempting to query the K8s metrics server")
@@ -67,7 +67,7 @@ func (m *Gatherer) GetMetrics(info metric.Info, podSelector labels.Selector) ([]
 		} else {
 			glog.V(3).Infof("Successfully retrieved K8s metrics: %+v", gatheredMetrics)
 		}
-		info.KubernetesMetrics = convertK8sMetricsToCPAK8sMetrics(gatheredMetrics)
+		info.KubernetesMetrics = convertK8sMetricsToCPAK8sMetrics(gatheredMetrics, currentReplicas)
 		glog.V(3).Infoln("Finished querying the K8s metrics server")
 	}
 
@@ -205,10 +205,13 @@ func (m *Gatherer) getMetricsForPods(info metric.Info, podSelector labels.Select
 	return metrics, nil
 }
 
-func convertK8sMetricsToCPAK8sMetrics(metrics []*metrics.Metric) []*k8smetric.Metric {
+func convertK8sMetricsToCPAK8sMetrics(metrics []*metrics.Metric, currentReplicas int32) []*k8smetric.Metric {
 	cpaK8sMetrics := []*k8smetric.Metric{}
 	for _, metric := range metrics {
-		cpaK8sMetrics = append(cpaK8sMetrics, (*k8smetric.Metric)(metric))
+		cpaK8sMetrics = append(cpaK8sMetrics, &k8smetric.Metric{
+			Metric:          *metric,
+			CurrentReplicas: currentReplicas,
+		})
 	}
 	return cpaK8sMetrics
 }

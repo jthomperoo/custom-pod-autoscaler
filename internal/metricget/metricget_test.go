@@ -54,12 +54,13 @@ func TestGetMetrics(t *testing.T) {
 	})
 
 	var tests = []struct {
-		description string
-		expectedErr error
-		expected    []*metric.ResourceMetric
-		spec        metric.Info
-		gatherer    metricget.Gatherer
-		podSelector labels.Selector
+		description     string
+		expectedErr     error
+		expected        []*metric.ResourceMetric
+		spec            metric.Info
+		gatherer        metricget.Gatherer
+		podSelector     labels.Selector
+		currentReplicas int32
 	}{
 		{
 			"Invalid run mode",
@@ -88,6 +89,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			nil,
+			0,
 		},
 		{
 			"Per pod error when listing pods",
@@ -116,6 +118,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod pre-metric hook fail",
@@ -163,6 +166,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod single pod single deployment shell execute fail",
@@ -207,6 +211,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod no resources",
@@ -231,6 +236,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod post-metric hook fail",
@@ -284,6 +290,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod no pod in managed deployment, but pod in other deployment with different name in same namespace",
@@ -328,6 +335,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			selectorFromString("app==test"),
+			0,
 		},
 		{
 			"Per pod no pod in managed deployment, but pod in other deployment with same name in different namespace",
@@ -372,6 +380,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod single pod single deployment shell execute success",
@@ -421,6 +430,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod single pod single deployment shell execute success with pre-metric hook",
@@ -476,6 +486,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod single pod single deployment shell execute success with post-metric hook",
@@ -531,6 +542,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod single pod, single replicaset success",
@@ -580,6 +592,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod single pod, single statefulset success",
@@ -629,6 +642,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod single pod, single replicationcontroller success",
@@ -676,6 +690,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod multiple pod single deployment shell execute success",
@@ -736,6 +751,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per resource shell execute fail",
@@ -765,6 +781,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			nil,
+			0,
 		},
 		{
 			"Per resource pre-metric hook fail",
@@ -797,6 +814,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			nil,
+			0,
 		},
 		{
 			"Per resource post-metric hook fail",
@@ -835,6 +853,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			nil,
+			0,
 		},
 		{
 			"Per resource shell execute success",
@@ -869,6 +888,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			nil,
+			0,
 		},
 		{
 			"Per resource shell execute success with pre-metric hook",
@@ -906,6 +926,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			nil,
+			0,
 		},
 		{
 			"Per resource shell execute success with post-metric hook",
@@ -943,6 +964,7 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			nil,
+			0,
 		},
 		{
 			"Per resource shell execute success with K8s metrics",
@@ -1006,6 +1028,7 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per resource shell execute success, fail to get K8s metrics, but RequireKubernetesMetrics: false",
@@ -1060,6 +1083,7 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per resource shell execute failure, fail to get K8s metrics, RequireKubernetesMetrics: true",
@@ -1109,6 +1133,7 @@ func TestGetMetrics(t *testing.T) {
 				},
 			},
 			labels.NewSelector(),
+			0,
 		},
 		{
 			"Per pod single pod, single Argo Rollout success",
@@ -1158,12 +1183,13 @@ func TestGetMetrics(t *testing.T) {
 				}(),
 			},
 			labels.NewSelector(),
+			0,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			metrics, err := test.gatherer.GetMetrics(test.spec, test.podSelector)
+			metrics, err := test.gatherer.GetMetrics(test.spec, test.podSelector, test.currentReplicas)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return

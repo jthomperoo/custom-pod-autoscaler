@@ -71,7 +71,7 @@ func (s *Scaler) Scale() error {
 	metrics, err := s.GetMetricer.GetMetrics(metric.Info{
 		Resource: resource,
 		RunType:  config.ScalerRunType,
-	}, selector)
+	}, selector, scaleResource.Spec.Replicas)
 	if err != nil {
 		return fmt.Errorf("failed to get metrics: %w", err)
 	}

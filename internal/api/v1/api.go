@@ -119,7 +119,7 @@ func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 	metrics, err := api.GetMetricer.GetMetrics(metric.Info{
 		Resource: resource,
 		RunType:  runType,
-	}, selector)
+	}, selector, scaleResource.Spec.Replicas)
 	if err != nil {
 		apiError(w, &apiv1.Error{
 			Message: err.Error(),
@@ -194,7 +194,7 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 	metrics, err := api.GetMetricer.GetMetrics(metric.Info{
 		Resource: resource,
 		RunType:  runType,
-	}, selector)
+	}, selector, scaleResource.Spec.Replicas)
 	if err != nil {
 		apiError(w, &apiv1.Error{
 			Message: err.Error(),

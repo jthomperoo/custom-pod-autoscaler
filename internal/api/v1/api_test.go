@@ -45,13 +45,13 @@ import (
 
 type failGetMetrics struct{}
 
-func (f *failGetMetrics) GetMetrics(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
+func (f *failGetMetrics) GetMetrics(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error) {
 	return nil, errors.New("FAIL GET METRICS")
 }
 
 type successGetMetrics struct{}
 
-func (s *successGetMetrics) GetMetrics(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
+func (s *successGetMetrics) GetMetrics(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error) {
 	return []*metric.ResourceMetric{
 		{
 			Value:    "SUCCESS",
