@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,14 +17,7 @@ limitations under the License.
 package object
 
 import (
-	"time"
-
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/value"
+	"github.com/jthomperoo/k8shorizmetrics/metrics/object"
 )
 
-// Metric (Object) is a metric describing a kubernetes object (for example, hits-per-second on an Ingress object).
-type Metric struct {
-	Current       value.MetricValue `json:"current,omitempty"`
-	ReadyPodCount *int64            `json:"ready_pod_count,omitempty"`
-	Timestamp     time.Time         `json:"timestamp,omitempty"`
-}
+type Metric object.Metric

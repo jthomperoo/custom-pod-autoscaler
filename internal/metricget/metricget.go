@@ -26,9 +26,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute"
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget"
+	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
-	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	"github.com/jthomperoo/k8shorizmetrics/metrics"
+	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -36,7 +37,11 @@ import (
 
 // GetMetricer provides methods for retrieving metrics
 type GetMetricer interface {
-	GetMetrics(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error)
+	GetMetrics(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error)
+}
+
+type K8sMetricGatherer interface {
+	Gather(specs []autoscalingv2.MetricSpec, namespace string, podSelector labels.Selector) ([]*metrics.Metric, error)
 }
 
 // Gatherer handles triggering the metric gathering logic to gather metrics for a resource
@@ -44,31 +49,31 @@ type Gatherer struct {
 	Clientset         kubernetes.Interface
 	Config            *config.Config
 	Execute           execute.Executer
-	K8sMetricGatherer k8smetricget.Gatherer
+	K8sMetricGatherer K8sMetricGatherer
 }
 
 // GetMetrics gathers metrics for the resource supplied
-func (m *Gatherer) GetMetrics(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
-
+func (m *Gatherer) GetMetrics(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
 	// Query metrics server if requested
 	if m.Config.KubernetesMetricSpecs != nil {
 		glog.V(3).Infoln("K8s Metrics specs provided, attempting to query the K8s metrics server")
-		k8sMetricSpec, err := m.K8sMetricGatherer.GetMetrics(info.Resource, m.Config.KubernetesMetricSpecs, m.Config.Namespace, scaleResource)
+		gatheredMetrics, err := m.K8sMetricGatherer.Gather(
+			convertCPAMetricSpecsToK8sMetricSpecs(m.Config.KubernetesMetricSpecs), m.Config.Namespace, podSelector)
 		if err != nil {
 			if m.Config.RequireKubernetesMetrics {
 				return nil, fmt.Errorf("failed to get required Kubernetes metrics: %w", err)
 			}
 			glog.Errorf("Failed to retrieve K8s metrics, not required so continuing: %+v", err)
 		} else {
-			glog.V(3).Infof("Successfully retrieved K8s metrics: %+v", k8sMetricSpec)
+			glog.V(3).Infof("Successfully retrieved K8s metrics: %+v", gatheredMetrics)
 		}
-		info.KubernetesMetrics = k8sMetricSpec
+		info.KubernetesMetrics = convertK8sMetricsToCPAK8sMetrics(gatheredMetrics)
 		glog.V(3).Infoln("Finished querying the K8s metrics server")
 	}
 
 	switch m.Config.RunMode {
 	case config.PerPodRunMode:
-		return m.getMetricsForPods(info, scaleResource)
+		return m.getMetricsForPods(info, podSelector)
 	case config.PerResourceRunMode:
 		return m.getMetricsForResource(info)
 	default:
@@ -126,18 +131,11 @@ func (m *Gatherer) getMetricsForResource(info metric.Info) ([]*metric.ResourceMe
 	return info.Metrics, nil
 }
 
-func (m *Gatherer) getMetricsForPods(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
+func (m *Gatherer) getMetricsForPods(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
 	glog.V(3).Infoln("Gathering metrics in per-pod mode")
 
-	glog.V(3).Infoln("Attempting to get pod selector from managed resource")
-	labels, err := labels.Parse(scaleResource.Status.Selector)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get pod selector of managed resource: %w", err)
-	}
-	glog.V(3).Infof("Label selector retrieved: %+v", labels)
-
 	glog.V(3).Infoln("Attempting to get pods being managed")
-	pods, err := m.Clientset.CoreV1().Pods(m.Config.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: labels.String()})
+	pods, err := m.Clientset.CoreV1().Pods(m.Config.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: podSelector.String()})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pods being managed: %w", err)
 	}
@@ -205,4 +203,20 @@ func (m *Gatherer) getMetricsForPods(info metric.Info, scaleResource *autoscalin
 	}
 
 	return metrics, nil
+}
+
+func convertK8sMetricsToCPAK8sMetrics(metrics []*metrics.Metric) []*k8smetric.Metric {
+	cpaK8sMetrics := []*k8smetric.Metric{}
+	for _, metric := range metrics {
+		cpaK8sMetrics = append(cpaK8sMetrics, (*k8smetric.Metric)(metric))
+	}
+	return cpaK8sMetrics
+}
+
+func convertCPAMetricSpecsToK8sMetricSpecs(specs []config.K8sMetricSpec) []autoscalingv2.MetricSpec {
+	k8sSpecs := []autoscalingv2.MetricSpec{}
+	for _, spec := range specs {
+		k8sSpecs = append(k8sSpecs, (autoscalingv2.MetricSpec)(spec))
+	}
+	return k8sSpecs
 }

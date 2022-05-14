@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@ limitations under the License.
 // Package value represents a computed value for a metric, can be either a raw value or an average value
 package value
 
-// MetricValue is a representation of a computed value for a metric, can be either a raw value or an average value
-type MetricValue struct {
-	Value        *int64 `json:"value,omitempty"`
-	AverageValue *int64 `json:"average_value,omitempty"`
-}
+import "github.com/jthomperoo/k8shorizmetrics/metrics/value"
+
+type MetricValue value.MetricValue

@@ -17,51 +17,29 @@ limitations under the License.
 package config
 
 import (
-	autoscaling "k8s.io/api/autoscaling/v2beta2"
-	v1 "k8s.io/api/core/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 )
 
 // K8sMetricSpec defines which metrics to query from the metrics server
-type K8sMetricSpec struct {
-	Type     autoscaling.MetricSourceType `json:"type"`
-	Object   *K8sObjectMetricSource       `json:"object,omitempty"`
-	Pods     *K8sPodsMetricSource         `json:"pods,omitempty"`
-	Resource *K8sResourceMetricSource     `json:"resource,omitempty"`
-	External *K8sExternalMetricSource     `json:"external,omitempty"`
-}
+type K8sMetricSpec autoscalingv2.MetricSpec
 
 // K8sMetricTarget defines the type of metric gathering, either target value, average value, or average utilization of a
 // specific metric
-type K8sMetricTarget struct {
-	Type autoscaling.MetricTargetType `json:"type"`
-}
+type K8sMetricTarget autoscalingv2.MetricTarget
 
 // K8sObjectMetricSource defines gathering metrics for a kubernetes object (for example, hits-per-second on an Ingress
 // object).
-type K8sObjectMetricSource struct {
-	DescribedObject autoscaling.CrossVersionObjectReference `json:"describedObject"`
-	Metric          autoscaling.MetricIdentifier            `json:"metric"`
-	Target          K8sMetricTarget                         `json:"target"`
-}
+type K8sObjectMetricSource autoscalingv2.ObjectMetricSource
 
 // K8sPodsMetricSource defines gathering metrics describing each pod in the current scale target (for example,
 // transactions-processed-per-second).
-type K8sPodsMetricSource struct {
-	Metric autoscaling.MetricIdentifier `json:"metric"`
-	Target K8sMetricTarget              `json:"target"`
-}
+type K8sPodsMetricSource autoscalingv2.PodsMetricSource
 
 // K8sResourceMetricSource defines gathering metrics for a resource metric known to Kubernetes, as specified in requests
 // and limits, describing each pod in the current scale target (e.g. CPU or memory). Such metrics are built in to
 // Kubernetes.
-type K8sResourceMetricSource struct {
-	Name   v1.ResourceName `json:"name" protobuf:"bytes,1,name=name"`
-	Target K8sMetricTarget `json:"target"`
-}
+type K8sResourceMetricSource autoscalingv2.ResourceMetricSource
 
 // K8sExternalMetricSource defines gathering metrics for a metric not associated with any Kubernetes object (for example
 // length of queue in cloud messaging service, or QPS from loadbalancer running outside of cluster).
-type K8sExternalMetricSource struct {
-	Metric autoscaling.MetricIdentifier `json:"metric"`
-	Target K8sMetricTarget              `json:"target"`
-}
+type K8sExternalMetricSource autoscalingv2.ExternalMetricSource

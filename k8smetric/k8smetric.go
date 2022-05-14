@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2022 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,19 +18,7 @@ limitations under the License.
 package k8smetric
 
 import (
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/external"
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/object"
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/pods"
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/resource"
+	"github.com/jthomperoo/k8shorizmetrics/metrics"
 )
 
-// Metric is a metric that has been retrieved from the K8s metrics server
-type Metric struct {
-	CurrentReplicas int32                `json:"current_replicas"`
-	Spec            config.K8sMetricSpec `json:"spec"`
-	Resource        *resource.Metric     `json:"resource,omitempty"`
-	Pods            *pods.Metric         `json:"pods,omitempty"`
-	Object          *object.Metric       `json:"object,omitempty"`
-	External        *external.Metric     `json:"external,omitempty"`
-}
+type Metric metrics.Metric

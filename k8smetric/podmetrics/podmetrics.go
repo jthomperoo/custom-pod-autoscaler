@@ -16,14 +16,8 @@ limitations under the License.
 
 package podmetrics
 
-import "time"
+import (
+	"github.com/jthomperoo/k8shorizmetrics/metrics/podmetrics"
+)
 
-// Metric contains pod metric value (the metric values are expected to be the metric as a milli-value)
-type Metric struct {
-	Timestamp time.Time
-	Window    time.Duration
-	Value     int64
-}
-
-// MetricsInfo contains pod metrics as a map from pod names to MetricsInfo
-type MetricsInfo map[string]Metric
+type Metric podmetrics.Metric

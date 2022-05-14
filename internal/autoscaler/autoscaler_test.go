@@ -30,14 +30,15 @@ import (
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 type fakeGetMetric struct {
-	getMetrics func(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error)
+	getMetrics func(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error)
 }
 
-func (m *fakeGetMetric) GetMetrics(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
-	return m.getMetrics(info, scaleResource)
+func (m *fakeGetMetric) GetMetrics(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
+	return m.getMetrics(info, podSelector)
 }
 
 type fakeGetEvaluation struct {
@@ -112,6 +113,44 @@ func TestScaler(t *testing.T) {
 			},
 		},
 		{
+			"Parse scale subresource selector fail",
+			errors.New(`failed to parse pod selector from scale subresource: unable to parse requirement: found '!', expected: in, notin, =, ==, !=, gt, lt`),
+			autoscaler.Scaler{
+				Client: &fake.ResourceClient{
+					GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+						return &unstructured.Unstructured{
+							Object: map[string]interface{}{
+								"metadata": map[string]interface{}{
+									"name":      name,
+									"namespace": namespace,
+								},
+							},
+						}, nil
+					},
+				},
+				Config: &config.Config{
+					Namespace: "test namespace",
+					ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
+						Kind:       "deployment",
+						Name:       "test",
+						APIVersion: "apps/v1",
+					},
+				},
+				Scaler: &fake.Scaler{
+					GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+						return &autoscalingv1.Scale{
+							Spec: autoscalingv1.ScaleSpec{
+								Replicas: 1,
+							},
+							Status: autoscalingv1.ScaleStatus{
+								Selector: "invalid!",
+							},
+						}, nil
+					},
+				},
+			},
+		},
+		{
 			"Gather metric fail",
 			errors.New("failed to get metrics: fail to get metric"),
 			autoscaler.Scaler{
@@ -137,7 +176,7 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(spec metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
 						return nil, errors.New("fail to get metric")
 					}
 					return &getMetric
@@ -179,7 +218,7 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(spec metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
 						return []*metric.ResourceMetric{}, nil
 					}
 					return &getMetric
@@ -243,7 +282,7 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
 						return []*metric.ResourceMetric{}, nil
 					}
 					return &getMetric
@@ -300,7 +339,7 @@ func TestScaler(t *testing.T) {
 				},
 				GetMetricer: func() *fakeGetMetric {
 					getMetric := fakeGetMetric{}
-					getMetric.getMetrics = func(spec metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
+					getMetric.getMetrics = func(info metric.Info, podSelector labels.Selector) ([]*metric.ResourceMetric, error) {
 						return []*metric.ResourceMetric{}, nil
 					}
 					return &getMetric

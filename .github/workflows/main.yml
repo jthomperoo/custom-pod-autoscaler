@@ -18,16 +18,16 @@ jobs:
       uses: actions/checkout@v1
     - name: Lint, test and build
       run: |
-        # Get golint
+
+        # Get staticcheck
         export PATH=$PATH:$(go env GOPATH)/bin
-        go install golang.org/x/lint/golint@v0.0.0-20201208152925-83fdc39ff7b5
+        go install honnef.co/go/tools/cmd/staticcheck@v0.3.0
 
         # Lint and test
-        make vendor_modules
         make lint
-        make beautify
+        make format
 
-        # Exit if after beautification there are any code differences
+        # Exit if after formatting there are any code differences
         git diff --exit-code
 
         make test

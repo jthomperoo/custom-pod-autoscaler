@@ -17,21 +17,7 @@ limitations under the License.
 package resource
 
 import (
-	"time"
-
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/podmetrics"
-	"k8s.io/apimachinery/pkg/util/sets"
+	"github.com/jthomperoo/k8shorizmetrics/metrics/resource"
 )
 
-// Metric (Resource) is a resource metric known to Kubernetes, as specified in requests and limits, describing each pod
-// in the current scale target (e.g. CPU or memory).  Such metrics are built in to Kubernetes, and have special scaling
-// options on top of those available to normal per-pod metrics (the "pods" source).
-type Metric struct {
-	PodMetricsInfo podmetrics.MetricsInfo `json:"pod_metrics_info"`
-	Requests       map[string]int64       `json:"requests"`
-	ReadyPodCount  int64                  `json:"ready_pod_count"`
-	IgnoredPods    sets.String            `json:"ignored_pods"`
-	MissingPods    sets.String            `json:"missing_pods"`
-	TotalPods      int                    `json:"total_pods"`
-	Timestamp      time.Time              `json:"timestamp,omitempty"`
-}
+type Metric resource.Metric

@@ -46,21 +46,17 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute/http"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute/shell"
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget"
-	metricsclient "github.com/jthomperoo/custom-pod-autoscaler/v2/internal/k8smetricget/metrics"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/metricget"
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/podclient"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/resourceclient"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/scaling"
-	cacheddiscovery "k8s.io/client-go/discovery/cached"
+	"github.com/jthomperoo/k8shorizmetrics"
+	"github.com/jthomperoo/k8shorizmetrics/metricsclient"
+	"github.com/jthomperoo/k8shorizmetrics/podsclient"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	k8sscale "k8s.io/client-go/scale"
-	k8sresourceclient "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
-	customclient "k8s.io/metrics/pkg/client/custom_metrics"
-	externalclient "k8s.io/metrics/pkg/client/external_metrics"
 )
 
 // Version is the version of the Custom Pod Autoscaler, injected in at build time
@@ -158,17 +154,13 @@ func main() {
 	)
 
 	// Create K8s metric gatherer, with required clients and configuration
-	gatherer := k8smetricget.NewGather(&metricsclient.RESTClient{
-		Client:                k8sresourceclient.NewForConfigOrDie(clusterConfig),
-		ExternalMetricsClient: externalclient.NewForConfigOrDie(clusterConfig),
-		CustomMetricsClient: customclient.NewForConfig(
-			clusterConfig,
-			restmapper.NewDeferredDiscoveryRESTMapper(cacheddiscovery.NewMemCacheClient(clientset.Discovery())),
-			customclient.NewAvailableAPIsGetter(clientset.Discovery()),
-		),
-	}, &podclient.OnDemandPodLister{
+	metricsclient := metricsclient.NewClient(clusterConfig, clientset.Discovery())
+	podsclient := &podsclient.OnDemandPodLister{
 		Clientset: clientset,
-	}, time.Duration(loadedConfig.CPUInitializationPeriod)*time.Second, time.Duration(loadedConfig.InitialReadinessDelay)*time.Second)
+	}
+	cpuInitializationPeriod := time.Duration(loadedConfig.CPUInitializationPeriod) * time.Second
+	initialReadinessDelay := time.Duration(loadedConfig.InitialReadinessDelay) * time.Second
+	gatherer := k8shorizmetrics.NewGatherer(metricsclient, podsclient, cpuInitializationPeriod, initialReadinessDelay)
 
 	// Set up shell executer
 	shellExec := &shell.Execute{

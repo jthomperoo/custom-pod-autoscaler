@@ -24,20 +24,26 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/metricget"
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
+	"github.com/jthomperoo/k8shorizmetrics/metrics"
+	"github.com/jthomperoo/k8shorizmetrics/metrics/podmetrics"
+	"github.com/jthomperoo/k8shorizmetrics/metrics/resource"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv1 "k8s.io/api/autoscaling/v1"
-	"k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	fakeappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1/fake"
 	k8stesting "k8s.io/client-go/testing"
 )
+
+func selectorFromString(selectorStr string) labels.Selector {
+	selector, _ := labels.Parse(selectorStr)
+	return selector
+}
 
 func TestGetMetrics(t *testing.T) {
 	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
@@ -48,12 +54,12 @@ func TestGetMetrics(t *testing.T) {
 	})
 
 	var tests = []struct {
-		description   string
-		expectedErr   error
-		expected      []*metric.ResourceMetric
-		spec          metric.Info
-		gatherer      metricget.Gatherer
-		scaleResource *autoscalingv1.Scale
+		description string
+		expectedErr error
+		expected    []*metric.ResourceMetric
+		spec        metric.Info
+		gatherer    metricget.Gatherer
+		podSelector labels.Selector
 	}{
 		{
 			"Invalid run mode",
@@ -84,31 +90,6 @@ func TestGetMetrics(t *testing.T) {
 			nil,
 		},
 		{
-			"Per pod fail to get deployment selector",
-			errors.New(`failed to get pod selector of managed resource: unable to parse requirement: found '!', expected: '=', '!=', '==', 'in', notin'`),
-			nil,
-			metric.Info{
-				Resource: &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test deployment",
-						Namespace: "test namespace",
-					},
-				},
-				RunType: config.ScalerRunType,
-			},
-			metricget.Gatherer{
-				Config: &config.Config{
-					Namespace: "test namespace",
-					RunMode:   config.PerPodRunMode,
-				},
-			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "invalid!",
-				},
-			},
-		},
-		{
 			"Per pod error when listing pods",
 			errors.New("failed to get pods being managed: fail to list pods"),
 			nil,
@@ -134,11 +115,7 @@ func TestGetMetrics(t *testing.T) {
 					return clientset
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod pre-metric hook fail",
@@ -169,7 +146,7 @@ func TestGetMetrics(t *testing.T) {
 					},
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test namespace",
@@ -185,11 +162,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod single pod single deployment shell execute fail",
@@ -217,7 +190,7 @@ func TestGetMetrics(t *testing.T) {
 					RunMode:   config.PerPodRunMode,
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test namespace",
@@ -233,11 +206,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod no resources",
@@ -261,11 +230,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod post-metric hook fail",
@@ -299,7 +264,7 @@ func TestGetMetrics(t *testing.T) {
 					},
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test namespace",
@@ -318,11 +283,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod no pod in managed deployment, but pod in other deployment with different name in same namespace",
@@ -350,7 +311,7 @@ func TestGetMetrics(t *testing.T) {
 					RunMode:   config.PerPodRunMode,
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test managed namespace",
@@ -366,11 +327,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			selectorFromString("app==test"),
 		},
 		{
 			"Per pod no pod in managed deployment, but pod in other deployment with same name in different namespace",
@@ -398,7 +355,7 @@ func TestGetMetrics(t *testing.T) {
 					RunMode:   config.PerPodRunMode,
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test unmanaged namespace",
@@ -414,11 +371,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod single pod single deployment shell execute success",
@@ -451,7 +404,7 @@ func TestGetMetrics(t *testing.T) {
 					RunMode:   config.PerPodRunMode,
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test namespace",
@@ -467,11 +420,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod single pod single deployment shell execute success with pre-metric hook",
@@ -510,7 +459,7 @@ func TestGetMetrics(t *testing.T) {
 					},
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test namespace",
@@ -526,11 +475,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod single pod single deployment shell execute success with post-metric hook",
@@ -569,7 +514,7 @@ func TestGetMetrics(t *testing.T) {
 					},
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test namespace",
@@ -585,11 +530,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod single pod, single replicaset success",
@@ -622,7 +563,7 @@ func TestGetMetrics(t *testing.T) {
 					RunMode:   config.PerPodRunMode,
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test namespace",
@@ -638,11 +579,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod single pod, single statefulset success",
@@ -675,7 +612,7 @@ func TestGetMetrics(t *testing.T) {
 					RunMode:   config.PerPodRunMode,
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test namespace",
@@ -691,11 +628,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod single pod, single replicationcontroller success",
@@ -726,7 +659,7 @@ func TestGetMetrics(t *testing.T) {
 					RunMode:   config.PerPodRunMode,
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test namespace",
@@ -742,11 +675,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod multiple pod single deployment shell execute success",
@@ -783,14 +712,14 @@ func TestGetMetrics(t *testing.T) {
 					RunMode:   config.PerPodRunMode,
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "first pod",
 							Namespace: "test namespace",
 							Labels:    map[string]string{"app": "test"},
 						},
 					},
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "second pod",
 							Namespace: "test namespace",
@@ -806,11 +735,7 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 		{
 			"Per resource shell execute fail",
@@ -1046,11 +971,11 @@ func TestGetMetrics(t *testing.T) {
 					},
 					KubernetesMetricSpecs: []config.K8sMetricSpec{
 						{
-							Type: v2beta2.ResourceMetricSourceType,
-							Resource: &config.K8sResourceMetricSource{
-								Name: v1.ResourceCPU,
-								Target: config.K8sMetricTarget{
-									Type: v2beta2.AverageValueMetricType,
+							Type: autoscalingv2.ResourceMetricSourceType,
+							Resource: &autoscalingv2.ResourceMetricSource{
+								Name: corev1.ResourceCPU,
+								Target: autoscalingv2.MetricTarget{
+									Type: autoscalingv2.AverageValueMetricType,
 								},
 							},
 						},
@@ -1064,17 +989,23 @@ func TestGetMetrics(t *testing.T) {
 					}
 					return &execute
 				}(),
-				K8sMetricGatherer: &fake.Gather{
-					GetMetricsReactor: func(resource metav1.Object, specs []config.K8sMetricSpec, namespace string, scaleResource *autoscalingv1.Scale) ([]*k8smetric.Metric, error) {
-						return []*k8smetric.Metric{
+				K8sMetricGatherer: &fake.Gatherer{
+					GatherReactor: func(specs []autoscalingv2.MetricSpec, namespace string, podSelector labels.Selector) ([]*metrics.Metric, error) {
+						return []*metrics.Metric{
 							{
-								CurrentReplicas: 3,
+								Resource: &resource.Metric{
+									PodMetricsInfo: podmetrics.MetricsInfo{
+										"test": podmetrics.Metric{
+											Value: 5,
+										},
+									},
+								},
 							},
 						}, nil
 					},
 				},
 			},
-			&autoscalingv1.Scale{},
+			labels.NewSelector(),
 		},
 		{
 			"Per resource shell execute success, fail to get K8s metrics, but RequireKubernetesMetrics: false",
@@ -1104,11 +1035,11 @@ func TestGetMetrics(t *testing.T) {
 					RequireKubernetesMetrics: false,
 					KubernetesMetricSpecs: []config.K8sMetricSpec{
 						{
-							Type: v2beta2.ResourceMetricSourceType,
-							Resource: &config.K8sResourceMetricSource{
-								Name: v1.ResourceCPU,
-								Target: config.K8sMetricTarget{
-									Type: v2beta2.AverageValueMetricType,
+							Type: autoscalingv2.ResourceMetricSourceType,
+							Resource: &autoscalingv2.ResourceMetricSource{
+								Name: corev1.ResourceCPU,
+								Target: autoscalingv2.MetricTarget{
+									Type: autoscalingv2.AverageValueMetricType,
 								},
 							},
 						},
@@ -1122,13 +1053,13 @@ func TestGetMetrics(t *testing.T) {
 					}
 					return &execute
 				}(),
-				K8sMetricGatherer: &fake.Gather{
-					GetMetricsReactor: func(resource metav1.Object, specs []config.K8sMetricSpec, namespace string, scaleResource *autoscalingv1.Scale) ([]*k8smetric.Metric, error) {
+				K8sMetricGatherer: &fake.Gatherer{
+					GatherReactor: func(specs []autoscalingv2.MetricSpec, namespace string, podSelector labels.Selector) ([]*metrics.Metric, error) {
 						return nil, errors.New("fail to get K8s metrics!")
 					},
 				},
 			},
-			&autoscalingv1.Scale{},
+			labels.NewSelector(),
 		},
 		{
 			"Per resource shell execute failure, fail to get K8s metrics, RequireKubernetesMetrics: true",
@@ -1153,11 +1084,11 @@ func TestGetMetrics(t *testing.T) {
 					RequireKubernetesMetrics: true,
 					KubernetesMetricSpecs: []config.K8sMetricSpec{
 						{
-							Type: v2beta2.ResourceMetricSourceType,
-							Resource: &config.K8sResourceMetricSource{
-								Name: v1.ResourceCPU,
-								Target: config.K8sMetricTarget{
-									Type: v2beta2.AverageValueMetricType,
+							Type: autoscalingv2.ResourceMetricSourceType,
+							Resource: &autoscalingv2.ResourceMetricSource{
+								Name: corev1.ResourceCPU,
+								Target: autoscalingv2.MetricTarget{
+									Type: autoscalingv2.AverageValueMetricType,
 								},
 							},
 						},
@@ -1171,13 +1102,13 @@ func TestGetMetrics(t *testing.T) {
 					}
 					return &execute
 				}(),
-				K8sMetricGatherer: &fake.Gather{
-					GetMetricsReactor: func(resource metav1.Object, specs []config.K8sMetricSpec, namespace string, scaleResource *autoscalingv1.Scale) ([]*k8smetric.Metric, error) {
+				K8sMetricGatherer: &fake.Gatherer{
+					GatherReactor: func(specs []autoscalingv2.MetricSpec, namespace string, podSelector labels.Selector) ([]*metrics.Metric, error) {
 						return nil, errors.New("fail to get K8s metrics!")
 					},
 				},
 			},
-			&autoscalingv1.Scale{},
+			labels.NewSelector(),
 		},
 		{
 			"Per pod single pod, single Argo Rollout success",
@@ -1210,7 +1141,7 @@ func TestGetMetrics(t *testing.T) {
 					RunMode:   config.PerPodRunMode,
 				},
 				Clientset: k8sfake.NewSimpleClientset(
-					&v1.Pod{
+					&corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test pod",
 							Namespace: "test namespace",
@@ -1226,17 +1157,13 @@ func TestGetMetrics(t *testing.T) {
 					return &execute
 				}(),
 			},
-			&autoscalingv1.Scale{
-				Status: autoscalingv1.ScaleStatus{
-					Selector: "app==test",
-				},
-			},
+			labels.NewSelector(),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			metrics, err := test.gatherer.GetMetrics(test.spec, test.scaleResource)
+			metrics, err := test.gatherer.GetMetrics(test.spec, test.podSelector)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return

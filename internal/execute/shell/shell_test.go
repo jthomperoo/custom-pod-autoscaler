@@ -123,7 +123,7 @@ func TestMain(m *testing.M) {
 			fakeExecCommand("success", func(t *testing.T) {
 				stdinb, err := ioutil.ReadAll(os.Stdin)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, err.Error())
+					fmt.Fprint(os.Stderr, err.Error())
 					os.Exit(1)
 				}
 
@@ -170,7 +170,7 @@ func TestMain(m *testing.M) {
 			fakeExecCommand("success", func(t *testing.T) {
 				stdinb, err := ioutil.ReadAll(os.Stdin)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, err.Error())
+					fmt.Fprint(os.Stderr, err.Error())
 					os.Exit(1)
 				}
 
@@ -217,7 +217,7 @@ func TestMain(m *testing.M) {
 			fakeExecCommand("success", func(t *testing.T) {
 				stdinb, err := ioutil.ReadAll(os.Stdin)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, err.Error())
+					fmt.Fprint(os.Stderr, err.Error())
 					os.Exit(1)
 				}
 
@@ -263,7 +263,7 @@ func TestMain(m *testing.M) {
 			fakeExecCommand("multiple-success", func(t *testing.T) {
 				stdinb, err := ioutil.ReadAll(os.Stdin)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, err.Error())
+					fmt.Fprint(os.Stderr, err.Error())
 					os.Exit(1)
 				}
 
