@@ -17,19 +17,7 @@ limitations under the License.
 package pods
 
 import (
-	"time"
-
-	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric/podmetrics"
-	"k8s.io/apimachinery/pkg/util/sets"
+	"github.com/jthomperoo/k8shorizmetrics/metrics/pods"
 )
 
-// Metric (Pods) is a metric describing each pod in the current scale target (for example,
-// transactions-processed-per-second).  The values will be averaged together before being compared to the target value.
-type Metric struct {
-	PodMetricsInfo podmetrics.MetricsInfo `json:"pod_metrics_info"`
-	ReadyPodCount  int64                  `json:"ready_pod_count"`
-	IgnoredPods    sets.String            `json:"ignored_pods"`
-	MissingPods    sets.String            `json:"missing_pods"`
-	TotalPods      int                    `json:"total_pods"`
-	Timestamp      time.Time              `json:"timestamp,omitempty"`
-}
+type Metric pods.Metric

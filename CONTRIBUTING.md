@@ -134,8 +134,8 @@ the other projects that solved it better and which could serve as inspiration.
 
 Developing this project requires these dependencies:
 
-* [Go](https://golang.org/doc/install) >= `1.16`
-* [Golint](https://github.com/golang/lint) == `v0.0.0-20201208152925-83fdc39ff7b5`
+* [Go](https://golang.org/doc/install) >= `1.17`
+* [staticcheck](https://staticcheck.io/docs/getting-started/) == `v0.3.0 (2022.1)`
 * [Docker](https://docs.docker.com/install/)
 
 To view the docs, you need Python 3 installed:

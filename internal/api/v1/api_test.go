@@ -40,17 +40,18 @@ import (
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 type failGetMetrics struct{}
 
-func (f *failGetMetrics) GetMetrics(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
+func (f *failGetMetrics) GetMetrics(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error) {
 	return nil, errors.New("FAIL GET METRICS")
 }
 
 type successGetMetrics struct{}
 
-func (s *successGetMetrics) GetMetrics(info metric.Info, scaleResource *autoscalingv1.Scale) ([]*metric.ResourceMetric, error) {
+func (s *successGetMetrics) GetMetrics(info metric.Info, podSelector labels.Selector, currentReplicas int32) ([]*metric.ResourceMetric, error) {
 	return []*metric.ResourceMetric{
 		{
 			Value:    "SUCCESS",
@@ -139,6 +140,46 @@ func TestAPI(t *testing.T) {
 			&fake.Scaler{
 				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
 					return nil, errors.New("fail getting scale subresource")
+				},
+			},
+		},
+		{
+			"Get metrics fail to parse scale subresource selector",
+			`{"message":"unable to parse requirement: found '!', expected: in, notin, =, ==, !=, gt, lt","code":500}`,
+			http.StatusInternalServerError,
+			"GET",
+			"/api/v1/metrics",
+			&config.Config{
+				Namespace: "test-namespace",
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+			},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
+						},
+					}, nil
+				},
+			},
+			nil,
+			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+						Status: autoscalingv1.ScaleStatus{
+							Selector: "invalid!",
+						},
+					}, nil
 				},
 			},
 		},
@@ -375,6 +416,46 @@ func TestAPI(t *testing.T) {
 			&fake.Scaler{
 				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
 					return nil, errors.New("fail to get subresource")
+				},
+			},
+		},
+		{
+			"fail to parse scale subresource selector",
+			`{"message":"unable to parse requirement: found '!', expected: in, notin, =, ==, !=, gt, lt","code":500}`,
+			http.StatusInternalServerError,
+			"POST",
+			"/api/v1/evaluation",
+			&config.Config{
+				Namespace: "test-namespace",
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+			},
+			&fake.ResourceClient{
+				GetReactor: func(apiVersion, kind, name, namespace string) (*unstructured.Unstructured, error) {
+					return &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"metadata": map[string]interface{}{
+								"name": name,
+							},
+						},
+					}, nil
+				},
+			},
+			nil,
+			nil,
+			&fake.Scaler{
+				GetScaleSubResourceReactor: func(apiVersion, kind, namespace, name string) (*autoscalingv1.Scale, error) {
+					return &autoscalingv1.Scale{
+						Spec: autoscalingv1.ScaleSpec{
+							Replicas: 1,
+						},
+						Status: autoscalingv1.ScaleStatus{
+							Selector: "invalid!",
+						},
+					}, nil
 				},
 			},
 		},

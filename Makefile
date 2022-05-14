@@ -2,21 +2,21 @@ REGISTRY = custompodautoscaler
 NAME = custom-pod-autoscaler
 VERSION = latest
 
-default: vendor_modules
+default:
 	@echo "=============Building============="
-	CGO_ENABLED=0 GOOS=linux go build -ldflags="-X 'main.Version=$(VERSION)'" -mod vendor -o dist/$(NAME) main.go
+	CGO_ENABLED=0 GOOS=linux go build -ldflags="-X 'main.Version=$(VERSION)'" -o dist/$(NAME) main.go
 	cp LICENSE dist/LICENSE
 
-test: vendor_modules
-	@echo "=============Running unit tests============="
-	go test -mod vendor ./... -cover -coverprofile unit_cover.out
+test:
+	@echo "=============Running tests============="
+	go test ./... -cover -coverprofile coverage.out
 
-lint: vendor_modules
+lint:
 	@echo "=============Linting============="
-	go list -mod vendor ./... | grep -v /vendor/ | xargs -L1 golint -set_exit_status
+	staticcheck ./...
 
-beautify: vendor_modules
-	@echo "=============Beautifying============="
+format:
+	@echo "=============Formatting============="
 	gofmt -s -w .
 	go mod tidy
 
@@ -33,9 +33,6 @@ doc:
 	@echo "=============Serving docs============="
 	mkdocs serve
 
-view_coverage:
+coverage:
 	@echo "=============Loading coverage HTML============="
-	go tool cover -html=unit_cover.out
-
-vendor_modules:
-	go mod vendor
+	go tool cover -html=coverage.out

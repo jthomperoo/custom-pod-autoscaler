@@ -35,6 +35,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/scaling"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 const (
@@ -105,11 +106,20 @@ func (api *API) getMetrics(w http.ResponseWriter, r *http.Request) {
 		runType = config.APIDryRunRunType
 	}
 
+	selector, err := labels.Parse(scaleResource.Status.Selector)
+	if err != nil {
+		apiError(w, &apiv1.Error{
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
 	// Get metrics
 	metrics, err := api.GetMetricer.GetMetrics(metric.Info{
 		Resource: resource,
 		RunType:  runType,
-	}, scaleResource)
+	}, selector, scaleResource.Spec.Replicas)
 	if err != nil {
 		apiError(w, &apiv1.Error{
 			Message: err.Error(),
@@ -171,11 +181,20 @@ func (api *API) getEvaluation(w http.ResponseWriter, r *http.Request) {
 		runType = config.APIDryRunRunType
 	}
 
+	selector, err := labels.Parse(scaleResource.Status.Selector)
+	if err != nil {
+		apiError(w, &apiv1.Error{
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
 	// Get metrics
 	metrics, err := api.GetMetricer.GetMetrics(metric.Info{
 		Resource: resource,
 		RunType:  runType,
-	}, scaleResource)
+	}, selector, scaleResource.Spec.Replicas)
 	if err != nil {
 		apiError(w, &apiv1.Error{
 			Message: err.Error(),

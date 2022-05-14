@@ -31,6 +31,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/scaling"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // Scaler handles scaling up/down the resource being managed; triggering metric gathering and
@@ -61,11 +62,16 @@ func (s *Scaler) Scale() error {
 	}
 	glog.V(2).Infof("Managed scale subresource retrieved: %+v", scaleResource)
 
+	selector, err := labels.Parse(scaleResource.Status.Selector)
+	if err != nil {
+		return fmt.Errorf("failed to parse pod selector from scale subresource: %w", err)
+	}
+
 	glog.V(2).Infoln("Attempting to get resource metrics")
 	metrics, err := s.GetMetricer.GetMetrics(metric.Info{
 		Resource: resource,
 		RunType:  config.ScalerRunType,
-	}, scaleResource)
+	}, selector, scaleResource.Spec.Replicas)
 	if err != nil {
 		return fmt.Errorf("failed to get metrics: %w", err)
 	}

@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Upgraded K8s client libraries to `v0.24.0`.
+- Upgraded to Go `v1.17`.
+- Extracted out internal K8s metrics calculations to use
+[jthomperoo/k8shorizmetrics](https://github.com/jthomperoo/k8shorizmetrics) instead.
 
 ## [v2.6.0] - 2022-04-17
 ### Added
