@@ -18,6 +18,7 @@ nav:
   - Cooldown: 'user-guide/cooldown.md'
   - 'Rest API': 'user-guide/rest-api.md'
   - 'Zero Scaling': 'user-guide/scaling-to-and-from-zero.md'
+  - 'Pausing and Un-pausing scaling': 'user-guide/pausing-and-unpausing-scaling.md'
   - 'Kubernetes Metrics': 'user-guide/kubernetes-metrics.md'
   - 'Migrating v1 to v2': 'user-guide/migrating-v1-to-v2.md'
 - Reference:
