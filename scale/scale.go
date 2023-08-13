@@ -18,7 +18,7 @@ package scale
 
 import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/evaluate"
-	autoscaling "k8s.io/api/autoscaling/v2beta2"
+	autoscaling "k8s.io/api/autoscaling/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

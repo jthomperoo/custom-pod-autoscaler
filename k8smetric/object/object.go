@@ -17,7 +17,7 @@ limitations under the License.
 package object
 
 import (
-	"github.com/jthomperoo/k8shorizmetrics/metrics/object"
+	"github.com/jthomperoo/k8shorizmetrics/v2/metrics/object"
 )
 
 type Metric object.Metric
