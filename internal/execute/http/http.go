@@ -23,8 +23,9 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	gohttp "net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -54,7 +55,7 @@ const (
 func DefaultExecute() *Execute {
 	return &Execute{
 		ClientGenerator: defaultClientGenerator,
-		ReadFile:        ioutil.ReadFile,
+		ReadFile:        os.ReadFile,
 	}
 }
 
@@ -94,7 +95,7 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 	switch method.HTTP.ParameterMode {
 	case BodyParameterMode:
 		// Set body parameter
-		req.Body = ioutil.NopCloser(strings.NewReader(value))
+		req.Body = io.NopCloser(strings.NewReader(value))
 	case QueryParameterMode:
 		// Set query parameter
 		query := req.URL.Query()
@@ -130,7 +131,7 @@ func (e *Execute) ExecuteWithValue(method *config.Method, value string) (string,
 	}
 
 	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}

@@ -26,7 +26,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	gohttp "net/http"
 	"os"
@@ -95,7 +94,7 @@ func main() {
 	}
 
 	// Read in config file
-	configFileData, err := ioutil.ReadFile(configPath)
+	configFileData, err := os.ReadFile(configPath)
 	if err != nil {
 		glog.Fatalf("Fail to read configuration file: %s", err)
 	}
