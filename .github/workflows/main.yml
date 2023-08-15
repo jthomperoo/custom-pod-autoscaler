@@ -21,7 +21,7 @@ jobs:
 
         # Get staticcheck
         export PATH=$PATH:$(go env GOPATH)/bin
-        go install honnef.co/go/tools/cmd/staticcheck@v0.3.0
+        go install honnef.co/go/tools/cmd/staticcheck@v0.4.3
 
         # Lint and test
         make lint
