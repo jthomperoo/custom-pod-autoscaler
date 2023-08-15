@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM python:3.6-slim
+FROM python:3.8-slim
 
 # Install dependencies for debugging
 RUN apt-get update

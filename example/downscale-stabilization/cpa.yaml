@@ -8,7 +8,7 @@ spec:
       containers:
       - name: downscale-stabilization
         image: downscale-stabilization:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
