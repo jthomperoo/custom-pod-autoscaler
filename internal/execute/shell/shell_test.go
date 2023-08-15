@@ -19,7 +19,7 @@ package shell_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -121,7 +121,7 @@ func TestMain(m *testing.M) {
 			},
 			"pipe value",
 			fakeExecCommand("success", func(t *testing.T) {
-				stdinb, err := ioutil.ReadAll(os.Stdin)
+				stdinb, err := io.ReadAll(os.Stdin)
 				if err != nil {
 					fmt.Fprint(os.Stderr, err.Error())
 					os.Exit(1)
@@ -168,7 +168,7 @@ func TestMain(m *testing.M) {
 			},
 			"pipe value",
 			fakeExecCommand("success", func(t *testing.T) {
-				stdinb, err := ioutil.ReadAll(os.Stdin)
+				stdinb, err := io.ReadAll(os.Stdin)
 				if err != nil {
 					fmt.Fprint(os.Stderr, err.Error())
 					os.Exit(1)
@@ -215,7 +215,7 @@ func TestMain(m *testing.M) {
 			},
 			"pipe value",
 			fakeExecCommand("success", func(t *testing.T) {
-				stdinb, err := ioutil.ReadAll(os.Stdin)
+				stdinb, err := io.ReadAll(os.Stdin)
 				if err != nil {
 					fmt.Fprint(os.Stderr, err.Error())
 					os.Exit(1)
@@ -261,7 +261,7 @@ func TestMain(m *testing.M) {
 			},
 			"pipe value",
 			fakeExecCommand("multiple-success", func(t *testing.T) {
-				stdinb, err := ioutil.ReadAll(os.Stdin)
+				stdinb, err := io.ReadAll(os.Stdin)
 				if err != nil {
 					fmt.Fprint(os.Stderr, err.Error())
 					os.Exit(1)

@@ -17,7 +17,7 @@ limitations under the License.
 package resource
 
 import (
-	"github.com/jthomperoo/k8shorizmetrics/metrics/resource"
+	"github.com/jthomperoo/k8shorizmetrics/v2/metrics/resource"
 )
 
 type Metric resource.Metric

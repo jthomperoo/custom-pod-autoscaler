@@ -17,7 +17,7 @@ limitations under the License.
 package pods
 
 import (
-	"github.com/jthomperoo/k8shorizmetrics/metrics/pods"
+	"github.com/jthomperoo/k8shorizmetrics/v2/metrics/pods"
 )
 
 type Metric pods.Metric

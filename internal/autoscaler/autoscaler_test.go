@@ -28,7 +28,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
-	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 )

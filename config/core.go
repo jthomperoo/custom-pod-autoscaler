@@ -17,7 +17,7 @@ limitations under the License.
 package config
 
 import (
-	autoscaling "k8s.io/api/autoscaling/v2beta2"
+	autoscaling "k8s.io/api/autoscaling/v2"
 )
 
 const (

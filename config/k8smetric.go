@@ -17,7 +17,7 @@ limitations under the License.
 package config
 
 import (
-	autoscalingv2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 )
 
 // K8sMetricSpec defines which metrics to query from the metrics server

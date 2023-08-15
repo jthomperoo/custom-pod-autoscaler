@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/config"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/confload"
-	autoscaling "k8s.io/api/autoscaling/v2beta2"
+	autoscaling "k8s.io/api/autoscaling/v2"
 )
 
 const (
@@ -95,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 			map[string]string{
 				"scaleTargetRef": "invalid JSON",
 			},
-			errors.New("invalid format of YAML/JSON field value: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type v2beta2.CrossVersionObjectReference"),
+			errors.New("invalid format of YAML/JSON field value: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type v2.CrossVersionObjectReference"),
 			nil,
 		},
 		{

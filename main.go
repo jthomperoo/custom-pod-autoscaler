@@ -26,7 +26,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	gohttp "net/http"
 	"os"
@@ -49,9 +48,9 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/metricget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/resourceclient"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/scaling"
-	"github.com/jthomperoo/k8shorizmetrics"
-	"github.com/jthomperoo/k8shorizmetrics/metricsclient"
-	"github.com/jthomperoo/k8shorizmetrics/podsclient"
+	"github.com/jthomperoo/k8shorizmetrics/v2"
+	"github.com/jthomperoo/k8shorizmetrics/v2/metricsclient"
+	"github.com/jthomperoo/k8shorizmetrics/v2/podsclient"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -95,7 +94,7 @@ func main() {
 	}
 
 	// Read in config file
-	configFileData, err := ioutil.ReadFile(configPath)
+	configFileData, err := os.ReadFile(configPath)
 	if err != nil {
 		glog.Fatalf("Fail to read configuration file: %s", err)
 	}
