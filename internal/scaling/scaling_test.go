@@ -56,18 +56,18 @@ func TestScale_Scale(t *testing.T) {
 		scaleResource *autoscalingv1.Scale
 	}{
 		{
-			"Fail to update scale for resource",
+			"Fail to patch scale for resource",
 			nil,
-			errors.New("failed to apply scaling changes to resource: fail to update resource"),
+			errors.New("failed to apply scaling changes to resource: fail to patch resource"),
 			&scaling.Scale{
 				&scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
-								Resource: "deployment",
-								Verb:     "update",
+								Resource: "deployments",
+								Verb:     "patch",
 								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, nil, errors.New("fail to update resource")
+									return true, nil, errors.New("fail to patch resource")
 								},
 							},
 						},
