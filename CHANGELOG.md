@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [v2.9.0] - 2023-12-23
+### Changed
+- Switched from performing UPDATE using the K8s API to using PATCH, avoids race condition if resource is modified
+while calculating the target number of replicas. ([#187](https://github.com/jthomperoo/custom-pod-autoscaler/pull/187))
 
 ## [v2.8.0] - 2023-08-15
 ### Changed
@@ -260,7 +264,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.8.0...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.9.0...HEAD
+[v2.9.0]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.8.0...v2.9.0
 [v2.8.0]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.7.0...v2.8.0
 [v2.7.0]:
