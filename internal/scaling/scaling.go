@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -32,6 +33,7 @@ import (
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	k8sscale "k8s.io/client-go/scale"
 )
 
@@ -137,14 +139,17 @@ func (s *Scale) Scale(info scale.Info, scaleResource *autoscalingv1.Scale) (*eva
 		}
 		glog.V(3).Infof("Group version parsed: %+v", resourceGV)
 
-		targetGR := schema.GroupResource{
-			Group:    resourceGV.Group,
-			Resource: info.ScaleTargetRef.Kind,
-		}
+		kindPlural := fmt.Sprintf("%ss", strings.ToLower(info.ScaleTargetRef.Kind))
+		targetGVR := resourceGV.WithResource(kindPlural)
 
 		glog.V(3).Infoln("Attempting to apply scaling changes to resource")
-		scaleResource.Spec.Replicas = targetReplicas
-		_, err = s.Scaler.Scales(info.Namespace).Update(context.Background(), targetGR, scaleResource, metav1.UpdateOptions{})
+
+		// Prepare patch
+		patch := []byte(fmt.Sprintf(`{"spec":{"replicas":%d}}`, targetReplicas))
+
+		glog.V(3).Infof("Applying patch: %s to resource %s in namespace %s", string(patch), scaleResource.Name, info.Namespace)
+
+		_, err = s.Scaler.Scales(info.Namespace).Patch(context.Background(), targetGVR, scaleResource.Name, types.StrategicMergePatchType, patch, metav1.PatchOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply scaling changes to resource: %w", err)
 		}
