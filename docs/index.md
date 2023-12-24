@@ -77,4 +77,4 @@ These two pieces of logic are all the custom logic required to build a Custom Po
 handle all Kubernetes API interactions for scaling/retrieving resources.
 
 See the [examples](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example) or the [getting started
-guide](user-guide/getting-started) for more information.
+guide](user-guide/getting-started.md) for more information.
