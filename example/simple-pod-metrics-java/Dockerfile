@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install wget jq curl openjdk-21-jre -y
 # Install CPA
 RUN wget                                                                                                      \
     -qO-                                                                                                      \
-    https://github.com/jthomperoo/custom-pod-autoscaler/releases/download/v2.9.0/custom-pod-autoscaler.tar.gz \
+    https://github.com/jthomperoo/custom-pod-autoscaler/releases/download/v2.10.0/custom-pod-autoscaler.tar.gz \
     | tar xvz                                                                                                 \
     && mv dist/* /app/
 

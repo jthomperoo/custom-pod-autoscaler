@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v2.10.0] - 2023-12-24
 ### Added
 - Added Python 3.12 Docker image (`custompodautoscaler/python-3-12`).
 ### Removed
@@ -278,7 +280,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.9.0...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.10.0...HEAD
+[v2.10.0]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.9.0...v2.10.0
 [v2.9.0]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.8.0...v2.9.0
 [v2.8.0]:
