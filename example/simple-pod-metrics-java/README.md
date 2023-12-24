@@ -1,10 +1,14 @@
 # Java Simple Pod Metrics Example
+
 This example shows how to make a Custom Pod Autoscaler (CPA) using Java.
-The example extends the OpenJDK 11 CPA base image (custompodautoscaler/openjdk-11) and sets up an environment to allow
-Java to be used to determine metrics and evaluate how to scale.
+
+This example builds a custom docker image with the OpenJDK 21 JRE, based on the [Custom Docker Image
+example](../custom-docker-image/).
+
 The code is verbosely commented and designed to be read and understood for building your own CPAs.
 
 ## Overview
+
 This example contains a docker image of the example Java Custom Pod Autoscaler, alongside using the `flask-metric`
 sample application ([../flask-metric/README.md](../flask-metric/README.md)) as a target to scale up and down.
 
@@ -21,17 +25,21 @@ The CPA exposes two endpoints:
     * Aliased with `evaluation` in the example Dockerfile.
 
 ## Usage
+
 Trying out this example requires a kubernetes cluster to try it out on, this guide will assume you are using Minikube.
 
 ### Enable CPAs
+
 Using this CPA requires CPAs to be enabled on your kubernetes cluster, [follow this guide to set up CPAs on your
 cluster](https://github.com/jthomperoo/custom-pod-autoscaler-operator#installation).
 
 ### Switch to target the Minikube registry
+
 Target the Minikube registry for building the image:
 `eval $(minikube docker-env)`
 
 ### Deploy an app for the CPA to manage
+
 You need to deploy an app for the CPA to manage:
 * Build the example app image.
 `docker build -t flask-metric ../flask-metric`
@@ -40,6 +48,7 @@ You need to deploy an app for the CPA to manage:
 Now you have an app running to manage scaling for.
 
 ### Build CPA image
+
 Once CPAs have been enabled on your cluster, you need to build this example, run these commands to build the example:
 * Build the example image.
 `docker build -t simple-pod-metrics-java .`
@@ -48,6 +57,7 @@ Once CPAs have been enabled on your cluster, you need to build this example, run
 Now the CPA should be running on your cluster, managing the app we previously deployed.
 
 ## Testing the CPA
+
 * List pods.
 `kubectl get pods -l app=flask-metric`
 * Exec into a pod.

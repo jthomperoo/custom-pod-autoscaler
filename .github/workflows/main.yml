@@ -9,19 +9,15 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - name: Set up Go
-      uses: actions/setup-go@v1
+    - uses: actions/setup-go@v4
       with:
-        go-version: 1.21
-      id: go
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v1
+        go-version: '1.21'
+    - uses: actions/checkout@v4
     - name: Lint, test and build
       run: |
 
         # Get staticcheck
         export PATH=$PATH:$(go env GOPATH)/bin
-        go install honnef.co/go/tools/cmd/staticcheck@v0.4.3
 
         # Lint and test
         make lint
@@ -46,19 +42,24 @@ jobs:
         DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
       if: github.event_name != 'pull_request' && github.repository == 'jthomperoo/custom-pod-autoscaler'
       run: |
+
         # Array of images to publish
-        declare -a IMAGES=(python python-3-6 python-3-7 python-3-8 alpine openjdk-11)
+        declare -a IMAGES=(python python-3-8 python-3-12 alpine)
         echo "$DOCKER_PASS" | docker login --username=$DOCKER_USER --password-stdin
+
         if [ ${{ github.event_name }} == "release" ]; then
+
           # This needs to be determined again, due to env vars not being shared between steps
           # https://github.com/actions/starter-workflows/issues/68
           VERSION=$(echo "${{ github.ref }}" | grep -P '([^\/]+$)' -o)
+
           # Go through each image type and publish each one individually
           for image in "${IMAGES[@]}"; do
             docker tag custompodautoscaler/${image}:${VERSION} custompodautoscaler/${image}:latest
             docker push custompodautoscaler/${image}:${VERSION}
             docker push custompodautoscaler/${image}:latest
           done
+
           # Package binary
           tar -czvf custom-pod-autoscaler.tar.gz dist/*
         else
@@ -68,7 +69,7 @@ jobs:
         fi
     - name: Deploy binary
       if: github.event_name == 'release' && github.repository == 'jthomperoo/custom-pod-autoscaler'
-      uses: Shopify/upload-to-release@1.0.0
+      uses: Shopify/upload-to-release@v2.0.0
       with:
         name: custom-pod-autoscaler.tar.gz
         path: custom-pod-autoscaler.tar.gz

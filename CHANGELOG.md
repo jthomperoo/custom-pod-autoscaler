@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Added Python 3.12 Docker image (`custompodautoscaler/python-3-12`).
+### Removed
+- Dropped support for Python 3.6 and 3.7 Docker images (`custompodautoscaler/python-3-6` and
+`custompodautoscaler/python-3-7`) which are EOL ([see Python version lifecycles
+here](https://devguide.python.org/versions/)).
+- Dropped support for OpenJDK image (`custompodautoscaler/openjdk-11`) since the base images are EOL ([see deprecation
+notice here](https://hub.docker.com/_/openjdk)). Instead use a Custom Docker Image and install a JRE into it, [see
+the updated simple-pod-metrics-java example for
+details](https://github.com/jthomperoo/custom-pod-autoscaler/tree/master/example/simple-pod-metrics-java).
+### Changed
+- Updated `custompodautoscaler/python` to track Python 3.12.
+- Updated package dependencies.
+
 ## [v2.9.0] - 2023-12-23
 ### Changed
 - Switched from performing UPDATE using the K8s API to using PATCH, avoids race condition if resource is modified

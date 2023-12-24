@@ -1,8 +1,17 @@
 site_name: Custom Pod Autoscaler
-theme: material
+theme:
+  name: material
+  features:
+    - content.code.copy
 markdown_extensions:
   - mdx_truly_sane_lists
-  - codehilite
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
 plugins:
   - search
 nav:

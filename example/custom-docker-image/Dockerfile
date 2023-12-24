@@ -1,4 +1,4 @@
-# Copyright 2020 The Custom Pod Autoscaler Authors.
+# Copyright 2023 The Custom Pod Autoscaler Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install wget -y
 # Install CPA
 RUN wget                                                                                                      \
     -qO-                                                                                                      \
-    https://github.com/jthomperoo/custom-pod-autoscaler/releases/download/v2.4.0/custom-pod-autoscaler.tar.gz \
+    https://github.com/jthomperoo/custom-pod-autoscaler/releases/download/v2.9.0/custom-pod-autoscaler.tar.gz \
     | tar xvz                                                                                                 \
     && mv dist/* /app/
 
