@@ -3,7 +3,7 @@
 [![Go Report
 Card](https://goreportcard.com/badge/github.com/jthomperoo/custom-pod-autoscaler)](https://goreportcard.com/report/github.com/jthomperoo/custom-pod-autoscaler)
 [![Documentation
-Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=latest)](https://custom-pod-autoscaler.readthedocs.io/en/latest)
+Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=stable)](https://custom-pod-autoscaler.readthedocs.io/en/stable)
 [![License](https://img.shields.io/:license-apache-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 <p>This project is supported by:</p>
@@ -27,7 +27,7 @@ Kubernetes interactions and custom user logic interactions.
 
 A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting
 your own logic; see the [examples for more
-information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v2.9.0/example).
+information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v2.10.0/example).
 
 ## Features
 
