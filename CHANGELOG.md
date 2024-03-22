@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Updated to `k8shorizmetrics/v3`.
+- Partial K8s metrics server errors are logged to help with debugging.
 
 ## [v2.10.0] - 2023-12-24
 ### Added

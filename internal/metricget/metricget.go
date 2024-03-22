@@ -21,6 +21,7 @@ package metricget
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/golang/glog"
@@ -28,7 +29,8 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/k8smetric"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
-	"github.com/jthomperoo/k8shorizmetrics/v2/metrics"
+	"github.com/jthomperoo/k8shorizmetrics/v3"
+	"github.com/jthomperoo/k8shorizmetrics/v3/metrics"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -60,9 +62,25 @@ func (m *Gatherer) GetMetrics(info metric.Info, podSelector labels.Selector, cur
 		gatheredMetrics, err := m.K8sMetricGatherer.Gather(
 			convertCPAMetricSpecsToK8sMetricSpecs(m.Config.KubernetesMetricSpecs), m.Config.Namespace, podSelector)
 		if err != nil {
-			if m.Config.RequireKubernetesMetrics {
-				return nil, fmt.Errorf("failed to get required Kubernetes metrics: %w", err)
+			gatherErr := &k8shorizmetrics.GathererMultiMetricError{}
+			if errors.As(err, &gatherErr) {
+				for i, subErr := range gatherErr.Errors {
+					glog.Errorf("Error when retrieving K8s metrics (%d/%d): %+v", i+1, len(gatherErr.Errors), subErr)
+				}
+
+				if m.Config.RequireKubernetesMetrics {
+					if gatherErr.Partial {
+						return nil, fmt.Errorf("failed to get some (%d/%d) required Kubernetes metrics: %w", len(gatherErr.Errors), len(m.Config.KubernetesMetricSpecs), err)
+					}
+
+					return nil, fmt.Errorf("failed to get all required Kubernetes metrics: %w", err)
+				}
+			} else {
+				if m.Config.RequireKubernetesMetrics {
+					return nil, fmt.Errorf("failed to get required Kubernetes metrics: %w", err)
+				}
 			}
+
 			glog.Errorf("Failed to retrieve K8s metrics, not required so continuing: %+v", err)
 		} else {
 			glog.V(3).Infof("Successfully retrieved K8s metrics: %+v", gatheredMetrics)
@@ -221,5 +239,6 @@ func convertCPAMetricSpecsToK8sMetricSpecs(specs []config.K8sMetricSpec) []autos
 	for _, spec := range specs {
 		k8sSpecs = append(k8sSpecs, (autoscalingv2.MetricSpec)(spec))
 	}
+	glog.V(1).Infof("specs: %+v", k8sSpecs)
 	return k8sSpecs
 }

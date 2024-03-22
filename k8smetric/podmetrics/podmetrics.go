@@ -17,7 +17,7 @@ limitations under the License.
 package podmetrics
 
 import (
-	"github.com/jthomperoo/k8shorizmetrics/v2/metrics/podmetrics"
+	"github.com/jthomperoo/k8shorizmetrics/v3/metrics/podmetrics"
 )
 
 type Metric podmetrics.Metric

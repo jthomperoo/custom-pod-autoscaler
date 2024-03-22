@@ -25,9 +25,10 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/fake"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/metricget"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/metric"
-	"github.com/jthomperoo/k8shorizmetrics/v2/metrics"
-	"github.com/jthomperoo/k8shorizmetrics/v2/metrics/podmetrics"
-	"github.com/jthomperoo/k8shorizmetrics/v2/metrics/resource"
+	"github.com/jthomperoo/k8shorizmetrics/v3"
+	"github.com/jthomperoo/k8shorizmetrics/v3/metrics"
+	"github.com/jthomperoo/k8shorizmetrics/v3/metrics/podmetrics"
+	"github.com/jthomperoo/k8shorizmetrics/v3/metrics/resource"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
@@ -1086,6 +1087,126 @@ func TestGetMetrics(t *testing.T) {
 			0,
 		},
 		{
+			description: "Per resource shell execute success, partial failure when getting K8s metrics, but RequireKubernetesMetrics: false",
+			expectedErr: nil,
+			expected: []*metric.ResourceMetric{
+				{
+					Resource: "test deployment",
+					Value:    "test value",
+				},
+			},
+			spec: metric.Info{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+				},
+				RunType: config.ScalerRunType,
+			},
+			gatherer: metricget.Gatherer{
+				Config: &config.Config{
+					Namespace: "test namespace",
+					RunMode:   config.PerResourceRunMode,
+					PostMetric: &config.Method{
+						Type: "pre-metric",
+					},
+					RequireKubernetesMetrics: false,
+					KubernetesMetricSpecs: []config.K8sMetricSpec{
+						{
+							Type: autoscalingv2.ResourceMetricSourceType,
+							Resource: &autoscalingv2.ResourceMetricSource{
+								Name: corev1.ResourceCPU,
+								Target: autoscalingv2.MetricTarget{
+									Type: autoscalingv2.AverageValueMetricType,
+								},
+							},
+						},
+					},
+				},
+				Clientset: k8sfake.NewSimpleClientset(),
+				Execute: func() *fake.Execute {
+					execute := fake.Execute{}
+					execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+						return "test value", nil
+					}
+					return &execute
+				}(),
+				K8sMetricGatherer: &fake.Gatherer{
+					GatherReactor: func(specs []autoscalingv2.MetricSpec, namespace string, podSelector labels.Selector) ([]*metrics.Metric, error) {
+						return nil, &k8shorizmetrics.GathererMultiMetricError{
+							Partial: true,
+							Errors: []error{
+								errors.New("test error"),
+							},
+						}
+					},
+				},
+			},
+			podSelector:     labels.NewSelector(),
+			currentReplicas: 0,
+		},
+		{
+			description: "Per resource shell execute success, full failure when getting K8s metrics, but RequireKubernetesMetrics: false",
+			expectedErr: nil,
+			expected: []*metric.ResourceMetric{
+				{
+					Resource: "test deployment",
+					Value:    "test value",
+				},
+			},
+			spec: metric.Info{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+				},
+				RunType: config.ScalerRunType,
+			},
+			gatherer: metricget.Gatherer{
+				Config: &config.Config{
+					Namespace: "test namespace",
+					RunMode:   config.PerResourceRunMode,
+					PostMetric: &config.Method{
+						Type: "pre-metric",
+					},
+					RequireKubernetesMetrics: false,
+					KubernetesMetricSpecs: []config.K8sMetricSpec{
+						{
+							Type: autoscalingv2.ResourceMetricSourceType,
+							Resource: &autoscalingv2.ResourceMetricSource{
+								Name: corev1.ResourceCPU,
+								Target: autoscalingv2.MetricTarget{
+									Type: autoscalingv2.AverageValueMetricType,
+								},
+							},
+						},
+					},
+				},
+				Clientset: k8sfake.NewSimpleClientset(),
+				Execute: func() *fake.Execute {
+					execute := fake.Execute{}
+					execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+						return "test value", nil
+					}
+					return &execute
+				}(),
+				K8sMetricGatherer: &fake.Gatherer{
+					GatherReactor: func(specs []autoscalingv2.MetricSpec, namespace string, podSelector labels.Selector) ([]*metrics.Metric, error) {
+						return nil, &k8shorizmetrics.GathererMultiMetricError{
+							Partial: false,
+							Errors: []error{
+								errors.New("test error"),
+							},
+						}
+					},
+				},
+			},
+			podSelector:     labels.NewSelector(),
+			currentReplicas: 0,
+		},
+		{
 			"Per resource shell execute failure, fail to get K8s metrics, RequireKubernetesMetrics: true",
 			errors.New("failed to get required Kubernetes metrics: fail to get K8s metrics!"),
 			nil,
@@ -1134,6 +1255,126 @@ func TestGetMetrics(t *testing.T) {
 			},
 			labels.NewSelector(),
 			0,
+		},
+		{
+			description: "Per resource shell execute success, partial failure when getting K8s metrics, RequireKubernetesMetrics: true",
+			expectedErr: errors.New("failed to get some (1/1) required Kubernetes metrics: gatherer multi metric error: 1 errors, first error is test error"),
+			expected: []*metric.ResourceMetric{
+				{
+					Resource: "test deployment",
+					Value:    "test value",
+				},
+			},
+			spec: metric.Info{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+				},
+				RunType: config.ScalerRunType,
+			},
+			gatherer: metricget.Gatherer{
+				Config: &config.Config{
+					Namespace: "test namespace",
+					RunMode:   config.PerResourceRunMode,
+					PostMetric: &config.Method{
+						Type: "pre-metric",
+					},
+					RequireKubernetesMetrics: true,
+					KubernetesMetricSpecs: []config.K8sMetricSpec{
+						{
+							Type: autoscalingv2.ResourceMetricSourceType,
+							Resource: &autoscalingv2.ResourceMetricSource{
+								Name: corev1.ResourceCPU,
+								Target: autoscalingv2.MetricTarget{
+									Type: autoscalingv2.AverageValueMetricType,
+								},
+							},
+						},
+					},
+				},
+				Clientset: k8sfake.NewSimpleClientset(),
+				Execute: func() *fake.Execute {
+					execute := fake.Execute{}
+					execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+						return "test value", nil
+					}
+					return &execute
+				}(),
+				K8sMetricGatherer: &fake.Gatherer{
+					GatherReactor: func(specs []autoscalingv2.MetricSpec, namespace string, podSelector labels.Selector) ([]*metrics.Metric, error) {
+						return nil, &k8shorizmetrics.GathererMultiMetricError{
+							Partial: true,
+							Errors: []error{
+								errors.New("test error"),
+							},
+						}
+					},
+				},
+			},
+			podSelector:     labels.NewSelector(),
+			currentReplicas: 0,
+		},
+		{
+			description: "Per resource shell execute success, full failure when getting K8s metrics, RequireKubernetesMetrics: true",
+			expectedErr: errors.New("failed to get all required Kubernetes metrics: gatherer multi metric error: 1 errors, first error is test error"),
+			expected: []*metric.ResourceMetric{
+				{
+					Resource: "test deployment",
+					Value:    "test value",
+				},
+			},
+			spec: metric.Info{
+				Resource: &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test deployment",
+						Namespace: "test namespace",
+					},
+				},
+				RunType: config.ScalerRunType,
+			},
+			gatherer: metricget.Gatherer{
+				Config: &config.Config{
+					Namespace: "test namespace",
+					RunMode:   config.PerResourceRunMode,
+					PostMetric: &config.Method{
+						Type: "pre-metric",
+					},
+					RequireKubernetesMetrics: true,
+					KubernetesMetricSpecs: []config.K8sMetricSpec{
+						{
+							Type: autoscalingv2.ResourceMetricSourceType,
+							Resource: &autoscalingv2.ResourceMetricSource{
+								Name: corev1.ResourceCPU,
+								Target: autoscalingv2.MetricTarget{
+									Type: autoscalingv2.AverageValueMetricType,
+								},
+							},
+						},
+					},
+				},
+				Clientset: k8sfake.NewSimpleClientset(),
+				Execute: func() *fake.Execute {
+					execute := fake.Execute{}
+					execute.ExecuteWithValueReactor = func(method *config.Method, value string) (string, error) {
+						return "test value", nil
+					}
+					return &execute
+				}(),
+				K8sMetricGatherer: &fake.Gatherer{
+					GatherReactor: func(specs []autoscalingv2.MetricSpec, namespace string, podSelector labels.Selector) ([]*metrics.Metric, error) {
+						return nil, &k8shorizmetrics.GathererMultiMetricError{
+							Partial: false,
+							Errors: []error{
+								errors.New("test error"),
+							},
+						}
+					},
+				},
+			},
+			podSelector:     labels.NewSelector(),
+			currentReplicas: 0,
 		},
 		{
 			"Per pod single pod, single Argo Rollout success",
