@@ -17,7 +17,7 @@ limitations under the License.
 package external
 
 import (
-	"github.com/jthomperoo/k8shorizmetrics/v2/metrics/external"
+	"github.com/jthomperoo/k8shorizmetrics/v3/metrics/external"
 )
 
 type Metric external.Metric

@@ -17,7 +17,7 @@ limitations under the License.
 package fake
 
 import (
-	"github.com/jthomperoo/k8shorizmetrics/v2/metrics"
+	"github.com/jthomperoo/k8shorizmetrics/v3/metrics"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	"k8s.io/apimachinery/pkg/labels"
 )

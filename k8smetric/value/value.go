@@ -17,6 +17,6 @@ limitations under the License.
 // Package value represents a computed value for a metric, can be either a raw value or an average value
 package value
 
-import "github.com/jthomperoo/k8shorizmetrics/v2/metrics/value"
+import "github.com/jthomperoo/k8shorizmetrics/v3/metrics/value"
 
 type MetricValue value.MetricValue

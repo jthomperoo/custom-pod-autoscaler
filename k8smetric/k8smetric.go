@@ -18,7 +18,7 @@ limitations under the License.
 package k8smetric
 
 import (
-	"github.com/jthomperoo/k8shorizmetrics/v2/metrics"
+	"github.com/jthomperoo/k8shorizmetrics/v3/metrics"
 )
 
 type Metric struct {
