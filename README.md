@@ -8,8 +8,8 @@ Status](https://readthedocs.org/projects/custom-pod-autoscaler/badge/?version=st
 
 <p>This project is supported by:</p>
 <p>
-  <a href="https://www.digitalocean.com/">
-    <img src="https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/SVG/DO_Logo_horizontal_blue.svg" width="201px">
+  <a href="https://www.businesssimulations.com/">
+    <img src="https://businesssimulations.com/img/logos/logo_nostrap_tp_410.webp">
   </a>
 </p>
 
@@ -27,7 +27,7 @@ Kubernetes interactions and custom user logic interactions.
 
 A Custom Pod Autoscaler can be created by using this project, extending the Docker base images provided and inserting
 your own logic; see the [examples for more
-information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v2.11.0/example).
+information](https://github.com/jthomperoo/custom-pod-autoscaler/tree/v2.12.0/example).
 
 ## Features
 

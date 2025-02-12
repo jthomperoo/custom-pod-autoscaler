@@ -5,7 +5,7 @@ go 1.24
 toolchain go1.24.0
 
 require (
-	github.com/jthomperoo/custom-pod-autoscaler/v2 v2.11.0
+	github.com/jthomperoo/custom-pod-autoscaler/v2 v2.12.0
 	k8s.io/api v0.32.1
 	k8s.io/apimachinery v0.32.1
 	k8s.io/client-go v0.32.1
