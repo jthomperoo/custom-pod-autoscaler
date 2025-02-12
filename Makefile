@@ -13,7 +13,7 @@ test:
 
 lint:
 	@echo "=============Linting============="
-	go run honnef.co/go/tools/cmd/staticcheck@v0.4.6 ./...
+	go run honnef.co/go/tools/cmd/staticcheck@v0.6.0 ./...
 
 format:
 	@echo "=============Formatting============="
@@ -23,10 +23,10 @@ format:
 docker: default
 	@echo "=============Building docker images============="
 	docker ps
-	docker build --target=python-3-8 -t $(REGISTRY)/python-3-8:$(VERSION) .
 	docker build --target=python-3-12 -t $(REGISTRY)/python-3-12:$(VERSION) .
+	docker build --target=python-3-13 -t $(REGISTRY)/python-3-13:$(VERSION) .
 	docker build --target=alpine -t $(REGISTRY)/alpine:$(VERSION) .
-	docker tag $(REGISTRY)/python-3-12:$(VERSION) $(REGISTRY)/python:$(VERSION)
+	docker tag $(REGISTRY)/python-3-13:$(VERSION) $(REGISTRY)/python:$(VERSION)
 
 doc:
 	@echo "=============Serving docs============="

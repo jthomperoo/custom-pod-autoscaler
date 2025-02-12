@@ -1,9 +1,11 @@
 name: main
+
 on:
   push:
   pull_request:
   release:
     types: [created]
+
 jobs:
   build:
     name: Build
@@ -11,7 +13,7 @@ jobs:
     steps:
     - uses: actions/setup-go@v4
       with:
-        go-version: '1.21'
+        go-version: '1.24'
     - uses: actions/checkout@v4
     - name: Lint, test and build
       run: |
@@ -44,7 +46,7 @@ jobs:
       run: |
 
         # Array of images to publish
-        declare -a IMAGES=(python python-3-8 python-3-12 alpine)
+        declare -a IMAGES=(python python-3-12 python-3-13 alpine)
         echo "$DOCKER_PASS" | docker login --username=$DOCKER_USER --password-stdin
 
         if [ ${{ github.event_name }} == "release" ]; then
