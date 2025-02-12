@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2025 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -385,7 +385,7 @@ func TestExecute_ExecuteWithValue(t *testing.T) {
 			s := &shell.Execute{test.command}
 			result, err := s.ExecuteWithValue(test.method, test.pipeValue)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
-				t.Errorf(result)
+				t.Error(result)
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return
 			}
