@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -34,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/restmapper"
 	k8sscale "k8s.io/client-go/scale"
 )
 
@@ -49,6 +49,7 @@ type Scale struct {
 	Config                   *config.Config
 	Execute                  execute.Executer
 	StabilizationEvaluations []TimestampedEvaluation
+	RESTMapper               restmapper.DeferredDiscoveryRESTMapper
 }
 
 // TimestampedEvaluation is used to associate an evaluation with a timestamp, used in stabilizing evaluations
@@ -133,14 +134,12 @@ func (s *Scale) Scale(info scale.Info, scaleResource *autoscalingv1.Scale) (*eva
 		glog.V(0).Infof("Rescaling from %d to %d replicas", currentReplicas, targetReplicas)
 		glog.V(3).Infoln("Attempting to parse group version")
 		// Parse group version
-		resourceGV, err := schema.ParseGroupVersion(info.ScaleTargetRef.APIVersion)
+		resourceGK := schema.FromAPIVersionAndKind(info.ScaleTargetRef.APIVersion, info.ScaleTargetRef.Kind)
+		mapping, err := s.RESTMapper.RESTMapping(resourceGK.GroupKind(), resourceGK.Version)
 		if err != nil {
 			return nil, err
 		}
-		glog.V(3).Infof("Group version parsed: %+v", resourceGV)
-
-		kindPlural := fmt.Sprintf("%ss", strings.ToLower(info.ScaleTargetRef.Kind))
-		targetGVR := resourceGV.WithResource(kindPlural)
+		glog.V(3).Infof("Group version parsed: %+v", mapping.Resource)
 
 		glog.V(3).Infoln("Attempting to apply scaling changes to resource")
 
@@ -149,7 +148,7 @@ func (s *Scale) Scale(info scale.Info, scaleResource *autoscalingv1.Scale) (*eva
 
 		glog.V(3).Infof("Applying patch: %s to resource %s in namespace %s", string(patch), scaleResource.Name, info.Namespace)
 
-		_, err = s.Scaler.Scales(info.Namespace).Patch(context.Background(), targetGVR, scaleResource.Name, types.StrategicMergePatchType, patch, metav1.PatchOptions{})
+		_, err = s.Scaler.Scales(info.Namespace).Patch(context.Background(), mapping.Resource, scaleResource.Name, types.StrategicMergePatchType, patch, metav1.PatchOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply scaling changes to resource: %w", err)
 		}

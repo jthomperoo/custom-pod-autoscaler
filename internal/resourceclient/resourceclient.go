@@ -18,14 +18,12 @@ package resourceclient
 
 import (
 	"context"
-	"fmt"
-
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/restmapper"
 )
 
 // Client provides methods for retrieving arbitrary Kubernetes resources, returned as generalised metav1.Object, which
@@ -37,31 +35,21 @@ type Client interface {
 // UnstructuredClient is an implementation of the arbitrary resource client that uses a dynamic Kubernetes interface,
 // retrieving unstructured k8s objects and converting them to metav1.Object
 type UnstructuredClient struct {
-	Dynamic dynamic.Interface
+	Dynamic    dynamic.Interface
+	RESTMapper restmapper.DeferredDiscoveryRESTMapper
 }
 
 // Get takes descriptors of a Kubernetes object (api version, kind, name, namespace) and fetches the matching object,
 // returning it as an unstructured Kubernetes resource
 func (u *UnstructuredClient) Get(apiVersion string, kind string, name string, namespace string) (*unstructured.Unstructured, error) {
-	// TODO: update this to be less hacky
-	// Convert to plural and lowercase
-	kindPlural := fmt.Sprintf("%ss", strings.ToLower(kind))
-
-	// Parse group version
-	resourceGV, err := schema.ParseGroupVersion(apiVersion)
+	resourceGK := schema.FromAPIVersionAndKind(apiVersion, kind)
+	mapping, err := u.RESTMapper.RESTMapping(resourceGK.GroupKind(), resourceGK.Version)
 	if err != nil {
 		return nil, err
 	}
 
-	// Build GVR
-	resourceGVR := schema.GroupVersionResource{
-		Group:    resourceGV.Group,
-		Version:  resourceGV.Version,
-		Resource: kindPlural,
-	}
-
 	// Get resource
-	resource, err := u.Dynamic.Resource(resourceGVR).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	resource, err := u.Dynamic.Resource(mapping.Resource).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -51,6 +51,8 @@ import (
 	"github.com/jthomperoo/k8shorizmetrics/v3"
 	"github.com/jthomperoo/k8shorizmetrics/v3/metricsclient"
 	"github.com/jthomperoo/k8shorizmetrics/v3/podsclient"
+	"k8s.io/client-go/discovery"
+	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -123,11 +125,11 @@ func main() {
 		glog.Fatalf("Fail to set up Kubernetes dynamic client: %s", err)
 	}
 
-	// Get group resources
-	groupResources, err := restmapper.GetAPIGroupResources(clientset.Discovery())
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(clusterConfig)
 	if err != nil {
-		glog.Fatalf("Fail get group resources: %s", err)
+		glog.Fatalf("Fail to set up Kubernetes discovery client: %s", err)
 	}
+	cachedDiscoveryClient := memory.NewMemCacheClient(discoveryClient)
 
 	// Set logging level
 	err = flag.Lookup("v").Value.Set(strconv.Itoa(int(loadedConfig.LogVerbosity)))
@@ -140,20 +142,19 @@ func main() {
 
 	// Set up resource client
 	resourceClient := &resourceclient.UnstructuredClient{
-		Dynamic: dynamicClient,
+		Dynamic:    dynamicClient,
+		RESTMapper: *restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient),
 	}
 
 	scaleClient := k8sscale.New(
 		clientset.RESTClient(),
-		restmapper.NewDiscoveryRESTMapper(groupResources),
+		restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient),
 		dynamic.LegacyAPIPathResolverFunc,
-		k8sscale.NewDiscoveryScaleKindResolver(
-			clientset.Discovery(),
-		),
+		k8sscale.NewDiscoveryScaleKindResolver(cachedDiscoveryClient),
 	)
 
 	// Create K8s metric gatherer, with required clients and configuration
-	metricsclient := metricsclient.NewClient(clusterConfig, clientset.Discovery())
+	metricsclient := metricsclient.NewClient(clusterConfig, cachedDiscoveryClient)
 	podsclient := &podsclient.OnDemandPodLister{
 		Clientset: clientset,
 	}
@@ -178,9 +179,10 @@ func main() {
 
 	// Set up scaling client
 	scaler := &scaling.Scale{
-		Scaler:  scaleClient,
-		Config:  loadedConfig,
-		Execute: combinedExecute,
+		Scaler:     scaleClient,
+		Config:     loadedConfig,
+		Execute:    combinedExecute,
+		RESTMapper: *restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient),
 	}
 
 	// Set up metric gathering
