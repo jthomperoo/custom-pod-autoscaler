@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v2.12.1] - 2025-02-14
 ### Fixed
 - Handling of plurals is more robust, it no longer simply adds a 's' to the end which failed for plurals such
 as 'logstash' -> 'logstashes', now queries using the discovery client and REST mapper.
@@ -299,7 +301,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.12.0...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.12.1...HEAD
+[v2.12.1]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.12.0...v2.12.1
 [v2.12.0]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.11.0...v2.12.0
 [v2.11.0]:
