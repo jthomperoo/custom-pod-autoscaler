@@ -2,9 +2,9 @@
 
 The Custom Pod Autoscaler is bundled with the following Docker base images:
 
-- `custompodautoscaler/python` tracks latest stable Python 3.x release (alpine based).
-- `custompodautoscaler/python-3-13` tracks latest stable Python 3.13.x release (alpine based).
-- `custompodautoscaler/python-3-12` tracks latest stable Python 3.12.x release (debian 12 bookworm based).
+- `custompodautoscaler/python` tracks latest stable Python 3.x release (debian based).
+- `custompodautoscaler/python-3-13` tracks latest stable Python 3.13.x release (debian based).
+- `custompodautoscaler/python-3-12` tracks latest stable Python 3.12.x release (debian based).
 - `custompodautoscaler/alpine` tracks latest stable Alpine 3.x release.
 
 ## Deprecated images
