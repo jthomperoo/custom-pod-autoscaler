@@ -5,17 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- Handling of plurals is more robust, it no longer simply adds a 's' to the end which failed for plurals such
+as 'logstash' -> 'logstashes', now queries using the discovery client and REST mapper.
 
 ## [v2.12.0] - 2025-02-12
 ### Added
-- Added support for Python 3.13 Docker image (`custompodautoscaler/python-3-13`)
+- Added support for Python 3.13 Docker image (`custompodautoscaler/python-3-13`).
 ### Changed
-- Upgraded to Go `v1.24`
-- Upgraded package dependencies
+- Upgraded to Go `v1.24`.
+- Upgraded package dependencies.
 - Updated `custompodautoscaler/python` to track Python 3.13.
 - Updated `custompodautoscaler/python-3-12` to track the latest Debian stable version.
 ### Removed
-- Dropped support for Python 3.8 Docker image (`custompodautoscaler/python-3-8`)
+- Dropped support for Python 3.8 Docker image (`custompodautoscaler/python-3-8`).
 
 ## [v2.11.0] - 2024-03-22
 ### Changed
