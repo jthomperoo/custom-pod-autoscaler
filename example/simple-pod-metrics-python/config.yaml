@@ -1,15 +1,16 @@
 evaluate:
   type: "shell"
   timeout: 2500
-  shell: 
+  shell:
     entrypoint: "python"
-    command: 
+    command:
       - "/evaluate.py"
 metric:
   type: "shell"
   timeout: 2500
-  shell: 
+  shell:
     entrypoint: "python"
-    command: 
+    command:
       - "/metric.py"
 runMode: "per-pod"
+logVerbosity: 3

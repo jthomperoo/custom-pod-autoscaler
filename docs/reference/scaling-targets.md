@@ -13,6 +13,8 @@ scale subresource API. For example this means support for:
 * Argo Rollouts
 * Other third party resources.
 
+> To see how to target custom resources [see the Custom Resources page](../user-guide/custom-resources.md).
+
 ## Scale target reference
 
 To tell a Custom Pod Autoscaler which resource to target, provide a `scaleTargetRef` - a description of the resource to

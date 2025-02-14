@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2025 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,16 +18,36 @@ package resourceclient_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/resourceclient"
+	meta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/dynamic"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic/fake"
 	k8stesting "k8s.io/client-go/testing"
 )
+
+func newFakeRestMapper(group string, version string, singular string, plural string) meta.RESTMapper {
+	mapper := meta.NewDefaultRESTMapper([]schema.GroupVersion{})
+
+	groupVersion := fmt.Sprintf("%s/%s", group, version)
+
+	mapper.AddSpecific(schema.FromAPIVersionAndKind(groupVersion, singular), schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: plural,
+	}, schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: singular,
+	}, meta.RESTScopeNamespace)
+
+	return mapper
+}
 
 func TestClient_Get(t *testing.T) {
 	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
@@ -38,114 +58,117 @@ func TestClient_Get(t *testing.T) {
 	})
 
 	var tests = []struct {
-		description           string
-		expected              *unstructured.Unstructured
-		expectedErr           error
-		dynamic               dynamic.Interface
-		unstructuredConverter k8sruntime.UnstructuredConverter
-		apiVersion            string
-		kind                  string
-		name                  string
-		namespace             string
+		description    string
+		expected       *unstructured.Unstructured
+		expectedErr    error
+		resourceClient resourceclient.UnstructuredClient
+		apiVersion     string
+		kind           string
+		name           string
+		namespace      string
 	}{
 		{
-			"Invalid group version, fail to parse",
-			nil,
-			errors.New(`unexpected GroupVersion string: /invalid/`),
-			nil,
-			nil,
-			"/invalid/",
-			"",
-			"",
-			"",
+			description: "Fail to get group version resource, unknown resource",
+			expected:    nil,
+			expectedErr: errors.New(`no matches for kind "unknown" in version "test/v1"`),
+			resourceClient: resourceclient.UnstructuredClient{
+				RESTMapper: newFakeRestMapper("test", "v1", "test", "tests"),
+			},
+			apiVersion: "test/v1",
+			kind:       "unknown",
+			name:       "testname",
+			namespace:  "testnamespace",
 		},
 		{
-			"Fail to get resource",
-			nil,
-			errors.New(`fail to get resource`),
-			func() *fake.FakeDynamicClient {
-				client := fake.NewSimpleDynamicClient(k8sruntime.NewScheme())
-				client.PrependReactor("get", "tests", func(action k8stesting.Action) (bool, k8sruntime.Object, error) {
-					return true, nil, errors.New("fail to get resource")
-				})
-				return client
-			}(),
-			nil,
-			"test/v1",
-			"test",
-			"testname",
-			"testnamespace",
+			description: "Fail to get resource",
+			expected:    nil,
+			expectedErr: errors.New(`fail to get resource`),
+			resourceClient: resourceclient.UnstructuredClient{
+				Dynamic: func() *fake.FakeDynamicClient {
+					client := fake.NewSimpleDynamicClient(k8sruntime.NewScheme())
+					client.PrependReactor("get", "tests", func(action k8stesting.Action) (bool, k8sruntime.Object, error) {
+						return true, nil, errors.New("fail to get resource")
+					})
+					return client
+				}(),
+				RESTMapper: newFakeRestMapper("test", "v1", "test", "tests"),
+			},
+			apiVersion: "test/v1",
+			kind:       "test",
+			name:       "testname",
+			namespace:  "testnamespace",
 		},
 		{
-			"Success, Deployment",
-			&unstructured.Unstructured{
+			description: "Success, Deployment",
+			expected: &unstructured.Unstructured{
 				Object: map[string]interface{}{
 					"metadata": map[string]interface{}{
 						"name":      "testname",
 						"namespace": "testnamespace",
 					},
 					"apiVersion": "apps/v1",
-					"kind":       "Deployment",
+					"kind":       "deployment",
 				},
 			},
-			nil,
-			fake.NewSimpleDynamicClient(k8sruntime.NewScheme(),
-				&unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"apiVersion": "apps/v1",
-						"kind":       "Deployment",
-						"metadata": map[string]interface{}{
-							"namespace": "testnamespace",
-							"name":      "testname",
+			expectedErr: nil,
+			resourceClient: resourceclient.UnstructuredClient{
+				Dynamic: fake.NewSimpleDynamicClient(k8sruntime.NewScheme(),
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "apps/v1",
+							"kind":       "deployment",
+							"metadata": map[string]interface{}{
+								"namespace": "testnamespace",
+								"name":      "testname",
+							},
 						},
 					},
-				},
-			),
-			k8sruntime.DefaultUnstructuredConverter,
-			"apps/v1",
-			"Deployment",
-			"testname",
-			"testnamespace",
+				),
+				RESTMapper: newFakeRestMapper("apps", "v1", "deployment", "deployments"),
+			},
+			apiVersion: "apps/v1",
+			kind:       "deployment",
+			name:       "testname",
+			namespace:  "testnamespace",
 		},
 		{
-			"Success, Argo Rollout",
-			&unstructured.Unstructured{
+			description: "Success, Argo Rollout",
+			expected: &unstructured.Unstructured{
 				Object: map[string]interface{}{
 					"metadata": map[string]interface{}{
 						"name":      "testname",
 						"namespace": "testnamespace",
 					},
 					"apiVersion": "argoproj.io/v1alpha1",
-					"kind":       "Rollout",
+					"kind":       "rollout",
 				},
 			},
-			nil,
-			fake.NewSimpleDynamicClient(k8sruntime.NewScheme(),
-				&unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"apiVersion": "argoproj.io/v1alpha1",
-						"kind":       "Rollout",
-						"metadata": map[string]interface{}{
-							"namespace": "testnamespace",
-							"name":      "testname",
+			expectedErr: nil,
+			resourceClient: resourceclient.UnstructuredClient{
+				Dynamic: fake.NewSimpleDynamicClient(k8sruntime.NewScheme(),
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "argoproj.io/v1alpha1",
+							"kind":       "rollout",
+							"metadata": map[string]interface{}{
+								"namespace": "testnamespace",
+								"name":      "testname",
+							},
 						},
 					},
-				},
-			),
-			k8sruntime.DefaultUnstructuredConverter,
-			"argoproj.io/v1alpha1",
-			"Rollout",
-			"testname",
-			"testnamespace",
+				),
+				RESTMapper: newFakeRestMapper("argoproj.io", "v1alpha1", "rollout", "rollouts"),
+			},
+			apiVersion: "argoproj.io/v1alpha1",
+			kind:       "rollout",
+			name:       "testname",
+			namespace:  "testnamespace",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			scaler := &resourceclient.UnstructuredClient{
-				Dynamic: test.dynamic,
-			}
-			result, err := scaler.Get(test.apiVersion, test.kind, test.name, test.namespace)
+			result, err := test.resourceClient.Get(test.apiVersion, test.kind, test.name, test.namespace)
 			if !cmp.Equal(&err, &test.expectedErr, equateErrorMessage) {
 				t.Errorf("error mismatch (-want +got):\n%s", cmp.Diff(test.expectedErr, err, equateErrorMessage))
 				return

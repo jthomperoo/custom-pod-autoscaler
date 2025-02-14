@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2025 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,12 +32,32 @@ import (
 	autoscalingv1 "k8s.io/api/autoscaling/v1" // Client-go uses the autoscaling/v1 api for its scaling client
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	scaleFake "k8s.io/client-go/scale/fake"
 	k8stesting "k8s.io/client-go/testing"
 )
+
+func newFakeRestMapper(group string, version string, singular string, plural string) meta.RESTMapper {
+	mapper := meta.NewDefaultRESTMapper([]schema.GroupVersion{})
+
+	groupVersion := fmt.Sprintf("%s/%s", group, version)
+
+	mapper.AddSpecific(schema.FromAPIVersionAndKind(groupVersion, singular), schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: plural,
+	}, schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: singular,
+	}, meta.RESTScopeNamespace)
+
+	return mapper
+}
 
 func TestScale_Scale(t *testing.T) {
 	equateErrorMessage := cmp.Comparer(func(x, y error) bool {
@@ -56,11 +76,50 @@ func TestScale_Scale(t *testing.T) {
 		scaleResource *autoscalingv1.Scale
 	}{
 		{
-			"Fail to patch scale for resource",
-			nil,
-			errors.New("failed to apply scaling changes to resource: fail to patch resource"),
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			description: "Fail to retrieve group version, no match",
+			expected:    nil,
+			expectedErr: errors.New(`failed to retrieve group version: no matches for kind "deployment" in version "apps/v1"`),
+			scaler: &scaling.Scale{
+				Scaler:                   nil,
+				Config:                   &config.Config{},
+				StabilizationEvaluations: []scaling.TimestampedEvaluation{},
+				Execute:                  nil,
+				RESTMapper:               newFakeRestMapper("apps", "v1", "unknown", "unknown"),
+			},
+			info: scale.Info{
+				Evaluation: evaluate.Evaluation{
+					TargetReplicas: int32(7),
+				},
+				Resource: func() *appsv1.Deployment {
+					return &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "test",
+							Namespace: "test namespace",
+						},
+					}
+				}(),
+				MinReplicas: 1,
+				MaxReplicas: 10,
+				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
+					Kind:       "deployment",
+					Name:       "test",
+					APIVersion: "apps/v1",
+				},
+				Namespace: "test",
+				RunType:   config.ScalerRunType,
+			},
+			scaleResource: &autoscalingv1.Scale{
+				Spec: autoscalingv1.ScaleSpec{
+					Replicas: 5,
+				},
+			},
+		},
+		{
+			description: "Fail to patch scale for resource",
+			expected:    nil,
+			expectedErr: errors.New("failed to apply scaling changes to resource: fail to patch resource"),
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -73,11 +132,12 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{},
-				nil,
-				nil,
+				Config:                   &config.Config{},
+				StabilizationEvaluations: []scaling.TimestampedEvaluation{},
+				Execute:                  nil,
+				RESTMapper:               newFakeRestMapper("apps", "v1", "deployment", "deployments"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(1),
 				},
@@ -99,81 +159,32 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 3,
 				},
 			},
 		},
 		{
-			"Fail to parse invalid API version",
-			nil,
-			errors.New("unexpected GroupVersion string: invalid/invalid/invalid"),
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
-					Fake: k8stesting.Fake{
-						ReactionChain: []k8stesting.Reactor{
-							&k8stesting.SimpleReactor{
-								Resource: "deployment",
-								Verb:     "update",
-								Reaction: func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-									return true, nil, errors.New("fail to update resource")
-								},
-							},
-						},
-					},
-				},
-				&config.Config{},
-				nil,
-				nil,
-			},
-			scale.Info{
-				Evaluation: evaluate.Evaluation{
-					TargetReplicas: int32(1),
-				},
-				Resource: func() *appsv1.Deployment {
-					return &appsv1.Deployment{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test",
-							Namespace: "test namespace",
-						},
-					}
-				}(),
-				MinReplicas: 1,
-				MaxReplicas: 10,
-				ScaleTargetRef: &autoscalingv2.CrossVersionObjectReference{
-					Kind:       "deployment",
-					Name:       "test",
-					APIVersion: "invalid/invalid/invalid",
-				},
-				Namespace: "test",
-				RunType:   config.ScalerRunType,
-			},
-			&autoscalingv1.Scale{
-				Spec: autoscalingv1.ScaleSpec{
-					Replicas: 3,
-				},
-			},
-		},
-		{
-			"Fail to run pre-scaling hook",
-			nil,
-			errors.New("failed run pre-scaling hook: fail to run pre-scaling hook"),
-			&scaling.Scale{
-				nil,
-				&config.Config{
+			description: "Fail to run pre-scaling hook",
+			expected:    nil,
+			expectedErr: errors.New("failed run pre-scaling hook: fail to run pre-scaling hook"),
+			scaler: &scaling.Scale{
+				Scaler: nil,
+				Config: &config.Config{
 					PreScale: &config.Method{
 						Type: "test",
 					},
 				},
-				&fake.Execute{
+				StabilizationEvaluations: []scaling.TimestampedEvaluation{},
+				Execute: &fake.Execute{
 					ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
 						return "", errors.New("fail to run pre-scaling hook")
 					},
 				},
-				nil,
+				RESTMapper: nil,
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(3),
 				},
@@ -195,31 +206,32 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 2,
 				},
 			},
 		},
 		{
-			"Fail to run post-scaling hook",
-			nil,
-			errors.New("failed to run post-scaling hook: fail to run post-scaling hook"),
-			&scaling.Scale{
-				nil,
-				&config.Config{
+			description: "Fail to run post-scaling hook",
+			expected:    nil,
+			expectedErr: errors.New("failed to run post-scaling hook: fail to run post-scaling hook"),
+			scaler: &scaling.Scale{
+				Scaler: nil,
+				Config: &config.Config{
 					PostScale: &config.Method{
 						Type: "test",
 					},
 				},
-				&fake.Execute{
+				StabilizationEvaluations: []scaling.TimestampedEvaluation{},
+				Execute: &fake.Execute{
 					ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
 						return "", errors.New("fail to run post-scaling hook")
 					},
 				},
-				nil,
+				RESTMapper: nil,
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(3),
 				},
@@ -241,25 +253,26 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 3,
 				},
 			},
 		},
 		{
-			"Success, deployment, autoscaling disabled",
-			&evaluate.Evaluation{
+			description: "Success, deployment, autoscaling disabled",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: 0,
 			},
-			nil,
-			&scaling.Scale{
-				nil,
-				&config.Config{},
-				nil,
-				nil,
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler:                   nil,
+				Config:                   &config.Config{},
+				StabilizationEvaluations: []scaling.TimestampedEvaluation{},
+				Execute:                  nil,
+				RESTMapper:               nil,
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(3),
 				},
@@ -281,20 +294,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 0,
 				},
 			},
 		},
 		{
-			"Success, deployment, scale to 0",
-			&evaluate.Evaluation{
+			description: "Success, deployment, scale to 0",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: int32(0),
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -307,11 +320,12 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{},
-				nil,
-				nil,
+				Config:                   &config.Config{},
+				StabilizationEvaluations: []scaling.TimestampedEvaluation{},
+				Execute:                  nil,
+				RESTMapper:               newFakeRestMapper("apps", "v1", "deployment", "deployments"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(0),
 				},
@@ -333,20 +347,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 5,
 				},
 			},
 		},
 		{
-			"Success, deployment, scale from 0",
-			&evaluate.Evaluation{
+			description: "Success, deployment, scale from 0",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: int32(3),
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -359,11 +373,11 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{},
-				nil,
-				nil,
+				Config:     &config.Config{},
+				Execute:    nil,
+				RESTMapper: newFakeRestMapper("apps", "v1", "deployment", "deployments"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(3),
 				},
@@ -385,33 +399,33 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 0,
 				},
 			},
 		},
 		{
-			"Success, deployment, autoscaling disabled, run pre-scaling hook",
-			&evaluate.Evaluation{
+			description: "Success, deployment, autoscaling disabled, run pre-scaling hook",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: 0,
 			},
-			nil,
-			&scaling.Scale{
-				nil,
-				&config.Config{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: nil,
+				Config: &config.Config{
 					PreScale: &config.Method{
 						Type: "test",
 					},
 				},
-				&fake.Execute{
+				Execute: &fake.Execute{
 					ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
 						return "success", nil
 					},
 				},
-				nil,
+				RESTMapper: nil,
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(3),
 				},
@@ -433,25 +447,25 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 0,
 				},
 			},
 		},
 		{
-			"Success, deployment, no change in scale",
-			&evaluate.Evaluation{
+			description: "Success, deployment, no change in scale",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: 3,
 			},
-			nil,
-			&scaling.Scale{
-				nil,
-				&config.Config{},
-				nil,
-				nil,
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler:     nil,
+				Config:     &config.Config{},
+				Execute:    nil,
+				RESTMapper: nil,
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(3),
 				},
@@ -473,20 +487,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 3,
 				},
 			},
 		},
 		{
-			"Success, deployment, evaluation above max replicas, scale to max replicas",
-			&evaluate.Evaluation{
+			description: "Success, deployment, evaluation above max replicas, scale to max replicas",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: 5,
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -499,11 +513,12 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{},
-				nil,
-				nil,
+				Config:                   &config.Config{},
+				StabilizationEvaluations: []scaling.TimestampedEvaluation{},
+				Execute:                  nil,
+				RESTMapper:               newFakeRestMapper("apps", "v1", "deployment", "deployments"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(10),
 				},
@@ -525,20 +540,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 2,
 				},
 			},
 		},
 		{
-			"Success, deployment, evaluation below min replicas, scale to min replicas",
-			&evaluate.Evaluation{
+			description: "Success, deployment, evaluation below min replicas, scale to min replicas",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: 2,
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -551,11 +566,12 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{},
-				nil,
-				nil,
+				Config:                   &config.Config{},
+				StabilizationEvaluations: []scaling.TimestampedEvaluation{},
+				Execute:                  nil,
+				RESTMapper:               newFakeRestMapper("apps", "v1", "deployment", "deployments"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(1),
 				},
@@ -577,20 +593,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 5,
 				},
 			},
 		},
 		{
-			"Success, deployment, evaluation within min-max bounds, scale to evaluation",
-			&evaluate.Evaluation{
+			description: "Success, deployment, evaluation within min-max bounds, scale to evaluation",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: int32(7),
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -603,11 +619,12 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{},
-				nil,
-				nil,
+				Config:                   &config.Config{},
+				StabilizationEvaluations: []scaling.TimestampedEvaluation{},
+				Execute:                  nil,
+				RESTMapper:               newFakeRestMapper("apps", "v1", "deployment", "deployments"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
 				},
@@ -629,20 +646,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 5,
 				},
 			},
 		},
 		{
-			"Success, deployment, evaluation within min-max bounds, scale to evaluation, run post-scale hook",
-			&evaluate.Evaluation{
+			description: "Success, deployment, evaluation within min-max bounds, scale to evaluation, run post-scale hook",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: int32(7),
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -655,19 +672,19 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{
+				Config: &config.Config{
 					PostScale: &config.Method{
 						Type: "test",
 					},
 				},
-				&fake.Execute{
+				Execute: &fake.Execute{
 					ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
 						return "success", nil
 					},
 				},
-				nil,
+				RESTMapper: newFakeRestMapper("apps", "v1", "deployment", "deployments"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
 				},
@@ -689,20 +706,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 5,
 				},
 			},
 		},
 		{
-			"Success, deployment, evaluation within min-max bounds, scale to evaluation, run pre and post-scale hooks",
-			&evaluate.Evaluation{
+			description: "Success, deployment, evaluation within min-max bounds, scale to evaluation, run pre and post-scale hooks",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: int32(7),
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -715,7 +732,7 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{
+				Config: &config.Config{
 					PostScale: &config.Method{
 						Type: "test",
 					},
@@ -723,14 +740,14 @@ func TestScale_Scale(t *testing.T) {
 						Type: "test",
 					},
 				},
-				&fake.Execute{
+				Execute: &fake.Execute{
 					ExecuteWithValueReactor: func(method *config.Method, value string) (string, error) {
 						return "success", nil
 					},
 				},
-				nil,
+				RESTMapper: newFakeRestMapper("apps", "v1", "deployment", "deployments"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
 				},
@@ -752,20 +769,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 5,
 				},
 			},
 		},
 		{
-			"Success, replicaset, evaluation within min-max bounds, scale to evaluation",
-			&evaluate.Evaluation{
+			description: "Success, replicaset, evaluation within min-max bounds, scale to evaluation",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: int32(7),
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -778,11 +795,11 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{},
-				nil,
-				nil,
+				Config:     &config.Config{},
+				Execute:    nil,
+				RESTMapper: newFakeRestMapper("apps", "v1", "replicaset", "replicasets"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
 				},
@@ -804,20 +821,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 3,
 				},
 			},
 		},
 		{
-			"Success, argo rollout, evaluation within min-max bounds, scale to evaluation",
-			&evaluate.Evaluation{
+			description: "Success, argo rollout, evaluation within min-max bounds, scale to evaluation",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: int32(7),
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -830,11 +847,11 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{},
-				nil,
-				nil,
+				Config:     &config.Config{},
+				Execute:    nil,
+				RESTMapper: newFakeRestMapper("argoproj.io", "v1alpha1", "rollout", "rollouts"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
 				},
@@ -856,20 +873,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 3,
 				},
 			},
 		},
 		{
-			"Success, replicationcontroller, evaluation within min-max bounds, scale to evaluation",
-			&evaluate.Evaluation{
+			description: "Success, replicationcontroller, evaluation within min-max bounds, scale to evaluation",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: int32(7),
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -882,11 +899,11 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{},
-				nil,
-				nil,
+				Config:     &config.Config{},
+				Execute:    nil,
+				RESTMapper: newFakeRestMapper("", "v1", "replicationcontroller", "replicationcontroller"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
 				},
@@ -908,20 +925,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 8,
 				},
 			},
 		},
 		{
-			"Success, statefulset, evaluation within min-max bounds, scale to evaluation",
-			&evaluate.Evaluation{
+			description: "Success, statefulset, evaluation within min-max bounds, scale to evaluation",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: int32(7),
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -934,11 +951,11 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{},
-				nil,
-				nil,
+				Config:     &config.Config{},
+				Execute:    nil,
+				RESTMapper: newFakeRestMapper("apps", "v1", "statefulset", "statefulsets"),
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(7),
 				},
@@ -960,20 +977,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 1,
 				},
 			},
 		},
 		{
-			"Success, deployment, 3 values within downscale stabilization window, 2 values pruned, previous max",
-			&evaluate.Evaluation{
+			description: "Success, deployment, 3 values within downscale stabilization window, 2 values pruned, previous max",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: int32(9),
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -986,11 +1003,12 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{
+				Config: &config.Config{
 					DownscaleStabilization: 45,
 				},
-				nil,
-				[]scaling.TimestampedEvaluation{
+				Execute:    nil,
+				RESTMapper: newFakeRestMapper("apps", "v1", "deployment", "deployments"),
+				StabilizationEvaluations: []scaling.TimestampedEvaluation{
 					{
 						Time: time.Now().Add(-60 * time.Second),
 						Evaluation: evaluate.Evaluation{
@@ -1023,7 +1041,7 @@ func TestScale_Scale(t *testing.T) {
 					},
 				},
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(2),
 				},
@@ -1045,20 +1063,20 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 5,
 				},
 			},
 		},
 		{
-			"Success, deployment, 3 values within downscale stabilization window, 2 values pruned, latest max",
-			&evaluate.Evaluation{
+			description: "Success, deployment, 3 values within downscale stabilization window, 2 values pruned, latest max",
+			expected: &evaluate.Evaluation{
 				TargetReplicas: int32(3),
 			},
-			nil,
-			&scaling.Scale{
-				&scaleFake.FakeScaleClient{
+			expectedErr: nil,
+			scaler: &scaling.Scale{
+				Scaler: &scaleFake.FakeScaleClient{
 					Fake: k8stesting.Fake{
 						ReactionChain: []k8stesting.Reactor{
 							&k8stesting.SimpleReactor{
@@ -1071,11 +1089,12 @@ func TestScale_Scale(t *testing.T) {
 						},
 					},
 				},
-				&config.Config{
+				Config: &config.Config{
 					DownscaleStabilization: 25,
 				},
-				nil,
-				[]scaling.TimestampedEvaluation{
+				Execute:    nil,
+				RESTMapper: newFakeRestMapper("apps", "v1", "deployment", "deployments"),
+				StabilizationEvaluations: []scaling.TimestampedEvaluation{
 					{
 						Time: time.Now().Add(-30 * time.Second),
 						Evaluation: evaluate.Evaluation{
@@ -1108,7 +1127,7 @@ func TestScale_Scale(t *testing.T) {
 					},
 				},
 			},
-			scale.Info{
+			info: scale.Info{
 				Evaluation: evaluate.Evaluation{
 					TargetReplicas: int32(3),
 				},
@@ -1130,7 +1149,7 @@ func TestScale_Scale(t *testing.T) {
 				Namespace: "test",
 				RunType:   config.ScalerRunType,
 			},
-			&autoscalingv1.Scale{
+			scaleResource: &autoscalingv1.Scale{
 				Spec: autoscalingv1.ScaleSpec{
 					Replicas: 5,
 				},

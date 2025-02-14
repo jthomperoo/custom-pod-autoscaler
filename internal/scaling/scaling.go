@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Custom Pod Autoscaler Authors.
+Copyright 2025 The Custom Pod Autoscaler Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -31,6 +30,7 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	meta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -49,6 +49,7 @@ type Scale struct {
 	Config                   *config.Config
 	Execute                  execute.Executer
 	StabilizationEvaluations []TimestampedEvaluation
+	RESTMapper               meta.RESTMapper
 }
 
 // TimestampedEvaluation is used to associate an evaluation with a timestamp, used in stabilizing evaluations
@@ -131,25 +132,24 @@ func (s *Scale) Scale(info scale.Info, scaleResource *autoscalingv1.Scale) (*eva
 	// If the resource needs scaled up/down
 	if targetReplicas != currentReplicas {
 		glog.V(0).Infof("Rescaling from %d to %d replicas", currentReplicas, targetReplicas)
-		glog.V(3).Infoln("Attempting to parse group version")
-		// Parse group version
-		resourceGV, err := schema.ParseGroupVersion(info.ScaleTargetRef.APIVersion)
+		glog.V(3).Infoln("Attempting to retrieve group version")
+		gvk := schema.FromAPIVersionAndKind(info.ScaleTargetRef.APIVersion, info.ScaleTargetRef.Kind)
+		mapping, err := s.RESTMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to retrieve group version: %w", err)
 		}
-		glog.V(3).Infof("Group version parsed: %+v", resourceGV)
+		glog.V(3).Infof("Group version retrieved: %+v", mapping.Resource)
 
-		kindPlural := fmt.Sprintf("%ss", strings.ToLower(info.ScaleTargetRef.Kind))
-		targetGVR := resourceGV.WithResource(kindPlural)
+		// We are using JSON patch for a couple of reasons:
+		// 1. CRD scale subresources do not support strategic patch
+		// 2. Merge patching seems broken: https://github.com/kubernetes/kubernetes/issues/116311
+		patch := []byte(fmt.Sprintf("[{\"op\":\"replace\",\"path\":\"/spec/replicas\",\"value\":%d}]", targetReplicas))
 
 		glog.V(3).Infoln("Attempting to apply scaling changes to resource")
 
-		// Prepare patch
-		patch := []byte(fmt.Sprintf(`{"spec":{"replicas":%d}}`, targetReplicas))
-
 		glog.V(3).Infof("Applying patch: %s to resource %s in namespace %s", string(patch), scaleResource.Name, info.Namespace)
 
-		_, err = s.Scaler.Scales(info.Namespace).Patch(context.Background(), targetGVR, scaleResource.Name, types.StrategicMergePatchType, patch, metav1.PatchOptions{})
+		_, err = s.Scaler.Scales(info.Namespace).Patch(context.Background(), mapping.Resource, scaleResource.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply scaling changes to resource: %w", err)
 		}

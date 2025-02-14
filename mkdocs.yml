@@ -29,7 +29,9 @@ nav:
   - 'Zero Scaling': 'user-guide/scaling-to-and-from-zero.md'
   - 'Pausing and Un-pausing scaling': 'user-guide/pausing-and-unpausing-scaling.md'
   - 'Kubernetes Metrics': 'user-guide/kubernetes-metrics.md'
+  - 'Custom Resources': 'user-guide/custom-resources.md'
   - 'Migrating v1 to v2': 'user-guide/migrating-v1-to-v2.md'
+  - 'Troubleshooting': 'user-guide/troubleshooting.md'
 - Reference:
   - Configuration: 'reference/configuration.md'
   - 'Docker Images': 'reference/docker-images.md'

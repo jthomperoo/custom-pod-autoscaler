@@ -44,6 +44,7 @@ or HTTP request.
 - Supports Kubernetes metrics that the Horizontal Pod Autoscaler uses, can be configured using a similar syntax and
 used in custom scaling decisions.
 - Supports [Argo Rollouts](https://argoproj.github.io/argo-rollouts/).
+- Supports targeting any custom resource that implements the scale subresource.
 
 ## Why would I use it?
 
