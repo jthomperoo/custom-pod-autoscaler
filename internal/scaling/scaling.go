@@ -30,10 +30,10 @@ import (
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/internal/execute"
 	"github.com/jthomperoo/custom-pod-autoscaler/v2/scale"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	meta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/restmapper"
 	k8sscale "k8s.io/client-go/scale"
 )
 
@@ -49,7 +49,7 @@ type Scale struct {
 	Config                   *config.Config
 	Execute                  execute.Executer
 	StabilizationEvaluations []TimestampedEvaluation
-	RESTMapper               restmapper.DeferredDiscoveryRESTMapper
+	RESTMapper               meta.RESTMapper
 }
 
 // TimestampedEvaluation is used to associate an evaluation with a timestamp, used in stabilizing evaluations
@@ -132,13 +132,13 @@ func (s *Scale) Scale(info scale.Info, scaleResource *autoscalingv1.Scale) (*eva
 	// If the resource needs scaled up/down
 	if targetReplicas != currentReplicas {
 		glog.V(0).Infof("Rescaling from %d to %d replicas", currentReplicas, targetReplicas)
-		glog.V(3).Infoln("Attempting to parse group version")
+		glog.V(3).Infoln("Attempting to retrieve group version")
 		gvk := schema.FromAPIVersionAndKind(info.ScaleTargetRef.APIVersion, info.ScaleTargetRef.Kind)
 		mapping, err := s.RESTMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse group version: %w", err)
+			return nil, fmt.Errorf("failed to retrieve group version: %w", err)
 		}
-		glog.V(3).Infof("Group version parsed: %+v", mapping.Resource)
+		glog.V(3).Infof("Group version retrieved: %+v", mapping.Resource)
 
 		// We are using JSON patch for a couple of reasons:
 		// 1. CRD scale subresources do not support strategic patch

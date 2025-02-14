@@ -143,7 +143,7 @@ func main() {
 	// Set up resource client
 	resourceClient := &resourceclient.UnstructuredClient{
 		Dynamic:    dynamicClient,
-		RESTMapper: *restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient),
+		RESTMapper: restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient),
 	}
 
 	scaleClient := k8sscale.New(
@@ -179,10 +179,11 @@ func main() {
 
 	// Set up scaling client
 	scaler := &scaling.Scale{
-		Scaler:     scaleClient,
-		Config:     loadedConfig,
-		Execute:    combinedExecute,
-		RESTMapper: *restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient),
+		Scaler:                   scaleClient,
+		Config:                   loadedConfig,
+		Execute:                  combinedExecute,
+		RESTMapper:               restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient),
+		StabilizationEvaluations: []scaling.TimestampedEvaluation{},
 	}
 
 	// Set up metric gathering
