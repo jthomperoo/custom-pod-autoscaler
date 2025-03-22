@@ -77,7 +77,7 @@ docker_multi_platform: package_linux_amd64 package_linux_arm64
 	docker buildx build --push --platform=linux/amd64,linux/arm64 --target=alpine --tag $(REGISTRY)/alpine:$(VERSION) .
 
 docker_tag_latest:
-	docker buildx imagetools create --tag $(REGISTRY)/python:$(VERSION) $(REGISTRY)/python:latest
-	docker buildx imagetools create --tag $(REGISTRY)/python-3-13:$(VERSION) $(REGISTRY)/python-3-13:latest
-	docker buildx imagetools create --tag $(REGISTRY)/python-3-13:$(VERSION) $(REGISTRY)/python-3-12:latest
-	docker buildx imagetools create --tag $(REGISTRY)/alpine:$(VERSION) $(REGISTRY)/alpine:latest
+	docker buildx imagetools create $(REGISTRY)/python:$(VERSION) --tag $(REGISTRY)/python:latest
+	docker buildx imagetools create $(REGISTRY)/python-3-13:$(VERSION) --tag $(REGISTRY)/python-3-13:latest
+	docker buildx imagetools create $(REGISTRY)/python-3-13:$(VERSION) --tag $(REGISTRY)/python-3-12:latest
+	docker buildx imagetools create $(REGISTRY)/alpine:$(VERSION) --tag $(REGISTRY)/alpine:latest
