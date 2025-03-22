@@ -2,9 +2,10 @@ REGISTRY = custompodautoscaler
 NAME = custom-pod-autoscaler
 VERSION = latest
 
-default:
-	go build -ldflags="-X 'main.Version=$(VERSION)'" -o dist/local/$(NAME) main.go
-	cp LICENSE dist/local/LICENSE
+default: package_linux_amd64 package_linux_arm64
+	docker build --target=python-3-13 --tag $(REGISTRY)/python-3-13:$(VERSION) --tag $(REGISTRY)/python:$(VERSION) .
+	docker build --target=python-3-12 --tag $(REGISTRY)/python-3-12:$(VERSION) .
+	docker build --target=alpine --tag $(REGISTRY)/alpine:$(VERSION) .
 
 test:
 	@echo "=============Running tests============="
@@ -27,13 +28,8 @@ coverage:
 	@echo "=============Loading coverage HTML============="
 	go tool cover -html=coverage.out
 
-docker: default
-	docker build --build-arg=DIST_FOLDER=dist/local --target=python-3-12 -t $(REGISTRY)/python-3-12:$(VERSION) .
-	docker build --build-arg=DIST_FOLDER=dist/local --target=python-3-13 -t $(REGISTRY)/python-3-13:$(VERSION) .
-	docker build --build-arg=DIST_FOLDER=dist/local --target=alpine -t $(REGISTRY)/alpine:$(VERSION) .
-	docker tag $(REGISTRY)/python-3-13:$(VERSION) $(REGISTRY)/python:$(VERSION)
-
 package_all: package_linux_386 package_linux_amd64 package_linux_arm package_linux_arm64 package_darwin_amd64 package_darwin_arm64 package_windows_386 package_windows_amd64
+	cp custom-pod-autoscaler-linux-amd64.tar.gz custom-pod-autoscaler.tar.gz
 
 package_linux_386:
 	CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -ldflags="-X 'main.Version=$(VERSION)'" -o dist/linux_386/custom-pod-autoscaler main.go
@@ -75,20 +71,13 @@ package_windows_amd64:
 	cp LICENSE dist/windows_amd64/LICENSE
 	tar -czvf custom-pod-autoscaler-windows-amd64.tar.gz dist/windows_amd64/*
 
-docker_all: docker_linux_amd64 docker_linux_arm64
-
-docker_linux_amd64: package_linux_amd64
-	docker buildx build --push --platform=linux/amd64 --build-arg=DIST_FOLDER=dist/linux_amd64 --target=python-3-13 -t $(REGISTRY)/python-3-13:$(VERSION) -t $(REGISTRY)/python:$(VERSION) .
-	docker buildx build --push --platform=linux/amd64 --build-arg=DIST_FOLDER=dist/linux_amd64 --target=python-3-12 -t $(REGISTRY)/python-3-12:$(VERSION) .
-	docker buildx build --push --platform=linux/amd64 --build-arg=DIST_FOLDER=dist/linux_amd64 --target=alpine -t $(REGISTRY)/alpine:$(VERSION) .
-
-docker_linux_arm64: package_linux_arm64
-	docker buildx build --push --platform=linux/arm64 --build-arg=DIST_FOLDER=dist/linux_arm64 --target=python-3-13 -t $(REGISTRY)/python-3-13:$(VERSION) -t $(REGISTRY)/python:$(VERSION) .
-	docker buildx build --push --platform=linux/arm64 --build-arg=DIST_FOLDER=dist/linux_arm64 --target=python-3-12 -t $(REGISTRY)/python-3-12:$(VERSION) .
-	docker buildx build --push --platform=linux/arm64 --build-arg=DIST_FOLDER=dist/linux_arm64 --target=alpine -t $(REGISTRY)/alpine:$(VERSION) .
+docker_multi_platform: package_linux_amd64 package_linux_arm64
+	docker buildx build --push --platform=linux/amd64,linux/arm64 --target=python-3-13 --tag $(REGISTRY)/python-3-13:$(VERSION) --tag $(REGISTRY)/python:$(VERSION) .
+	docker buildx build --push --platform=linux/amd64,linux/arm64 --target=python-3-12 --tag $(REGISTRY)/python-3-12:$(VERSION) .
+	docker buildx build --push --platform=linux/amd64,linux/arm64 --target=alpine --tag $(REGISTRY)/alpine:$(VERSION) .
 
 docker_tag_latest:
-	docker buildx imagetools create -t $(REGISTRY)/python:$(VERSION) $(REGISTRY)/python:latest
-	docker buildx imagetools create -t $(REGISTRY)/python-3-13:$(VERSION) $(REGISTRY)/python-3-13:latest
-	docker buildx imagetools create -t $(REGISTRY)/python-3-13:$(VERSION) $(REGISTRY)/python-3-12:latest
-	docker buildx imagetools create -t $(REGISTRY)/alpine:$(VERSION) $(REGISTRY)/alpine:latest
+	docker buildx imagetools create --tag $(REGISTRY)/python:$(VERSION) $(REGISTRY)/python:latest
+	docker buildx imagetools create --tag $(REGISTRY)/python-3-13:$(VERSION) $(REGISTRY)/python-3-13:latest
+	docker buildx imagetools create --tag $(REGISTRY)/python-3-13:$(VERSION) $(REGISTRY)/python-3-12:latest
+	docker buildx imagetools create --tag $(REGISTRY)/alpine:$(VERSION) $(REGISTRY)/alpine:latest

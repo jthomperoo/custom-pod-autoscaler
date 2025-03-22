@@ -54,7 +54,7 @@ jobs:
 
     - name: Build Docker images
       if: github.event_name != 'pull_request' && github.repository == 'jthomperoo/custom-pod-autoscaler'
-      run: make docker_all VERSION=${{ needs.determine-version.outputs.version }}
+      run: make docker_multi_platform VERSION=${{ needs.determine-version.outputs.version }}
 
     - name: Tag latest Docker images
       if: github.event_name == 'release'
@@ -65,6 +65,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
+          custom-pod-autoscaler.tar.gz
           custom-pod-autoscaler-linux-386.tar.gz
           custom-pod-autoscaler-linux-amd64.tar.gz
           custom-pod-autoscaler-linux-arm.tar.gz

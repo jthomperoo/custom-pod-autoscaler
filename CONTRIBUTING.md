@@ -164,14 +164,11 @@ the autoscaler's image is available in the registry it can be deployed using `ku
 
 ### Commands
 
-* `make` - builds the CPA binary for your local platform.
-* `make docker` - builds the CPA base images for your local platform.
+* `make` - builds the CPA Linux Docker image for your local architecture (either AMD64 or ARM64).
 * `make package_linux_arm64` - builds the CPA binary for the Linux ARM64 target (see the Makefile for a full list of
 targets) and packages it into a tar.gz file.
-* `make package` - builds the CPA binary for all available targets and packages them.
-* `make docker_linux_arm64` - builds the CPA base images for the Linux ARM64 target (see the Makefile for a full list
-of targets).
-* `make docker_all` - builds the CPA base images for all targets and pushes them to the registry.
+* `make package_all` - builds the CPA binary for all available targets and packages them.
+* `make docker_multi_platform` - performs a multi-platform docker build of the CPA base images.
 * `make test` - runs the unit tests.
 * `make lint` - lints the code.
 * `make beautify` - beautifies the code, must be run to pass the CI.
