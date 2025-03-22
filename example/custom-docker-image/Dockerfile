@@ -20,7 +20,7 @@ WORKDIR /app
 # Install wget
 RUN apt-get update && apt-get install wget -y
 
-# Install CPA
+# Install CPA (using AMD64 binary)
 RUN wget                                                                                                      \
     -qO-                                                                                                      \
     https://github.com/jthomperoo/custom-pod-autoscaler/releases/download/v2.12.1/custom-pod-autoscaler.tar.gz \

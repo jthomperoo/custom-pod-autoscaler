@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- New binary build targets:
+  - Linux i386 (x86)
+  - Linux ARM
+  - Linux ARM64
+  - Darwin AMD64
+  - Darwin ARM64
+  - Windows i386 (x86)
+  - Windows AMD64
+- New Docker platform:
+  - Linux ARM64
 
 ## [v2.12.1] - 2025-02-14
 ### Fixed

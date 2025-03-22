@@ -7,72 +7,73 @@ on:
     types: [created]
 
 jobs:
+
+  determine-version:
+    name: Determine version
+    runs-on: ubuntu-latest
+    steps:
+      - id: determine_version
+        run: |
+          if [ ${{ github.event_name }} == "release" ]; then
+            echo "version=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+          cat "$GITHUB_OUTPUT"
+    outputs:
+      version: ${{ steps.determine_version.outputs.version }}
+
   build:
     name: Build
     runs-on: ubuntu-latest
+    needs: [ determine-version ]
     steps:
-    - uses: actions/setup-go@v4
+    - uses: actions/setup-go@v5
       with:
         go-version: '1.24'
+    - uses: docker/setup-qemu-action@v3
+    - uses: docker/setup-buildx-action@v3
+
     - uses: actions/checkout@v4
-    - name: Lint, test and build
-      run: |
 
-        # Get staticcheck
-        export PATH=$PATH:$(go env GOPATH)/bin
+    - name: Lint
+      run: make lint
 
-        # Lint and test
-        make lint
-        make format
+    - name: Format
+      run: make format && git diff --exit-code
 
-        # Exit if after formatting there are any code differences
-        git diff --exit-code
+    - name: Test
+      run: make test
 
-        make test
+    - name: Build
+      run: make package_all VERSION=${{ needs.determine-version.outputs.version }}
 
-        # Build
-        if [ ${{ github.event_name }} == "release" ]; then
-          # github.ref is in the form refs/tags/VERSION, so apply regex to just get version
-          VERSION=$(echo "${{ github.ref }}" | grep -P '([^\/]+$)' -o)
-        else
-          VERSION=$(git rev-parse --short ${{ github.sha }})
-        fi
-        make docker VERSION=${VERSION}
-    - name: Deploy
-      env:
-        DOCKER_USER: ${{ secrets.DOCKER_USER }}
-        DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+    - name: Docker Hub authentication
       if: github.event_name != 'pull_request' && github.repository == 'jthomperoo/custom-pod-autoscaler'
-      run: |
-
-        # Array of images to publish
-        declare -a IMAGES=(python python-3-12 python-3-13 alpine)
-        echo "$DOCKER_PASS" | docker login --username=$DOCKER_USER --password-stdin
-
-        if [ ${{ github.event_name }} == "release" ]; then
-
-          # This needs to be determined again, due to env vars not being shared between steps
-          # https://github.com/actions/starter-workflows/issues/68
-          VERSION=$(echo "${{ github.ref }}" | grep -P '([^\/]+$)' -o)
-
-          # Go through each image type and publish each one individually
-          for image in "${IMAGES[@]}"; do
-            docker tag custompodautoscaler/${image}:${VERSION} custompodautoscaler/${image}:latest
-            docker push custompodautoscaler/${image}:${VERSION}
-            docker push custompodautoscaler/${image}:latest
-          done
-
-          # Package binary
-          tar -czvf custom-pod-autoscaler.tar.gz dist/*
-        else
-          for image in "${IMAGES[@]}"; do
-            docker push custompodautoscaler/${image}:$(git rev-parse --short ${{ github.sha }})
-          done
-        fi
-    - name: Deploy binary
-      if: github.event_name == 'release' && github.repository == 'jthomperoo/custom-pod-autoscaler'
-      uses: Shopify/upload-to-release@v2.0.0
+      uses: docker/login-action@v3
       with:
-        name: custom-pod-autoscaler.tar.gz
-        path: custom-pod-autoscaler.tar.gz
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_PASS }}
+
+    - name: Build Docker images
+      if: github.event_name != 'pull_request' && github.repository == 'jthomperoo/custom-pod-autoscaler'
+      run: make docker_multi_platform VERSION=${{ needs.determine-version.outputs.version }}
+
+    - name: Tag latest Docker images
+      if: github.event_name == 'release'
+      run: make docker_tag_latest
+
+    - name: Publish binaries
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          custom-pod-autoscaler.tar.gz
+          custom-pod-autoscaler-linux-386.tar.gz
+          custom-pod-autoscaler-linux-amd64.tar.gz
+          custom-pod-autoscaler-linux-arm.tar.gz
+          custom-pod-autoscaler-linux-arm64.tar.gz
+          custom-pod-autoscaler-darwin-amd64.tar.gz
+          custom-pod-autoscaler-darwin-arm64.tar.gz
+          custom-pod-autoscaler-windows-386.tar.gz
+          custom-pod-autoscaler-windows-amd64.tar.gz
