@@ -14,18 +14,21 @@
 
 # Python 3.13 build
 FROM python:3.13-slim AS python-3-13
+ARG DIST_FOLDER
 WORKDIR /app
-COPY dist /app/
+COPY $DIST_FOLDER /app/
 CMD [ "/app/custom-pod-autoscaler" ]
 
 # Python 3.12 build
 FROM python:3.12-slim AS python-3-12
+ARG DIST_FOLDER
 WORKDIR /app
-COPY dist /app/
+COPY $DIST_FOLDER /app/
 CMD [ "/app/custom-pod-autoscaler" ]
 
 # Alpine build
 FROM alpine:3 AS alpine
+ARG DIST_FOLDER
 WORKDIR /app
-COPY dist /app/
+COPY $DIST_FOLDER /app/
 CMD [ "/app/custom-pod-autoscaler" ]

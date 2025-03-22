@@ -7,6 +7,13 @@ The Custom Pod Autoscaler is bundled with the following Docker base images:
 - `custompodautoscaler/python-3-12` tracks latest stable Python 3.12.x release (debian based).
 - `custompodautoscaler/alpine` tracks latest stable Alpine 3.x release.
 
+## Platforms
+
+These Docker platforms are currently supported:
+
+- Linux AMD64
+- Linux ARM64
+
 ## Deprecated images
 
 The following images are deprecated and will no longer recieve updates:
