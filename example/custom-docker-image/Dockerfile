@@ -21,10 +21,10 @@ WORKDIR /app
 RUN apt-get update && apt-get install wget -y
 
 # Install CPA (using AMD64 binary)
-RUN wget                                                                                                      \
-    -qO-                                                                                                      \
-    https://github.com/jthomperoo/custom-pod-autoscaler/releases/download/v2.12.1/custom-pod-autoscaler.tar.gz \
-    | tar xvz                                                                                                 \
+RUN wget                                                                                                       \
+    -qO-                                                                                                       \
+    https://github.com/jthomperoo/custom-pod-autoscaler/releases/download/v2.12.2/custom-pod-autoscaler.tar.gz \
+    | tar xvz                                                                                                  \
     && mv dist/* /app/
 
 # Remove unused dist directory

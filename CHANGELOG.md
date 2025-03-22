@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v2.12.2] - 2025-03-22
 ### Changed
 - Upgraded package dependencies.
 ### Added
@@ -314,7 +316,9 @@ command and `evaluate` commands; default `3000` milliseconds.
 - Deploy image to Docker Hub.
 
 [Unreleased]:
-https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.12.1...HEAD
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.12.2...HEAD
+[v2.12.2]:
+https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.12.1...v2.12.2
 [v2.12.1]:
 https://github.com/jthomperoo/custom-pod-autoscaler/compare/v2.12.0...v2.12.1
 [v2.12.0]:
